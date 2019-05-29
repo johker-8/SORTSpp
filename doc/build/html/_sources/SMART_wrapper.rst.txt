@@ -1,0 +1,7 @@
+SMART_wrapper
+===========================
+
+.. automodule:: SMART_wrapper
+   :members:
+   :undoc-members:
+   :show-inheritance:

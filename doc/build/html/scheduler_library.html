@@ -1,0 +1,195 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>scheduler_library &#8212; SORTS++ 2.8.0 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="keplerian_sgp4" href="propagator_sgp4.html" />
+    <link rel="prev" title="radar_scan_library" href="radar_scan_library.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="propagator_sgp4.html" title="keplerian_sgp4"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="radar_scan_library.html" title="radar_scan_library"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">SORTS++ 2.8.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" accesskey="U">Documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-scheduler_library">
+<span id="scheduler-library"></span><h1>scheduler_library<a class="headerlink" href="#module-scheduler_library" title="Permalink to this headline">¶</a></h1>
+<p>Collection of classes and functions related to constructing a radar system scheduler.</p>
+<dl class="function">
+<dt id="scheduler_library.calculate_observation_params">
+<code class="descclassname">scheduler_library.</code><code class="descname">calculate_observation_params</code><span class="sig-paren">(</span><em>duty_cycle</em>, <em>SST_f</em>, <em>tracking_f</em>, <em>coher_int_t=0.1</em>, <em>IPP=0.01</em>, <em>interleaving_time_slice=0.4</em>, <em>scan_during_interleaved=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler_library.html#calculate_observation_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scheduler_library.calculate_observation_params" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="scheduler_library.configure_radar_to_observation">
+<code class="descclassname">scheduler_library.</code><code class="descname">configure_radar_to_observation</code><span class="sig-paren">(</span><em>radar</em>, <em>obs_par</em>, <em>mode='X'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler_library.html#configure_radar_to_observation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scheduler_library.configure_radar_to_observation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="scheduler_library.construct_scan_controler">
+<code class="descclassname">scheduler_library.</code><code class="descname">construct_scan_controler</code><span class="sig-paren">(</span><em>sim</em>, <em>txi</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler_library.html#construct_scan_controler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scheduler_library.construct_scan_controler" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="scheduler_library.dynamic_sceduler">
+<code class="descclassname">scheduler_library.</code><code class="descname">dynamic_sceduler</code><span class="sig-paren">(</span><em>sim</em>, <em>config</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler_library.html#dynamic_sceduler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scheduler_library.dynamic_sceduler" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="scheduler_library.isolated_static_discovery_sceduler">
+<code class="descclassname">scheduler_library.</code><code class="descname">isolated_static_discovery_sceduler</code><span class="sig-paren">(</span><em>sim</em>, <em>config</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler_library.html#isolated_static_discovery_sceduler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scheduler_library.isolated_static_discovery_sceduler" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="scheduler_library.memory_static_discovery_sceduler">
+<code class="descclassname">scheduler_library.</code><code class="descname">memory_static_discovery_sceduler</code><span class="sig-paren">(</span><em>sim</em>, <em>config</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler_library.html#memory_static_discovery_sceduler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scheduler_library.memory_static_discovery_sceduler" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="scheduler_library.obs_params">
+<em class="property">class </em><code class="descclassname">scheduler_library.</code><code class="descname">obs_params</code><span class="sig-paren">(</span><em>tup</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler_library.html#obs_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scheduler_library.obs_params" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="scheduler_library.obs_params.get_tup">
+<code class="descname">get_tup</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler_library.html#obs_params.get_tup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scheduler_library.obs_params.get_tup" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="scheduler_library.obs_params.set_params">
+<code class="descname">set_params</code><span class="sig-paren">(</span><em>tup</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler_library.html#obs_params.set_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scheduler_library.obs_params.set_params" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="scheduler_library.print_observation_params">
+<code class="descclassname">scheduler_library.</code><code class="descname">print_observation_params</code><span class="sig-paren">(</span><em>obs_par</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler_library.html#print_observation_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scheduler_library.print_observation_params" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="scheduler_library.que_value_dyn_v0">
+<code class="descclassname">scheduler_library.</code><code class="descname">que_value_dyn_v0</code><span class="sig-paren">(</span><em>data</em>, <em>config</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler_library.html#que_value_dyn_v0"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scheduler_library.que_value_dyn_v0" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="scheduler_library.que_value_dyn_v1">
+<code class="descclassname">scheduler_library.</code><code class="descname">que_value_dyn_v1</code><span class="sig-paren">(</span><em>data</em>, <em>config</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler_library.html#que_value_dyn_v1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scheduler_library.que_value_dyn_v1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="scheduler_library.que_value_dyn_v2">
+<code class="descclassname">scheduler_library.</code><code class="descname">que_value_dyn_v2</code><span class="sig-paren">(</span><em>data</em>, <em>config</em>, <em>debug=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler_library.html#que_value_dyn_v2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scheduler_library.que_value_dyn_v2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="scheduler_library.radar_control">
+<code class="descclassname">scheduler_library.</code><code class="descname">radar_control</code><span class="sig-paren">(</span><em>t</em>, <em>on_time</em>, <em>off_time</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler_library.html#radar_control"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scheduler_library.radar_control" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="scheduler_library.scheduling_movie">
+<code class="descclassname">scheduler_library.</code><code class="descname">scheduling_movie</code><span class="sig-paren">(</span><em>tracks</em>, <em>tracks_t</em>, <em>radar</em>, <em>population</em>, <em>root</em>, <em>time_slice=0.2</em>, <em>time_len=0.0005555555555555556</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler_library.html#scheduling_movie"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scheduler_library.scheduling_movie" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="doc.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="doc.html#simulation-handler">Simulation handler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#class-modules">Class modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#function-modules">Function modules</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="doc.html#instance-libraries">Instance libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#integrator-interfaces">Integrator interfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#tests">Tests</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="radar_scan_library.html"
+                        title="previous chapter">radar_scan_library</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="propagator_sgp4.html"
+                        title="next chapter">keplerian_sgp4</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="propagator_sgp4.html" title="keplerian_sgp4"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="radar_scan_library.html" title="radar_scan_library"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">SORTS++ 2.8.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" >Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

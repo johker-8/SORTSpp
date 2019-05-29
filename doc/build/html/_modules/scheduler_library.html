@@ -1,0 +1,642 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>scheduler_library &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for scheduler_library</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="sd">&#39;&#39;&#39;Collection of classes and functions related to constructing a radar system scheduler.</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">matplotlib.animation</span> <span class="k">as</span> <span class="nn">animation</span>
+<span class="kn">from</span> <span class="nn">mpl_toolkits.mplot3d</span> <span class="k">import</span> <span class="n">Axes3D</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+
+<span class="kn">import</span> <span class="nn">plothelp</span>
+<span class="kn">import</span> <span class="nn">rewardf_library</span>
+
+<div class="viewcode-block" id="scheduler_TEMPLATE"><a class="viewcode-back" href="../modules/scheduler_library.html#scheduler_library.scheduler_TEMPLATE">[docs]</a><span class="k">def</span> <span class="nf">scheduler_TEMPLATE</span><span class="p">(</span><span class="n">catalogue</span><span class="p">,</span> <span class="n">radar</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">t0</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+
+<span class="k">def</span> <span class="nf">_binary_radar_control</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">on_time</span><span class="p">,</span> <span class="n">off_time</span><span class="p">):</span>
+    <span class="n">tm</span> <span class="o">=</span> <span class="n">t</span> <span class="o">%</span> <span class="p">(</span><span class="n">on_time</span><span class="o">+</span><span class="n">off_time</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">tm</span> <span class="o">&lt;=</span> <span class="n">on_time</span>
+
+
+
+<div class="viewcode-block" id="dynamic_scheduler"><a class="viewcode-back" href="../modules/scheduler_library.html#scheduler_library.dynamic_scheduler">[docs]</a><span class="k">def</span> <span class="nf">dynamic_scheduler</span><span class="p">(</span><span class="n">catalogue</span><span class="p">,</span> <span class="n">radar</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">t0</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Dynamic scheduler</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">reward_function</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;reward_function&#39;</span><span class="p">,</span> <span class="n">rewardf_library</span><span class="o">.</span><span class="n">rewardf_exp_peak_SNR_tracklet_len</span><span class="p">)</span>
+    <span class="n">reward_function_config</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;reward_function_config&#39;</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s1">&#39;sigma_t&#39;</span><span class="p">:</span> <span class="mf">2.0</span><span class="o">*</span><span class="mf">60.0</span><span class="p">,</span>
+            <span class="s1">&#39;lambda_N&#39;</span><span class="p">:</span> <span class="mf">10.0</span>
+        <span class="p">})</span>
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;logger&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+
+    <span class="n">on_time</span> <span class="o">=</span> <span class="n">parameters</span><span class="o">.</span><span class="n">SST_slices</span> <span class="o">*</span> <span class="n">parameters</span><span class="o">.</span><span class="n">coher_int_t</span>
+    <span class="n">off_time</span> <span class="o">=</span> <span class="n">parameters</span><span class="o">.</span><span class="n">Interleaving_slices</span> <span class="o">*</span> <span class="n">parameters</span><span class="o">.</span><span class="n">interleaving_time_slice</span>
+
+    <span class="n">radar_control</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">_binary_radar_control</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">on_time</span><span class="p">,</span> <span class="n">off_time</span><span class="p">)</span>
+
+    <span class="n">catalogue</span><span class="o">.</span><span class="n">compile_tracks</span><span class="p">(</span><span class="n">radar</span><span class="p">,</span> <span class="n">t0</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">radar_control</span> <span class="o">=</span> <span class="n">radar_control</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">logger</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Raw track count: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">catalogue</span><span class="o">.</span><span class="n">tracks</span><span class="p">)))</span>
+
+    <span class="n">t_sort</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">catalogue</span><span class="o">.</span><span class="n">tracks</span><span class="p">[</span><span class="s1">&#39;t0&#39;</span><span class="p">])</span> <span class="c1">#chronological order</span>
+    <span class="n">catalogue</span><span class="o">.</span><span class="n">tracks</span> <span class="o">=</span> <span class="n">catalogue</span><span class="o">.</span><span class="n">tracks</span><span class="p">[</span><span class="n">t_sort</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">catalogue</span><span class="o">.</span><span class="n">tracks</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;No schedule constructed, no tracks available.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">catalogue</span>
+
+    <span class="c1">#these tracks will be deleted after scheduler analysis is complete</span>
+    <span class="n">keep_flag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">catalogue</span><span class="o">.</span><span class="n">tracks</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
+
+    <span class="c1">#lets go with a queue system according to track ID</span>
+    <span class="c1">#we know that they are in chronological order</span>
+    <span class="n">queue</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">queue_OID</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">queue_dist</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="c1">#we create a list of events, i.e. start to stop measurements</span>
+    <span class="c1"># 0 = start</span>
+    <span class="c1"># 1 = stop</span>
+    <span class="n">tr_t1</span> <span class="o">=</span> <span class="n">catalogue</span><span class="o">.</span><span class="n">tracks</span><span class="p">[</span><span class="s1">&#39;t0&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">catalogue</span><span class="o">.</span><span class="n">tracks</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]</span>
+    <span class="n">t_events</span> <span class="o">=</span> <span class="p">[</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">ID</span><span class="p">)</span> <span class="k">for</span> <span class="n">ID</span><span class="p">,</span><span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">catalogue</span><span class="o">.</span><span class="n">tracks</span><span class="p">[</span><span class="s1">&#39;t0&#39;</span><span class="p">])</span> <span class="p">]</span>\
+             <span class="o">+</span> <span class="p">[</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">ID</span><span class="p">)</span> <span class="k">for</span> <span class="n">ID</span><span class="p">,</span><span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">tr_t1</span><span class="p">)</span> <span class="p">]</span>
+
+    <span class="n">t_events</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">t_prev</span> <span class="o">=</span> <span class="n">t_events</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">t_first</span> <span class="o">=</span> <span class="n">t_events</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">t_last</span> <span class="o">=</span> <span class="n">t_events</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">_done</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">_time_start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">_frac</span> <span class="o">=</span> <span class="mi">1000</span>
+    <span class="n">_iter_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_events</span><span class="p">)</span>
+    <span class="n">_iter_now</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">obj_inds</span> <span class="o">=</span> <span class="n">catalogue</span><span class="o">.</span><span class="n">tracks</span><span class="p">[</span><span class="s1">&#39;index&#39;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">parameters</span><span class="o">.</span><span class="n">tracking_f</span> <span class="o">&lt;</span> <span class="mf">1e-3</span><span class="p">:</span>
+        <span class="n">t_events</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">t_now</span><span class="p">,</span> <span class="n">event_type</span><span class="p">,</span> <span class="n">ID</span> <span class="ow">in</span> <span class="n">t_events</span><span class="p">:</span>
+        <span class="n">_iter_now</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="c1">#now this queue will contain all track ID&#39;s that request data points </span>
+        <span class="c1">#at every point in time discretized according to events</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">queue</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">t_prev</span> <span class="o">!=</span> <span class="n">t_now</span><span class="p">:</span>
+
+            <span class="c1">#create a timeline between the last event and this according to our time slices</span>
+            <span class="n">t_start</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">t_prev</span> <span class="o">/</span> <span class="p">(</span><span class="n">on_time</span><span class="o">+</span><span class="n">off_time</span><span class="p">))</span><span class="o">*</span><span class="p">(</span><span class="n">on_time</span><span class="o">+</span><span class="n">off_time</span><span class="p">)</span>
+            <span class="n">t_stop</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">t_now</span>  <span class="o">/</span> <span class="p">(</span><span class="n">on_time</span><span class="o">+</span><span class="n">off_time</span><span class="p">))</span><span class="o">*</span><span class="p">(</span><span class="n">on_time</span><span class="o">+</span><span class="n">off_time</span><span class="p">)</span>
+            
+            <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">t_start</span><span class="p">,</span> <span class="n">t_stop</span><span class="p">,</span> <span class="n">parameters</span><span class="o">.</span><span class="n">coher_int_t</span> <span class="p">)</span>
+
+            <span class="c1">#find witch times are possible due to radar control</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">_binary_radar_control</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">on_time</span><span class="p">,</span> <span class="n">off_time</span><span class="p">)]</span>
+
+            <span class="c1">#distribute points to queue</span>
+            <span class="n">queue_reward</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">queue</span><span class="p">),))</span>
+
+            <span class="k">for</span> <span class="n">ti</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)):</span>
+                <span class="c1">#calculate the object queue position</span>
+                <span class="k">for</span> <span class="n">qI</span><span class="p">,</span> <span class="n">queue_entry</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">queue</span><span class="p">):</span>
+
+                    <span class="n">queue_reward</span><span class="p">[</span><span class="n">qI</span><span class="p">]</span> <span class="o">=</span> <span class="n">reward_function</span><span class="p">(</span>
+                        <span class="n">t</span><span class="p">[</span><span class="n">ti</span><span class="p">],</span>
+                        <span class="n">catalogue</span><span class="o">.</span><span class="n">tracks</span><span class="p">[</span><span class="n">queue_entry</span><span class="p">],</span>
+                        <span class="n">reward_function_config</span><span class="p">,</span>
+                    <span class="p">)</span>
+                
+                <span class="n">que_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">queue_reward</span><span class="p">)</span>
+                <span class="n">queue_dist</span><span class="p">[</span><span class="n">queue</span><span class="p">[</span><span class="n">que_id</span><span class="p">]]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">ti</span><span class="p">])</span>
+
+            <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            if logger is not None:</span>
+<span class="sd">                logger.debug(&#39;STEP {:.2f} h : handing out {} points&#39;.format(t_now/3600.0, len(t)))</span>
+<span class="sd">                for qI in range(len(queue)):</span>
+<span class="sd">                    logger.debug(&#39;-- ID {} - que place {:.5f}: has {} points&#39;.format(queue[qI],queue_reward[qI],len(queue_dist[queue[qI]])))</span>
+<span class="sd">            &#39;&#39;&#39;</span>
+        <span class="c1">#add and remove objects to queue</span>
+        <span class="k">if</span> <span class="n">event_type</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c1">#logger.info(&#39;Del: OID {} qI {} ID {}&#39;.format(queue_OID[qI], qI, ID))</span>
+            <span class="n">qI</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">ID</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">queue_dist</span><span class="p">[</span><span class="n">ID</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c1">#we have a tracklet, add to list</span>
+                <span class="k">if</span> <span class="n">catalogue</span><span class="o">.</span><span class="n">tracks</span><span class="p">[</span><span class="n">ID</span><span class="p">][</span><span class="s1">&#39;tracklet&#39;</span><span class="p">]:</span>
+                    <span class="n">tmp_tracklet</span> <span class="o">=</span> <span class="n">catalogue</span><span class="o">.</span><span class="n">tracklets</span><span class="p">[</span><span class="n">catalogue</span><span class="o">.</span><span class="n">tracks</span><span class="p">[</span><span class="n">ID</span><span class="p">][</span><span class="s1">&#39;tracklet_index&#39;</span><span class="p">]]</span>
+                    <span class="n">tmp_tracklet</span><span class="p">[</span><span class="s1">&#39;t&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmp_tracklet</span><span class="p">[</span><span class="s1">&#39;t&#39;</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">queue_dist</span><span class="p">[</span><span class="n">ID</span><span class="p">]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                    <span class="n">catalogue</span><span class="o">.</span><span class="n">tracks</span><span class="p">[</span><span class="n">ID</span><span class="p">][</span><span class="s1">&#39;tracklet_len&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">queue_dist</span><span class="p">[</span><span class="n">ID</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">catalogue</span><span class="o">.</span><span class="n">add_tracklet</span><span class="p">(</span>
+                        <span class="n">track_id</span> <span class="o">=</span> <span class="n">ID</span><span class="p">,</span>
+                        <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">queue_dist</span><span class="p">[</span><span class="n">ID</span><span class="p">]),</span>
+                        <span class="n">index</span> <span class="o">=</span> <span class="n">queue_OID</span><span class="p">[</span><span class="n">qI</span><span class="p">],</span>
+                        <span class="n">fnames</span> <span class="o">=</span> <span class="p">[],</span>
+                        <span class="n">is_prior</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="n">catalogue</span><span class="o">.</span><span class="n">tracks</span><span class="p">[</span><span class="n">ID</span><span class="p">][</span><span class="s1">&#39;tracklet&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="n">catalogue</span><span class="o">.</span><span class="n">tracks</span><span class="p">[</span><span class="n">ID</span><span class="p">][</span><span class="s1">&#39;tracklet_len&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">queue_dist</span><span class="p">[</span><span class="n">ID</span><span class="p">])</span>
+                    <span class="n">catalogue</span><span class="o">.</span><span class="n">tracks</span><span class="p">[</span><span class="n">ID</span><span class="p">][</span><span class="s1">&#39;tracklet_index&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">catalogue</span><span class="o">.</span><span class="n">tracklets</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+                
+            <span class="k">del</span> <span class="n">queue_OID</span><span class="p">[</span><span class="n">qI</span><span class="p">]</span>
+            <span class="k">del</span> <span class="n">queue</span><span class="p">[</span><span class="n">qI</span><span class="p">]</span>
+            <span class="k">del</span> <span class="n">queue_dist</span><span class="p">[</span><span class="n">ID</span><span class="p">]</span>
+
+
+        <span class="k">if</span> <span class="n">event_type</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1">#logger.info(&#39;Add: OID {} ID {}&#39;.format(obj_inds[ID], ID))</span>
+            <span class="n">oid</span> <span class="o">=</span> <span class="n">obj_inds</span><span class="p">[</span><span class="n">ID</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">ID</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">queue</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">oid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">queue_OID</span><span class="p">:</span>
+                    <span class="n">queue</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ID</span><span class="p">)</span>
+                    <span class="n">queue_OID</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">oid</span><span class="p">)</span>
+                    <span class="n">queue_dist</span><span class="p">[</span><span class="n">ID</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">keep_flag</span><span class="p">[</span><span class="n">ID</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1">#logger.info(&#39;queue: {}&#39;.format(queue))</span>
+        <span class="n">dt_now</span> <span class="o">=</span> <span class="p">(</span><span class="n">t_now</span> <span class="o">-</span> <span class="n">t_first</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">t_last</span> <span class="o">-</span> <span class="n">t_first</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">dt_now</span><span class="o">*</span><span class="nb">float</span><span class="p">(</span><span class="n">_frac</span><span class="p">))</span> <span class="o">&gt;=</span> <span class="n">_done</span><span class="p">:</span>
+            <span class="n">_done</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">dt_now</span><span class="o">*</span><span class="nb">float</span><span class="p">(</span><span class="n">_frac</span><span class="p">))</span> <span class="o">+</span> <span class="mi">1</span>
+
+            <span class="k">if</span> <span class="n">logger</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">_time_elaps</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">_time_start</span>
+
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{:.2f}</span><span class="s1"> </span><span class="si">% o</span><span class="s1">f scheduling complete at </span><span class="si">{:.3f}</span><span class="s1"> h, estimated time left </span><span class="si">{:.3f}</span><span class="s1"> h&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">dt_now</span><span class="o">*</span><span class="mf">100.0</span><span class="p">,</span>
+                    <span class="n">_time_elaps</span><span class="o">/</span><span class="mf">3600.0</span><span class="p">,</span>
+                    <span class="n">_time_elaps</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">_iter_now</span><span class="p">)</span><span class="o">*</span><span class="nb">float</span><span class="p">(</span><span class="n">_iter_len</span> <span class="o">-</span> <span class="n">_iter_now</span><span class="p">)</span><span class="o">/</span><span class="mf">3600.0</span><span class="p">,</span>
+                <span class="p">))</span>
+
+
+        <span class="n">t_prev</span> <span class="o">=</span> <span class="n">t_now</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_events</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">_old_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">catalogue</span><span class="o">.</span><span class="n">tracks</span><span class="p">))</span>
+        <span class="n">_old_index</span> <span class="o">=</span> <span class="n">_old_index</span><span class="p">[</span><span class="n">keep_flag</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">_new_index</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">_old_index</span><span class="p">)))</span>
+        <span class="c1">#need to recalibrate all &quot;track_index&quot;</span>
+        <span class="k">for</span> <span class="n">tracklet</span> <span class="ow">in</span> <span class="n">catalogue</span><span class="o">.</span><span class="n">tracklets</span><span class="p">:</span>
+            <span class="n">ind</span> <span class="o">=</span> <span class="n">_old_index</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">tracklet</span><span class="p">[</span><span class="s1">&#39;track_id&#39;</span><span class="p">])</span>
+            <span class="n">tracklet</span><span class="p">[</span><span class="s1">&#39;track_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_new_index</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span>
+
+        <span class="n">catalogue</span><span class="o">.</span><span class="n">tracks</span> <span class="o">=</span> <span class="n">catalogue</span><span class="o">.</span><span class="n">tracks</span><span class="p">[</span><span class="n">keep_flag</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">catalogue</span></div>
+
+
+
+
+
+
+
+<span class="c1">##</span>
+<span class="c1">## THESE SCHEDULERS ARE NOW OUTDATED AND CANOT FUNCTION, NEED TO CONFORM TO NEW STANDARD</span>
+<span class="c1">##</span>
+<span class="c1">#this only tracks for config[&#39;memory_track_time&#39;] seconds</span>
+<span class="c1">#then if this tracking is achived it starts scanning again and remembers the object!</span>
+<span class="c1">#it is only focused on discovery so it wont do follow ups</span>
+<div class="viewcode-block" id="memory_static_discovery_sceduler"><a class="viewcode-back" href="../modules/scheduler_library.html#scheduler_library.memory_static_discovery_sceduler">[docs]</a><span class="k">def</span> <span class="nf">memory_static_discovery_sceduler</span><span class="p">(</span><span class="n">sim</span><span class="p">,</span><span class="n">config</span><span class="p">):</span>
+    <span class="n">cat</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">_catalogue</span>
+    <span class="n">cat_detections</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">_detections</span>
+    <span class="n">tracks</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">discovered</span> <span class="o">=</span> <span class="p">[[</span><span class="kc">False</span><span class="p">,</span><span class="mi">0</span><span class="p">]]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">cat_detections</span><span class="p">)</span>
+    <span class="n">tracks_rem</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">oid</span><span class="p">,</span><span class="n">detections</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cat_detections</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">detections</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">txi</span><span class="p">,</span><span class="n">tx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">detections</span><span class="p">):</span>
+                    <span class="n">n_dets</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">tx</span><span class="p">[</span><span class="s2">&quot;t0&quot;</span><span class="p">])</span>
+                    <span class="k">for</span> <span class="n">det_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_dets</span><span class="p">):</span>
+                        <span class="n">tracks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="p">[</span><span class="n">tx</span><span class="p">[</span><span class="s2">&quot;t0&quot;</span><span class="p">][</span><span class="n">det_idx</span><span class="p">],</span> <span class="n">tx</span><span class="p">[</span><span class="s2">&quot;t1&quot;</span><span class="p">][</span><span class="n">det_idx</span><span class="p">]</span> <span class="o">-</span> <span class="n">tx</span><span class="p">[</span><span class="s2">&quot;t0&quot;</span><span class="p">][</span><span class="n">det_idx</span><span class="p">],</span> <span class="kc">True</span><span class="p">,</span> <span class="mf">10.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">tx</span><span class="p">[</span><span class="s2">&quot;snr&quot;</span><span class="p">][</span><span class="n">det_idx</span><span class="p">])),</span> <span class="n">oid</span> <span class="p">]</span> <span class="p">)</span>
+    <span class="n">tracks</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="c1">#chronological order</span>
+    <span class="n">memory</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">tri</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tracks</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="p">][</span><span class="mi">2</span><span class="p">]:</span>
+            <span class="n">di</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="p">][</span><span class="mi">4</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">memory</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;memory_track_time&#39;</span><span class="p">]:</span>
+                    <span class="n">tracks_overlap_check</span> <span class="o">=</span> <span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="o">+</span><span class="n">di</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">memory</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="p">][</span><span class="mi">4</span><span class="p">])</span>
+                    <span class="n">tracks_overlap_check</span> <span class="o">=</span> <span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;memory_track_time&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="o">+</span><span class="n">di</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                
+                <span class="k">while</span> <span class="n">tracks_overlap_check</span><span class="p">:</span> <span class="c1">#checks all possibilities</span>
+                    <span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="o">+</span><span class="n">di</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="n">tracks_rem</span><span class="o">+=</span><span class="mi">1</span>
+                    <span class="n">di</span><span class="o">+=</span><span class="mi">1</span>
+                    <span class="k">if</span> <span class="n">tri</span><span class="o">+</span><span class="n">di</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">tracks</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;memory_track_time&#39;</span><span class="p">]:</span>
+                            <span class="n">tracks_overlap_check</span> <span class="o">=</span> <span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="o">+</span><span class="n">di</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">tracks_overlap_check</span> <span class="o">=</span> <span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;memory_track_time&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="o">+</span><span class="n">di</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">tracks_overlap_check</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">tracks_rem</span><span class="o">+=</span><span class="mi">1</span>
+
+    <span class="c1">#go trough again and check for discoveries</span>
+    <span class="k">for</span> <span class="n">tri</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tracks</span><span class="p">)):</span>
+        <span class="c1">#if detected and not yet discovered, set to discovered</span>
+        <span class="k">if</span> <span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">discovered</span><span class="p">[</span><span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="p">][</span><span class="mi">4</span><span class="p">]][</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="n">discovered</span><span class="p">[</span><span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="p">][</span><span class="mi">4</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span><span class="n">tri</span><span class="p">]</span>
+
+    <span class="n">scheduler_return</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">scheduler_return</span><span class="p">[</span><span class="s1">&#39;tracks&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tracks</span>
+    <span class="n">scheduler_return</span><span class="p">[</span><span class="s1">&#39;discovered&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">discovered</span>
+    <span class="n">scheduler_return</span><span class="p">[</span><span class="s1">&#39;removed_tracks&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tracks_rem</span>
+    <span class="k">return</span> <span class="n">scheduler_return</span></div>
+
+
+<span class="c1">##</span>
+<span class="c1">## THESE SCHEDULERS ARE NOW OUTDATED AND CANOT FUNCTION, NEED TO CONFORM TO NEW STANDARD</span>
+<span class="c1">##</span>
+<div class="viewcode-block" id="isolated_static_discovery_sceduler"><a class="viewcode-back" href="../modules/scheduler_library.html#scheduler_library.isolated_static_discovery_sceduler">[docs]</a><span class="k">def</span> <span class="nf">isolated_static_discovery_sceduler</span><span class="p">(</span><span class="n">sim</span><span class="p">,</span><span class="n">config</span><span class="p">):</span>
+    <span class="n">cat</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">_catalogue</span>
+    <span class="n">cat_detections</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">_detections</span>
+    <span class="n">tracks</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">discovered</span> <span class="o">=</span> <span class="p">[[</span><span class="kc">False</span><span class="p">,</span><span class="mi">0</span><span class="p">]]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">cat_detections</span><span class="p">)</span>
+    <span class="n">tracks_rem</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">oid</span><span class="p">,</span><span class="n">detections</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cat_detections</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">detections</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">txi</span><span class="p">,</span><span class="n">tx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">detections</span><span class="p">):</span>
+                    <span class="n">n_dets</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">tx</span><span class="p">[</span><span class="s2">&quot;t0&quot;</span><span class="p">])</span>
+                    <span class="k">for</span> <span class="n">det_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_dets</span><span class="p">):</span>
+                        <span class="n">tracks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="p">[</span><span class="n">tx</span><span class="p">[</span><span class="s2">&quot;t0&quot;</span><span class="p">][</span><span class="n">det_idx</span><span class="p">],</span> <span class="n">tx</span><span class="p">[</span><span class="s2">&quot;t1&quot;</span><span class="p">][</span><span class="n">det_idx</span><span class="p">]</span> <span class="o">-</span> <span class="n">tx</span><span class="p">[</span><span class="s2">&quot;t0&quot;</span><span class="p">][</span><span class="n">det_idx</span><span class="p">],</span> <span class="kc">True</span><span class="p">,</span> <span class="mf">10.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">tx</span><span class="p">[</span><span class="s2">&quot;snr&quot;</span><span class="p">][</span><span class="n">det_idx</span><span class="p">])),</span> <span class="n">oid</span> <span class="p">]</span> <span class="p">)</span>
+    <span class="n">tracks</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="c1">#chronological order</span>
+    <span class="k">for</span> <span class="n">tri</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tracks</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="p">][</span><span class="mi">2</span><span class="p">]:</span>
+            <span class="n">di</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">tracks_overlap_check</span> <span class="o">=</span> <span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="o">+</span><span class="n">di</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">while</span> <span class="n">tracks_overlap_check</span><span class="p">:</span> <span class="c1">#checks all possibilities</span>
+                <span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="o">+</span><span class="n">di</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">tracks_rem</span><span class="o">+=</span><span class="mi">1</span>
+                <span class="n">di</span><span class="o">+=</span><span class="mi">1</span>
+                <span class="k">if</span> <span class="n">tri</span><span class="o">+</span><span class="n">di</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">tracks</span><span class="p">):</span>
+                    <span class="n">tracks_overlap_check</span> <span class="o">=</span> <span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="o">+</span><span class="n">di</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">tracks_overlap_check</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="c1">#go trough again and check for discoveries</span>
+    <span class="k">for</span> <span class="n">tri</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tracks</span><span class="p">)):</span>
+        <span class="c1">#if detected and not yet discovered, set to discovered</span>
+        <span class="k">if</span> <span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">discovered</span><span class="p">[</span><span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="p">][</span><span class="mi">4</span><span class="p">]][</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="n">discovered</span><span class="p">[</span><span class="n">tracks</span><span class="p">[</span><span class="n">tri</span><span class="p">][</span><span class="mi">4</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span><span class="n">tri</span><span class="p">]</span>
+
+    <span class="n">scheduler_return</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">scheduler_return</span><span class="p">[</span><span class="s1">&#39;tracks&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tracks</span>
+    <span class="n">scheduler_return</span><span class="p">[</span><span class="s1">&#39;discovered&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">discovered</span>
+    <span class="n">scheduler_return</span><span class="p">[</span><span class="s1">&#39;removed_tracks&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tracks_rem</span>
+    <span class="k">return</span> <span class="n">scheduler_return</span></div>
+
+
+
+
+<div class="viewcode-block" id="scheduling_movie"><a class="viewcode-back" href="../modules/scheduler_library.html#scheduler_library.scheduling_movie">[docs]</a><span class="k">def</span> <span class="nf">scheduling_movie</span><span class="p">(</span><span class="n">tracks</span><span class="p">,</span> <span class="n">tracks_t</span><span class="p">,</span> <span class="n">radar</span><span class="p">,</span> <span class="n">population</span><span class="p">,</span> <span class="n">root</span><span class="p">,</span> <span class="n">time_slice</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">time_len</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="mf">60.0</span><span class="o">/</span><span class="mf">30.0</span><span class="p">):</span>
+    <span class="c1">#create a better sorted data structure</span>
+    <span class="n">tx</span> <span class="o">=</span> <span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">point_data</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">track_data</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">track</span><span class="p">,</span><span class="n">t_track</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">tracks</span><span class="p">,</span><span class="n">tracks_t</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">track</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span>
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">t_track</span><span class="p">:</span>
+                <span class="c1">#tracklet point time, OID, source</span>
+                <span class="n">row</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">track</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="n">track</span><span class="p">[</span><span class="mi">6</span><span class="p">]]</span>
+                <span class="n">point_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">row</span> <span class="p">)</span>
+            <span class="c1">#det time, det length, OID</span>
+            <span class="n">track_data</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">track</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">track</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">track</span><span class="p">[</span><span class="mi">4</span><span class="p">]])</span>
+
+    <span class="c1">#sort according to time, should be coherrent-int sec spaced</span>
+    <span class="n">point_data</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">track_data</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="n">point_data_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">point_data</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">point_data</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">point_data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">time_len</span><span class="o">*</span><span class="mf">3600.0</span><span class="p">:</span>
+        <span class="n">t_lims</span> <span class="o">=</span> <span class="p">(</span><span class="n">point_data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">point_data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">time_len</span><span class="o">*</span><span class="mf">3600.0</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">t_lims</span> <span class="o">=</span> <span class="p">(</span><span class="n">point_data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">point_data</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+
+    
+    <span class="n">plt</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;dark_background&#39;</span><span class="p">)</span>
+
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">))</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3d&#39;</span><span class="p">)</span>
+    <span class="n">plothelp</span><span class="o">.</span><span class="n">draw_earth_grid</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;white&#39;</span><span class="p">)</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">data_gen</span><span class="p">():</span>
+        <span class="n">t_curr</span> <span class="o">=</span> <span class="n">t_lims</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">data_list</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">trac_cnt</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">active_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">t_ind</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">while</span> <span class="n">t_curr</span> <span class="o">&lt;</span> <span class="n">t_lims</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">t_curr</span><span class="p">,</span><span class="s1">&#39; - &#39;</span><span class="p">,</span> <span class="n">t_lims</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">t_exec_y</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+            <span class="n">t_curr</span> <span class="o">+=</span> <span class="n">time_slice</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Adding tracks&#39;</span><span class="p">)</span>
+            <span class="n">check_tracks</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">while</span> <span class="n">check_tracks</span><span class="p">:</span>
+                <span class="n">track</span> <span class="o">=</span> <span class="n">track_data</span><span class="p">[</span><span class="n">trac_cnt</span><span class="p">]</span>
+
+                <span class="n">check_tracks</span> <span class="o">=</span> <span class="n">track_data</span><span class="p">[</span><span class="n">trac_cnt</span><span class="o">+</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">t_curr</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Adding:&#39;</span><span class="p">,</span> <span class="n">t_curr</span><span class="p">,</span> <span class="n">trac_cnt</span><span class="p">,</span> <span class="n">track</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">check_tracks</span><span class="p">,</span> <span class="s1">&#39;next - &#39;</span><span class="p">,</span> <span class="n">track_data</span><span class="p">[</span><span class="n">trac_cnt</span><span class="o">+</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39; df &#39;</span><span class="p">,</span> <span class="n">track</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="n">time_slice</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">track</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">t_curr</span> <span class="ow">and</span> <span class="n">trac_cnt</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">active_list</span><span class="p">:</span>
+                    <span class="n">t_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">t_curr</span><span class="p">,</span> <span class="n">track</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">track</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">time_slice</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_vec</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">space_o</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">get_object</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">track</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+                        <span class="n">ecef_traj</span> <span class="o">=</span> <span class="n">space_o</span><span class="o">.</span><span class="n">get_orbit</span><span class="p">(</span><span class="n">t_vec</span><span class="p">)</span>
+
+                        <span class="c1">#print(trac_cnt, track[0], track[1], t_vec)</span>
+
+                        <span class="n">data_list</span><span class="p">[</span><span class="n">trac_cnt</span><span class="p">]</span> <span class="o">=</span> <span class="n">ecef_traj</span>
+                        <span class="n">t_ind</span><span class="p">[</span><span class="n">trac_cnt</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                        
+                        <span class="n">active_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trac_cnt</span><span class="p">)</span>
+                    
+                    <span class="n">trac_cnt</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;removing tracks&#39;</span><span class="p">)</span>
+            <span class="n">del_lst</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">aci</span><span class="p">,</span><span class="n">tri</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">active_list</span><span class="p">):</span>
+                <span class="n">track</span> <span class="o">=</span> <span class="n">track_data</span><span class="p">[</span><span class="n">tri</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">track</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">track</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">t_curr</span><span class="p">:</span>
+
+                    <span class="k">del</span> <span class="n">data_list</span><span class="p">[</span><span class="n">tri</span><span class="p">]</span>
+                    <span class="k">del</span> <span class="n">t_ind</span><span class="p">[</span><span class="n">tri</span><span class="p">]</span>
+                    <span class="n">del_lst</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">aci</span><span class="p">)</span>
+
+            <span class="n">del_lst</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+            <span class="n">del_lst</span> <span class="o">=</span> <span class="n">del_lst</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="k">for</span> <span class="n">tri</span> <span class="ow">in</span> <span class="n">del_lst</span><span class="p">:</span>
+                <span class="k">del</span> <span class="n">active_list</span><span class="p">[</span><span class="n">tri</span><span class="p">]</span>
+
+            <span class="k">for</span> <span class="n">ind</span><span class="p">,</span><span class="n">t_val</span> <span class="ow">in</span> <span class="n">t_ind</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">t_ind</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">t_val</span> <span class="o">+</span> <span class="mi">1</span>
+
+
+            <span class="n">dt_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">point_data_arr</span> <span class="o">-</span> <span class="n">t_curr</span><span class="p">)</span>
+
+            <span class="n">point_ind</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">dt_arr</span><span class="p">))</span>
+            <span class="n">point_t</span> <span class="o">=</span> <span class="n">point_data</span><span class="p">[</span><span class="n">point_ind</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">point_oid</span> <span class="o">=</span> <span class="n">point_data</span><span class="p">[</span><span class="n">point_ind</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="n">space_o</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">get_object</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">point_oid</span><span class="p">))</span>
+            <span class="n">point</span> <span class="o">=</span> <span class="n">space_o</span><span class="o">.</span><span class="n">get_orbit</span><span class="p">(</span><span class="n">point_t</span><span class="p">)</span>
+            <span class="n">point</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">point</span><span class="o">.</span><span class="n">size</span><span class="p">,)</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;yield time: &#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t_exec_y</span><span class="p">)</span><span class="o">*</span><span class="mf">60.0</span><span class="p">,</span> <span class="s1">&#39; min&#39;</span><span class="p">)</span>
+            
+
+            <span class="k">yield</span> <span class="n">t_ind</span><span class="p">,</span> <span class="n">data_list</span><span class="p">,</span> <span class="n">point</span><span class="p">,</span> <span class="n">t_curr</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+        <span class="c1"># update the data</span>
+        <span class="n">t_ind</span><span class="p">,</span> <span class="n">data_list</span><span class="p">,</span> <span class="n">point</span><span class="p">,</span> <span class="n">t_curr</span> <span class="o">=</span> <span class="n">data</span>
+
+        <span class="nb">print</span><span class="p">((</span><span class="n">t_curr</span> <span class="o">-</span> <span class="n">t_lims</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="p">(</span><span class="n">t_lims</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">t_lims</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="s1">&#39; done: &#39;</span><span class="p">,</span> <span class="mf">1.0</span><span class="o">/</span><span class="p">((</span><span class="n">t_curr</span> <span class="o">-</span> <span class="n">t_lims</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="p">(</span><span class="n">t_lims</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">t_lims</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span><span class="o">*</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0_exec</span><span class="p">)</span><span class="o">/</span><span class="mf">3600.0</span><span class="p">,</span> <span class="s1">&#39; h left&#39;</span><span class="p">)</span>
+
+        <span class="n">titl</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span><span class="s1">&#39;Simulation t=</span><span class="si">%.4f</span><span class="s1"> min&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">t_curr</span><span class="o">/</span><span class="mf">60.0</span><span class="p">))</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Updating plot&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">tri</span><span class="p">,</span><span class="n">dat</span> <span class="ow">in</span> <span class="n">data_list</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ax_traj_list</span><span class="p">[</span><span class="n">tri</span><span class="p">]</span><span class="o">.</span><span class="n">get_xydata</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;- traj &#39;</span><span class="p">,</span> <span class="n">tri</span><span class="p">)</span>
+                <span class="n">ax_traj_list</span><span class="p">[</span><span class="n">tri</span><span class="p">]</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span>
+                    <span class="n">dat</span><span class="p">[</span><span class="mi">0</span><span class="p">,:],</span>
+                    <span class="n">dat</span><span class="p">[</span><span class="mi">1</span><span class="p">,:],</span>
+                    <span class="p">)</span>
+                <span class="n">ax_traj_list</span><span class="p">[</span><span class="n">tri</span><span class="p">]</span><span class="o">.</span><span class="n">set_3d_properties</span><span class="p">(</span>
+                    <span class="n">dat</span><span class="p">[</span><span class="mi">2</span><span class="p">,:],</span>
+                    <span class="p">)</span>
+                <span class="n">ax_traj_list</span><span class="p">[</span><span class="n">tri</span><span class="p">]</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">t_ind</span><span class="p">[</span><span class="n">tri</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">dat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;- point &#39;</span><span class="p">,</span> <span class="n">tri</span><span class="p">)</span>
+                <span class="n">ax_point_list</span><span class="p">[</span><span class="n">tri</span><span class="p">]</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span>
+                    <span class="n">dat</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">t_ind</span><span class="p">[</span><span class="n">tri</span><span class="p">]],</span>
+                    <span class="n">dat</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">t_ind</span><span class="p">[</span><span class="n">tri</span><span class="p">]],</span>
+                    <span class="p">)</span>
+                <span class="n">ax_point_list</span><span class="p">[</span><span class="n">tri</span><span class="p">]</span><span class="o">.</span><span class="n">set_3d_properties</span><span class="p">(</span>
+                    <span class="n">dat</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="n">t_ind</span><span class="p">[</span><span class="n">tri</span><span class="p">]],</span>
+                    <span class="p">)</span>
+                <span class="n">ax_point_list</span><span class="p">[</span><span class="n">tri</span><span class="p">]</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">tri</span><span class="p">,</span><span class="n">tr_ax</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ax_traj_list</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr_ax</span><span class="o">.</span><span class="n">get_xydata</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">tri</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_list</span><span class="p">:</span>
+                    <span class="n">ax_traj_list</span><span class="p">[</span><span class="n">tri</span><span class="p">]</span><span class="o">.</span><span class="n">set_data</span><span class="p">([],[])</span>
+                    <span class="n">ax_traj_list</span><span class="p">[</span><span class="n">tri</span><span class="p">]</span><span class="o">.</span><span class="n">set_3d_properties</span><span class="p">([])</span>
+                    <span class="n">ax_traj_list</span><span class="p">[</span><span class="n">tri</span><span class="p">]</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+
+                    <span class="n">ax_point_list</span><span class="p">[</span><span class="n">tri</span><span class="p">]</span><span class="o">.</span><span class="n">set_data</span><span class="p">([],[])</span>
+                    <span class="n">ax_point_list</span><span class="p">[</span><span class="n">tri</span><span class="p">]</span><span class="o">.</span><span class="n">set_3d_properties</span><span class="p">([])</span>
+                    <span class="n">ax_point_list</span><span class="p">[</span><span class="n">tri</span><span class="p">]</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+
+
+        <span class="n">txp0</span><span class="p">,</span><span class="n">k0</span><span class="o">=</span><span class="n">tx</span><span class="o">.</span><span class="n">get_scan</span><span class="p">(</span><span class="n">t_curr</span><span class="p">)</span><span class="o">.</span><span class="n">antenna_pointing</span><span class="p">(</span><span class="n">t_curr</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;- scan &#39;</span><span class="p">)</span>
+        <span class="n">beam_len</span> <span class="o">=</span> <span class="mf">1000e3</span>
+        <span class="n">ax_tx_scan</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">k0</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">beam_len</span><span class="p">],</span>
+            <span class="p">[</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">k0</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">beam_len</span><span class="p">],</span>
+            <span class="p">)</span>
+        <span class="n">ax_tx_scan</span><span class="o">.</span><span class="n">set_3d_properties</span><span class="p">([</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">k0</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">beam_len</span><span class="p">])</span>
+        <span class="n">ax_tx_scan</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;- track&#39;</span><span class="p">)</span>
+        <span class="c1">#radar beams</span>
+        <span class="n">ax_txb</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span>
+            <span class="p">[</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span>
+            <span class="p">)</span>
+        <span class="n">ax_txb</span><span class="o">.</span><span class="n">set_3d_properties</span><span class="p">([</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">point</span><span class="p">[</span><span class="mi">2</span><span class="p">]])</span>
+        <span class="n">ax_txb</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">rxi</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">)):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;- reciv &#39;</span><span class="p">,</span> <span class="n">rxi</span><span class="p">)</span>
+            <span class="n">ax_rxb_list</span><span class="p">[</span><span class="n">rxi</span><span class="p">]</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">[</span><span class="n">rxi</span><span class="p">]</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span>
+                <span class="p">[</span><span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">[</span><span class="n">rxi</span><span class="p">]</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span>
+                <span class="p">)</span>
+            <span class="n">ax_rxb_list</span><span class="p">[</span><span class="n">rxi</span><span class="p">]</span><span class="o">.</span><span class="n">set_3d_properties</span><span class="p">([</span><span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">[</span><span class="n">rxi</span><span class="p">]</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">point</span><span class="p">[</span><span class="mi">2</span><span class="p">]])</span>
+            <span class="n">ax_rxb_list</span><span class="p">[</span><span class="n">rxi</span><span class="p">]</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;returning axis&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax_traj_list</span><span class="p">,</span> <span class="n">ax_txb</span><span class="p">,</span> <span class="n">ax_rxb_list</span><span class="p">,</span> <span class="n">ax_tx_scan</span>
+
+    <span class="c1">#traj</span>
+    <span class="c1">#ax_traj = ax.plot(ecef_traj[0,:],ecef_traj[1,:],ecef_traj[2,:],alpha=1,color=&quot;white&quot;)</span>
+    <span class="n">ax_traj_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">ax_point_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">track</span> <span class="ow">in</span> <span class="n">track_data</span><span class="p">:</span>
+        <span class="n">ax_traj</span><span class="p">,</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([],[],[],</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;white&quot;</span><span class="p">)</span>
+        <span class="n">ax_traj_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ax_traj</span><span class="p">)</span>
+
+        <span class="n">ax_point</span><span class="p">,</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([],[],[],</span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;yellow&quot;</span><span class="p">)</span>
+        <span class="n">ax_point_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ax_point</span><span class="p">)</span>
+
+    <span class="c1">#init</span>
+    <span class="n">ecef_point</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">ecef</span>
+
+    <span class="c1">#radar beams</span>
+    <span class="n">ax_txb</span><span class="p">,</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">ecef_point</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span>
+        <span class="p">[</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">ecef_point</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span>
+        <span class="p">[</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">ecef_point</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;green&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">ax_tx_scan</span><span class="p">,</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">ecef_point</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span>
+        <span class="p">[</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">ecef_point</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span>
+        <span class="p">[</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">ecef_point</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;yellow&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="n">ax_rxb_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">rx</span> <span class="ow">in</span> <span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">:</span>
+        <span class="n">ax_rxb</span><span class="p">,</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">rx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">ecef_point</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span>
+            <span class="p">[</span><span class="n">rx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">ecef_point</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span>
+            <span class="p">[</span><span class="n">rx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">ecef_point</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;green&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">ax_rxb_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ax_rxb</span><span class="p">)</span>
+
+    <span class="n">delta</span> <span class="o">=</span> <span class="mf">1500e3</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">([</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">delta</span><span class="p">,</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">delta</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">([</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">delta</span><span class="p">,</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">delta</span><span class="p">])</span> 
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_zlim</span><span class="p">([</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">delta</span><span class="p">,</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">delta</span><span class="p">])</span> 
+
+    <span class="n">titl</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span><span class="mf">0.94</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">size</span><span class="o">=</span><span class="mi">22</span><span class="p">,</span><span class="n">horizontalalignment</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">)</span>
+    
+    <span class="n">t0_exec</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;setup done, starting anim&#39;</span><span class="p">)</span>
+    <span class="n">ani</span> <span class="o">=</span> <span class="n">animation</span><span class="o">.</span><span class="n">FuncAnimation</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">run</span><span class="p">,</span> <span class="n">data_gen</span><span class="p">,</span>
+        <span class="n">blit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="c1">#interval=1.0e3*time_slice,</span>
+        <span class="n">repeat</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Anim done, writing movie&#39;</span><span class="p">)</span>
+
+    <span class="n">fps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="n">time_slice</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">fps</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">fps</span> <span class="o">=</span> <span class="mi">10</span>
+
+    <span class="n">Writer</span> <span class="o">=</span> <span class="n">animation</span><span class="o">.</span><span class="n">writers</span><span class="p">[</span><span class="s1">&#39;ffmpeg&#39;</span><span class="p">]</span>
+    <span class="n">writer</span> <span class="o">=</span> <span class="n">Writer</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">artist</span><span class="o">=</span><span class="s1">&#39;Daniel Kastinen&#39;</span><span class="p">),</span><span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">)</span>
+    <span class="n">ani</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">root</span> <span class="o">+</span> <span class="s1">&#39;scheduler_movie.mp4&#39;</span><span class="p">,</span> <span class="n">writer</span><span class="o">=</span><span class="n">writer</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;showing plot&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/doc.html">Documentation</a></li>
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

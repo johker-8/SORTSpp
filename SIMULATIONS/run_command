@@ -1,0 +1,1 @@
+mpirun -np 18 ./SIMULATIONS/run_sim_2.py

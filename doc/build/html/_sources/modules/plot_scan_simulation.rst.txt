@@ -1,0 +1,7 @@
+plot_scan_simulation
+===========================
+
+.. automodule:: plot_scan_simulation
+   :members:
+   :undoc-members:
+   :show-inheritance:

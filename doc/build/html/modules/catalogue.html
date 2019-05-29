@@ -1,0 +1,274 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>catalogue &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="debris" href="debris.html" />
+    <link rel="prev" title="space_object" href="space_object.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="debris.html" title="debris"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="space_object.html" title="space_object"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" accesskey="U">Documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-catalogue">
+<span id="catalogue"></span><h1>catalogue<a class="headerlink" href="#module-catalogue" title="Permalink to this headline">¶</a></h1>
+<p>Catalogue class.</p>
+<p>NOTES:
+If a object is detected it automatically produces a tracklet with one point (the point of detection)
+It can then get more tracklet points from the scheduler</p>
+<p>We will have to think like this:
+* we run 1 set of obsrevation confugrations for one certain time
+* if a object is discovered, it can only get tracklet points that pass
+* Correlation between unknown objects will be AFTERWARDS, not in read time, thus it can be “rediscovered”
+* These “rediscoveries” will help imporve orbital elelemnts when it is added to the catalouge.</p>
+<dl class="class">
+<dt id="catalogue.Catalogue">
+<em class="property">class </em><code class="descclassname">catalogue.</code><code class="descname">Catalogue</code><span class="sig-paren">(</span><em>population</em>, <em>known=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/catalogue.html#Catalogue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue.Catalogue" title="Permalink to this definition">¶</a></dt>
+<dd><p># TODO: Write proper documentation for this class.</p>
+<p>** BELOW IS OLD DOCS **
+_detections format:
+[the object id] -&gt; dict
+dict: “t0” initial detection</p>
+<blockquote>
+<div>“t1” passes below horizon
+“snr” the snr’s
+“tm” time of max SNR</div></blockquote>
+<p>each dict is a vector where one entry is one detection
+e.g _detections[obj id 4][‘t0’][detection 2]</p>
+<p>_maintinence format:, None indicate fail at that slot
+[the object id] -&gt; dict
+dict: “t” list of all above to below horizon rimes, tx lst [‘t’][tx 0][pass 2][above horizon time = 0, below = 1]</p>
+<blockquote>
+<div>“snr” the list of max snrs of all rx tx pairs, i,e [“snr”][tx 0][pass 0][rx 1][0=SNR,1=time]</div></blockquote>
+<p>each dict is a vector where one entry is one detection
+e.g _maintinence[obj id 4][‘t’][tx 0][pass 2][0] = above horizon t</p>
+<dl class="docutils">
+<dt>track format [track nr], is list:</dt>
+<dd>0 : t0 (scan: detection time, track: above horizon)
+1 : dt (time untill horizon)
+2 : detected/measured?
+3 : SNR dB (scan: best detection posibility, track: peak snr)
+4 : OID [not pop-id]
+5 : number of baselines, e.g. 3=tristatic
+6 : track is maintenance “track” or discovery “scan”
+7 : time of SNR dB (col 3)</dd>
+</dl>
+<p>e.g _tracks[track nr 4][3] = SNR dB</p>
+<p>_discovered format:
+[object id]
+[True or false, track number]
+e.g _discovered[object id 4][1] = track of detection</p>
+<p>_tracklets
+format: rows = tracks</p>
+<blockquote>
+<div>cols: …fnames… [one col for each name]</div></blockquote>
+<p>#known objects DO NOT NEED TO BE SCANED FOR</p>
+<dl class="method">
+<dt id="catalogue.Catalogue.add_prior">
+<code class="descname">add_prior</code><span class="sig-paren">(</span><em>index</em>, <em>state</em>, <em>cov</em>, <em>date</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/catalogue.html#Catalogue.add_prior"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue.Catalogue.add_prior" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="catalogue.Catalogue.add_tracklet">
+<code class="descname">add_tracklet</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/catalogue.html#Catalogue.add_tracklet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue.Catalogue.add_tracklet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a tracklet to the internal list.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="catalogue.Catalogue.add_tracks">
+<code class="descname">add_tracks</code><span class="sig-paren">(</span><em>num</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/catalogue.html#Catalogue.add_tracks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue.Catalogue.add_tracks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add more tracks to data array.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="catalogue.Catalogue.compile_tracks">
+<code class="descname">compile_tracks</code><span class="sig-paren">(</span><em>radar</em>, <em>t0</em>, <em>t1</em>, <em>radar_control=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/catalogue.html#Catalogue.compile_tracks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue.Catalogue.compile_tracks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes a radar system and uses the cashed maintenance and detections data to fill the track-data array.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="catalogue.Catalogue.detection_summary">
+<code class="descname">detection_summary</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/catalogue.html#Catalogue.detection_summary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue.Catalogue.detection_summary" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="catalogue.Catalogue.detection_summary_plot">
+<code class="descname">detection_summary_plot</code><span class="sig-paren">(</span><em>save_folder=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/catalogue.html#Catalogue.detection_summary_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue.Catalogue.detection_summary_plot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="catalogue.Catalogue.detection_tracks_plot">
+<code class="descname">detection_tracks_plot</code><span class="sig-paren">(</span><em>save_folder=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/catalogue.html#Catalogue.detection_tracks_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue.Catalogue.detection_tracks_plot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="catalogue.Catalogue.from_file">
+<em class="property">classmethod </em><code class="descname">from_file</code><span class="sig-paren">(</span><em>population</em>, <em>fname</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/catalogue.html#Catalogue.from_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue.Catalogue.from_file" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="catalogue.Catalogue.get_orbit">
+<code class="descname">get_orbit</code><span class="sig-paren">(</span><em>ind</em>, <em>t0</em>, <em>t1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/catalogue.html#Catalogue.get_orbit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue.Catalogue.get_orbit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the orbit-determination for object considering tracks between certain times.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="catalogue.Catalogue.load">
+<code class="descname">load</code><span class="sig-paren">(</span><em>fname</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/catalogue.html#Catalogue.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue.Catalogue.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a instance of Catalogue using a saved file and a population.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="catalogue.Catalogue.maintain">
+<code class="descname">maintain</code><span class="sig-paren">(</span><em>inds</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/catalogue.html#Catalogue.maintain"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue.Catalogue.maintain" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set object(s) to be maintained.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="catalogue.Catalogue.maintenance_tracks_plot">
+<code class="descname">maintenance_tracks_plot</code><span class="sig-paren">(</span><em>save_folder=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/catalogue.html#Catalogue.maintenance_tracks_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue.Catalogue.maintenance_tracks_plot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="catalogue.Catalogue.maintinece_summary">
+<code class="descname">maintinece_summary</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/catalogue.html#Catalogue.maintinece_summary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue.Catalogue.maintinece_summary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute summary statistics about maintenance.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="catalogue.Catalogue.maintinece_summary_plot">
+<code class="descname">maintinece_summary_plot</code><span class="sig-paren">(</span><em>save_folder=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/catalogue.html#Catalogue.maintinece_summary_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue.Catalogue.maintinece_summary_plot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="catalogue.Catalogue.plots">
+<code class="descname">plots</code><span class="sig-paren">(</span><em>save_folder=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/catalogue.html#Catalogue.plots"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue.Catalogue.plots" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="catalogue.Catalogue.save">
+<code class="descname">save</code><span class="sig-paren">(</span><em>fname</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/catalogue.html#Catalogue.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue.Catalogue.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save all data related to the catalog to a hdf5 file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="catalogue.Catalogue.track_statistics">
+<code class="descname">track_statistics</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/catalogue.html#Catalogue.track_statistics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue.Catalogue.track_statistics" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="catalogue.Catalogue.track_statistics_plot">
+<code class="descname">track_statistics_plot</code><span class="sig-paren">(</span><em>save_folder=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/catalogue.html#Catalogue.track_statistics_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue.Catalogue.track_statistics_plot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../introduction/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="doc.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="doc.html#simulation-handler">Simulation handler</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="doc.html#class-modules">Class modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#function-modules">Function modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#instance-libraries">Instance libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#integrator-interfaces">Integrator interfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#tests">Tests</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="space_object.html"
+                        title="previous chapter">space_object</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="debris.html"
+                        title="next chapter">debris</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="debris.html" title="debris"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="space_object.html" title="space_object"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" >Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,500 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>propagator_sgp4 &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="propagator_orekit" href="propagator_orekit.html" />
+    <link rel="prev" title="rewardf_library" href="rewardf_library.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="propagator_orekit.html" title="propagator_orekit"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="rewardf_library.html" title="rewardf_library"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" accesskey="U">Documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-propagator_sgp4">
+<span id="propagator-sgp4"></span><h1>propagator_sgp4<a class="headerlink" href="#module-propagator_sgp4" title="Permalink to this headline">¶</a></h1>
+<p>SGP4 interface with SORTS++.</p>
+<p>Written in 2018 by Juha Vierinen
+based on code from Jan Siminski, ESA.
+Modified by Daniel Kastinen 2018/2019</p>
+<dl class="data">
+<dt id="propagator_sgp4.MU_earth">
+<code class="descclassname">propagator_sgp4.</code><code class="descname">MU_earth</code><em class="property"> = 398600800000000.0</em><a class="headerlink" href="#propagator_sgp4.MU_earth" title="Permalink to this definition">¶</a></dt>
+<dd><p>float: Standard gravitational parameter of the Earth using the WGS72 convention.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="propagator_sgp4.M_earth">
+<code class="descclassname">propagator_sgp4.</code><code class="descname">M_earth</code><em class="property"> = 5.972370723755184e+24</em><a class="headerlink" href="#propagator_sgp4.M_earth" title="Permalink to this definition">¶</a></dt>
+<dd><p>float: Mass of the Earth using the WGS72 convention.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="propagator_sgp4.PropagatorSGP4">
+<em class="property">class </em><code class="descclassname">propagator_sgp4.</code><code class="descname">PropagatorSGP4</code><span class="sig-paren">(</span><em>polar_motion=False</em>, <em>polar_motion_model='80'</em>, <em>out_frame='ITRF'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propagator_sgp4.html#PropagatorSGP4"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propagator_sgp4.PropagatorSGP4" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="propagator_base.html#propagator_base.PropagatorBase" title="propagator_base.PropagatorBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">propagator_base.PropagatorBase</span></code></a></p>
+<p>Propagator class implementing the SGP4 propagator.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><strong>polar_motion</strong> (<em>bool</em>) – Determines if polar motion should be used in calculating ITRF frame.</li>
+<li><strong>polar_motion_model</strong> (<em>str</em>) – String identifying the polar motion model to be used. Options are ‘80’ or ‘00’.</li>
+<li><strong>out_frame</strong> (<em>str</em>) – String identifying the output frame. Options are ‘ITRF’ or ‘TEME’.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The constructor creates a propagator instance with supplied options.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>polar_motion</strong> (<em>bool</em>) – Determines if polar motion should be used in calculating ITRF frame.</li>
+<li><strong>polar_motion_model</strong> (<em>str</em>) – String identifying the polar motion model to be used. Options are ‘80’ or ‘00’.</li>
+<li><strong>out_frame</strong> (<em>str</em>) – String identifying the output frame. Options are ‘ITRF’ or ‘TEME’.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="propagator_sgp4.PropagatorSGP4.get_orbit">
+<code class="descname">get_orbit</code><span class="sig-paren">(</span><em>t</em>, <em>a</em>, <em>e</em>, <em>inc</em>, <em>raan</em>, <em>aop</em>, <em>mu0</em>, <em>mjd0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propagator_sgp4.html#PropagatorSGP4.get_orbit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propagator_sgp4.PropagatorSGP4.get_orbit" title="Permalink to this definition">¶</a></dt>
+<dd><p><strong>Implementation:</strong></p>
+<p>All state-vector units are in meters.</p>
+<p>Keyword arguments contain only information needed for ballistic coefficient <code class="code docutils literal notranslate"><span class="pre">B</span></code> used by SGP4. Either <code class="code docutils literal notranslate"><span class="pre">B</span></code> or <code class="code docutils literal notranslate"><span class="pre">C_D</span></code>, <code class="code docutils literal notranslate"><span class="pre">A</span></code> and <code class="code docutils literal notranslate"><span class="pre">m</span></code> must be supplied.
+They also contain a option to give angles in radians or degrees. By default input is assumed to be degrees.</p>
+<p><strong>Frame:</strong></p>
+<p>The input frame is ECI (TEME) for orbital elements and Cartesian. The output frame is as standard ECEF (ITRF). But can be set to TEME.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>B</strong> (<em>float</em>) – Ballistic coefficient</li>
+<li><strong>C_D</strong> (<em>float</em>) – Drag coefficient</li>
+<li><strong>A</strong> (<em>float</em>) – Cross-sectional Area</li>
+<li><strong>m</strong> (<em>float</em>) – Mass</li>
+<li><strong>radians</strong> (<em>bool</em>) – If true, all angles are assumed to be in radians.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="propagator_sgp4.PropagatorSGP4.get_orbit_TLE">
+<code class="descname">get_orbit_TLE</code><span class="sig-paren">(</span><em>t</em>, <em>line1</em>, <em>line2</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propagator_sgp4.html#PropagatorSGP4.get_orbit_TLE"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propagator_sgp4.PropagatorSGP4.get_orbit_TLE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes a TLE and propagates it forward in time directly using the SGP4 algorithm.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>t</strong> (<em>float/list/numpy.ndarray</em>) – Time in seconds to propagate relative the initial state epoch.</li>
+<li><strong>line1</strong> (<em>str</em>) – TLE line 1</li>
+<li><strong>line2</strong> (<em>str</em>) – TLE line 2</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="propagator_sgp4.PropagatorSGP4.get_orbit_cart">
+<code class="descname">get_orbit_cart</code><span class="sig-paren">(</span><em>t</em>, <em>x</em>, <em>y</em>, <em>z</em>, <em>vx</em>, <em>vy</em>, <em>vz</em>, <em>mjd0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propagator_sgp4.html#PropagatorSGP4.get_orbit_cart"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propagator_sgp4.PropagatorSGP4.get_orbit_cart" title="Permalink to this definition">¶</a></dt>
+<dd><p><strong>Implementation:</strong></p>
+<p>All state-vector units are in meters.</p>
+<p>Keyword arguments contain only information needed for ballistic coefficient <code class="code docutils literal notranslate"><span class="pre">B</span></code> used by SGP4. Either <code class="code docutils literal notranslate"><span class="pre">B</span></code> or <code class="code docutils literal notranslate"><span class="pre">C_D</span></code>, <code class="code docutils literal notranslate"><span class="pre">A</span></code> and <code class="code docutils literal notranslate"><span class="pre">m</span></code> must be supplied.
+They also contain a option to give angles in radians or degrees. By default input is assumed to be degrees.</p>
+<p><strong>Frame:</strong></p>
+<p>The input frame is ECI (TEME) for orbital elements and Cartesian. The output frame is always ECEF.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>B</strong> (<em>float</em>) – Ballistic coefficient</li>
+<li><strong>C_D</strong> (<em>float</em>) – Drag coefficient</li>
+<li><strong>A</strong> (<em>float</em>) – Cross-sectional Area</li>
+<li><strong>m</strong> (<em>float</em>) – Mass</li>
+<li><strong>radians</strong> (<em>bool</em>) – If true, all angles are assumed to be in radians.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="propagator_sgp4.PropagatorTLE">
+<em class="property">class </em><code class="descclassname">propagator_sgp4.</code><code class="descname">PropagatorTLE</code><span class="sig-paren">(</span><em>polar_motion=False</em>, <em>polar_motion_model='80'</em>, <em>out_frame='ITRF'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propagator_sgp4.html#PropagatorTLE"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propagator_sgp4.PropagatorTLE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#propagator_sgp4.PropagatorSGP4" title="propagator_sgp4.PropagatorSGP4"><code class="xref py py-class docutils literal notranslate"><span class="pre">propagator_sgp4.PropagatorSGP4</span></code></a></p>
+<dl class="method">
+<dt id="propagator_sgp4.PropagatorTLE.get_orbit">
+<code class="descname">get_orbit</code><span class="sig-paren">(</span><em>t</em>, <em>a</em>, <em>e</em>, <em>inc</em>, <em>raan</em>, <em>aop</em>, <em>mu0</em>, <em>mjd0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propagator_sgp4.html#PropagatorTLE.get_orbit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propagator_sgp4.PropagatorTLE.get_orbit" title="Permalink to this definition">¶</a></dt>
+<dd><p><strong>Implementation:</strong></p>
+<p>Direct propagation of TLE. All input elements are ignored except for the two lines in <code class="code docutils literal notranslate"><span class="pre">**kwargs</span></code>.</p>
+<p><strong>Frame:</strong></p>
+<blockquote>
+<div>The output frame is (ITRF) ECEF or (TEME) ECI.</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>line1</strong> (<em>str</em>) – TLE line 1</li>
+<li><strong>line2</strong> (<em>str</em>) – TLE line 2</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="propagator_sgp4.PropagatorTLE.get_orbit_cart">
+<code class="descname">get_orbit_cart</code><span class="sig-paren">(</span><em>t</em>, <em>x</em>, <em>y</em>, <em>z</em>, <em>vx</em>, <em>vy</em>, <em>vz</em>, <em>mjd0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propagator_sgp4.html#PropagatorTLE.get_orbit_cart"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propagator_sgp4.PropagatorTLE.get_orbit_cart" title="Permalink to this definition">¶</a></dt>
+<dd><p><strong>Implementation:</strong></p>
+<p>Direct propagation of TLE. All input elements are ignored except for the two lines in <code class="code docutils literal notranslate"><span class="pre">**kwargs</span></code>.</p>
+<p><strong>Frame:</strong></p>
+<blockquote>
+<div>The output frame is (ITRF) ECEF or (TEME) ECI.</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>line1</strong> (<em>str</em>) – TLE line 1</li>
+<li><strong>line2</strong> (<em>str</em>) – TLE line 2</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="propagator_sgp4.SGP4">
+<em class="property">class </em><code class="descclassname">propagator_sgp4.</code><code class="descname">SGP4</code><span class="sig-paren">(</span><em>mjd_epoch</em>, <em>mean_elements</em>, <em>B</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propagator_sgp4.html#SGP4"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propagator_sgp4.SGP4" title="Permalink to this definition">¶</a></dt>
+<dd><p>The SGP4 class acts as a wrapper around the sgp4 module
+uploaded by Brandon Rhodes (<a class="reference external" href="http://pypi.python.org/pypi/sgp4/">http://pypi.python.org/pypi/sgp4/</a>).</p>
+<p>It converts orbital elements into the TLE-like ‘satellite’-structure which
+is used by the module for the propagation.</p>
+<dl class="docutils">
+<dt>Notes:</dt>
+<dd>The class can be directly used for propagation. Alternatively,
+a simple propagator function is provided below.</dd>
+</dl>
+<dl class="attribute">
+<dt id="propagator_sgp4.SGP4.GM">
+<code class="descname">GM</code><em class="property"> = 398600.8</em><a class="headerlink" href="#propagator_sgp4.SGP4.GM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="propagator_sgp4.SGP4.MJD_0">
+<code class="descname">MJD_0</code><em class="property"> = 2400000.5</em><a class="headerlink" href="#propagator_sgp4.SGP4.MJD_0" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="propagator_sgp4.SGP4.Q0">
+<code class="descname">Q0</code><em class="property"> = 120.0</em><a class="headerlink" href="#propagator_sgp4.SGP4.Q0" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="propagator_sgp4.SGP4.RHO0">
+<code class="descname">RHO0</code><em class="property"> = 2.461e-08</em><a class="headerlink" href="#propagator_sgp4.SGP4.RHO0" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="propagator_sgp4.SGP4.R_EARTH">
+<code class="descname">R_EARTH</code><em class="property"> = 6378.135</em><a class="headerlink" href="#propagator_sgp4.SGP4.R_EARTH" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="propagator_sgp4.SGP4.S0">
+<code class="descname">S0</code><em class="property"> = 78.0</em><a class="headerlink" href="#propagator_sgp4.SGP4.S0" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="propagator_sgp4.SGP4.WGS">
+<code class="descname">WGS</code><em class="property"> = EarthGravity(tumin=13.446839696959309, mu=398600.8, radiusearthkm=6378.135, xke=0.07436691613317342, j2=0.001082616, j3=-2.53881e-06, j4=-1.65597e-06, j3oj2=-0.002345069720011528)</em><a class="headerlink" href="#propagator_sgp4.SGP4.WGS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="propagator_sgp4.SGP4.position">
+<code class="descname">position</code><span class="sig-paren">(</span><em>mjd</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propagator_sgp4.html#SGP4.position"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propagator_sgp4.SGP4.position" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inertial position at epoch mjd</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>mjd</strong> (<em>float</em>) – epoch where satellite should be propagated to</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="propagator_sgp4.SGP4.state">
+<code class="descname">state</code><span class="sig-paren">(</span><em>mjd</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propagator_sgp4.html#SGP4.state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propagator_sgp4.SGP4.state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inertial position and velocity ([m], [m/s]) at epoch mjd</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>mjd</strong> (<em>float</em>) – epoch where satellite should be propagated to</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="propagator_sgp4.SGP4.velocity">
+<code class="descname">velocity</code><span class="sig-paren">(</span><em>mjd</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propagator_sgp4.html#SGP4.velocity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propagator_sgp4.SGP4.velocity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inertial velocity at epoch mjd</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>mjd</strong> (<em>float</em>) – epoch where satellite should be propagated to</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="propagator_sgp4.ecef2teme">
+<code class="descclassname">propagator_sgp4.</code><code class="descname">ecef2teme</code><span class="sig-paren">(</span><em>t</em>, <em>p</em>, <em>v</em>, <em>mjd0=57084</em>, <em>xp=0.0</em>, <em>yp=0.0</em>, <em>model='80'</em>, <em>lod=0.0015563</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propagator_sgp4.html#ecef2teme"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propagator_sgp4.ecef2teme" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reverse operation, developed by Daniel Kastinen 2019</p>
+<p># TODO: Write proper docstring
+p, v and output are all in units of km and km/s, as for teme2ecef</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="propagator_sgp4.gstime">
+<code class="descclassname">propagator_sgp4.</code><code class="descname">gstime</code><span class="sig-paren">(</span><em>jdut1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propagator_sgp4.html#gstime"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propagator_sgp4.gstime" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function finds the greenwich sidereal time (iau-82).</p>
+<p><em>References:</em> Vallado 2007, 193, Eq 3-43</p>
+<p>Author: David Vallado 719-573-2600    7 jun 2002
+Adapted to Python, Daniel Kastinen 2018</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>jdut1</strong> (<em>float</em>) – Julian date of ut1 in days from 4713 bc</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Greenwich sidereal time in radians, 0 to <span class="math notranslate nohighlight">\(2\pi\)</span></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">float</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="propagator_sgp4.polarm">
+<code class="descclassname">propagator_sgp4.</code><code class="descname">polarm</code><span class="sig-paren">(</span><em>xp</em>, <em>yp</em>, <em>ttt</em>, <em>opt</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propagator_sgp4.html#polarm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propagator_sgp4.polarm" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function calculates the transformation matrix that accounts for polar motion. both the 1980 and 2000 theories are handled. note that the rotation order is different between 1980 and 2000.</p>
+<p><em>References:</em> Vallado 2004, 207-209, 211, 223-224.</p>
+<p>Author: David Vallado 719-573-2600   25 jun 2002.
+Adapted to Python, Daniel Kastinen 2018</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>xp</strong> (<em>float</em>) – x-axis polar motion coefficient in radians</li>
+<li><strong>yp</strong> (<em>float</em>) – y-axis polar motion coefficient in radians</li>
+<li><strong>ttt</strong> (<em>float</em>) – Julian centuries of tt (00 theory only)</li>
+<li><strong>opt</strong> (<em>str</em>) – Model for polar motion to use, options are ‘01’, ‘02’, ‘80’.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Transformation matrix for ECEF to PEF</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray (3x3 matrix)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="propagator_sgp4.sgp4_propagation">
+<code class="descclassname">propagator_sgp4.</code><code class="descname">sgp4_propagation</code><span class="sig-paren">(</span><em>mjd_epoch</em>, <em>mean_elements</em>, <em>B=0.0</em>, <em>dt=0.0</em>, <em>method=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propagator_sgp4.html#sgp4_propagation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propagator_sgp4.sgp4_propagation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lazy SGP4 propagation using SGP4 class</p>
+<p>Create a satellite object from mean elements and propagate it</p>
+<p>:param list/numpy.ndarray mean_elements : [a0,e0,i0,raan0,aop0,M0]
+:param float B: Ballistic coefficient ( 0.5*C_D*A/m )
+:param float dt: Time difference w.r.t. element epoch in seconds
+:param float mjd_epoch: Epoch of elements as Modified Julian Date (MJD) Can be ignored if the exact epoch is unimportant.
+:param str method: Forces use of SGP4 or SDP4 depending on string ‘n’ or ‘d’</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="propagator_sgp4.teme2ecef">
+<code class="descclassname">propagator_sgp4.</code><code class="descname">teme2ecef</code><span class="sig-paren">(</span><em>t</em>, <em>p</em>, <em>v</em>, <em>mjd0=57084</em>, <em>xp=0.0</em>, <em>yp=0.0</em>, <em>model='80'</em>, <em>lod=0.0015563</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propagator_sgp4.html#teme2ecef"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propagator_sgp4.teme2ecef" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function trsnforms a vector from the true equator mean equniox frame
+(teme), to an earth fixed (ITRF) frame.  the results take into account
+the effects of sidereal time, and polar motion.</p>
+<p><em>References:</em> Vallado  2007, 219-228.</p>
+<p>Author: David Vallado 719-573-2600, 10 dec 2007.
+Adapted to Python, Daniel Kastinen 2018</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>t</strong> (<em>numpy.ndarray</em>) – numpy vector row of seconds relative to <code class="code docutils literal notranslate"><span class="pre">mjd0</span></code></li>
+<li><strong>p</strong> (<em>numpy.ndarray</em>) – numpy matrix of TEME positions, Cartesian coordinates in km. Columns correspond to times in t, and rows to x, y and z coordinates respectively.</li>
+<li><strong>v</strong> (<em>numpy.ndarray</em>) – numpy matrix of TEME velocities, Cartesian coordinates in km/s. Columns correspond to times in t, and rows to x, y and z coordinates respectively.</li>
+<li><strong>mjd0</strong> (<em>float</em>) – Modified julian date epoch that t vector is relative to</li>
+<li><strong>xp</strong> (<em>float</em>) – x-axis polar motion coefficient in radians</li>
+<li><strong>yp</strong> (<em>float</em>) – y-axis polar motion coefficient in radians</li>
+<li><strong>model</strong> (<em>str</em>) – The polar motion model used in transformation, options are ‘80’ or ‘00’, see David Vallado documentation for more info.</li>
+<li><strong>lod</strong> (<em>float</em>) – Excess length of day in seconds</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">State vector of position and velocity in km and km/s.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray (6-D vector)</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Uses:</strong></p>
+<blockquote>
+<div><blockquote>
+<div><ul class="simple">
+<li><a class="reference internal" href="#propagator_sgp4.gstime" title="propagator_sgp4.gstime"><code class="xref py py-func docutils literal notranslate"><span class="pre">propagator_sgp4.gstime()</span></code></a></li>
+<li><a class="reference internal" href="#propagator_sgp4.polarm" title="propagator_sgp4.polarm"><code class="xref py py-func docutils literal notranslate"><span class="pre">propagator_sgp4.polarm()</span></code></a></li>
+</ul>
+</div></blockquote>
+<p>[recef,vecef,aecef] = teme2ecef  ( rteme,vteme,ateme,ttt,jdut1,lod,xp,yp );</p>
+</div></blockquote>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../introduction/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="doc.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="doc.html#simulation-handler">Simulation handler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#class-modules">Class modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#function-modules">Function modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#instance-libraries">Instance libraries</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="doc.html#integrator-interfaces">Integrator interfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#tests">Tests</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="rewardf_library.html"
+                        title="previous chapter">rewardf_library</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="propagator_orekit.html"
+                        title="next chapter">propagator_orekit</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="propagator_orekit.html" title="propagator_orekit"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="rewardf_library.html" title="rewardf_library"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" >Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

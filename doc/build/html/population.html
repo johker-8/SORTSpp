@@ -1,0 +1,308 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>population &#8212; SORTS++ 2.8.0 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="radar_scans" href="radar_scans.html" />
+    <link rel="prev" title="base_propagator" href="propagator_base.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="radar_scans.html" title="radar_scans"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="propagator_base.html" title="base_propagator"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">SORTS++ 2.8.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" accesskey="U">Documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-population">
+<span id="population"></span><h1>population<a class="headerlink" href="#module-population" title="Permalink to this headline">¶</a></h1>
+<p>Defines a population of space objects in the form of a class.</p>
+<dl class="class">
+<dt id="population.Population">
+<em class="property">class </em><code class="descclassname">population.</code><code class="descname">Population</code><span class="sig-paren">(</span><em>name='Unnamed population'</em>, <em>extra_columns=[]</em>, <em>dtypes=[]</em>, <em>space_object_uses=[]</em>, <em>propagator=&lt;class 'propagator_sgp4.PropagatorSGP4'&gt;</em>, <em>propagator_options={}</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/population.html#Population"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#population.Population" title="Permalink to this definition">¶</a></dt>
+<dd><p>Encapsulates a population of space objects as an array and functions for returning instances of space objects.</p>
+<p><strong>Default columns:</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li>0: oid - Object ID</li>
+<li>1: a - Semi-major axis in km</li>
+<li>2: e - Eccentricity</li>
+<li>3: i - Inclination in degrees</li>
+<li>4: raan - Right Ascension of ascending node in degrees</li>
+<li>5: aop - Argument of perihelion in degrees</li>
+<li>6: mu0 - Mean anoamly in degrees</li>
+<li>7: mjd0 - Epoch of object given in Modified Julian Days</li>
+</ul>
+</div></blockquote>
+<p>Any column that is added will have its name used in initializing the Space object.</p>
+<p>A population’s column data can also be accessed as a python dictionary or a table according to row number, e.g.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1">#this returns all Right Ascension of ascending node as a numpy vector</span>
+<span class="n">vector</span> <span class="o">=</span> <span class="n">my_population</span><span class="p">[</span><span class="s1">&#39;raan&#39;</span><span class="p">]</span>
+
+<span class="c1">#this gets row number 3 (since we use 0 indexing)</span>
+<span class="n">row</span> <span class="o">=</span> <span class="n">my_population</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>but it is also configured to be able to try to convert to uniform type array and perform numpy like slices. If a column data type cannot be converted to the default data type numpy.nan is inserted instead.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1">#This will convert the internal data structure to a uniform type array and select all rows and columns 4 and onwards. This is time-consuming on large populations as it actually copies to data.</span>
+<span class="n">vector</span> <span class="o">=</span> <span class="n">my_population</span><span class="p">[:,</span><span class="mi">4</span><span class="p">:]</span>
+
+<span class="c1"># This is significantly faster as a single column is easy to extract and no conversion is needed</span>
+<span class="n">data_point</span> <span class="o">=</span> <span class="n">my_population</span><span class="p">[</span><span class="mi">123</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>This indexing system can also be used for data manipulation:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">my_population</span><span class="p">[</span><span class="s1">&#39;raan&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vector</span>
+<span class="n">my_population</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span>
+<span class="n">my_population</span><span class="p">[:,</span><span class="mi">4</span><span class="p">:]</span> <span class="o">=</span> <span class="n">matrix</span>
+<span class="n">my_population</span><span class="p">[</span><span class="mi">123</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.3</span>
+<span class="n">my_population</span><span class="p">[</span><span class="mi">123</span><span class="p">,</span><span class="mi">11</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;test&#39;</span>
+</pre></div>
+</div>
+<p>Notice that in the above example the value to be assigned always has the correct size corresponding to the index and slices, a statement like <code class="code docutils literal notranslate"><span class="pre">x[:,3:7]</span> <span class="pre">=</span> <span class="pre">3</span></code> is not possible, instead one would write <code class="code docutils literal notranslate"><span class="pre">x[:,3:7]</span> <span class="pre">=</span> <span class="pre">np.full((len(pop),</span> <span class="pre">4),</span> <span class="pre">3.0,</span> <span class="pre">dtype='f')</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first simple">
+<li><strong>objs</strong> (<em>numpy.ndarray</em>) – Array containing population data. Rows correspond to objects and columns to variables.</li>
+<li><strong>name</strong> (<em>str</em>) – Name of population.</li>
+<li><strong>header</strong> (<em>list</em>) – List of strings containing column descriptions.</li>
+<li><strong>space_object_uses</strong> (<em>list</em>) – List of booleans describing what columns should be included when initializing a space object. This allows for extra data to be stored in the population without passing it to the space object.</li>
+<li><strong>propagator</strong> (<a class="reference internal" href="propagator_base.html#propagator_base.PropagatorBase" title="propagator_base.PropagatorBase"><em>PropagatorBase</em></a>) – Propagator class pointer used for <a class="reference internal" href="space_object.html#space_object.SpaceObject" title="space_object.SpaceObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">space_object.SpaceObject</span></code></a>.</li>
+<li><strong>propagator_options</strong> (<em>dict</em>) – Propagator initialization keyword arguments.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> (<em>str</em>) – Name of population.</li>
+<li><strong>extra_columns</strong> (<em>list</em>) – List of strings containing column descriptions for addition data besides the default columns.</li>
+<li><strong>dtypes</strong> (<em>list</em>) – List of strings containing numpy data type description. Defaults to ‘f’.</li>
+<li><strong>space_object_uses</strong> (<em>list</em>) – List of booleans describing what columns should be included when initializing a space object. This allows for extra data to be stored in the population without passing it to the space object.</li>
+<li><strong>propagator</strong> (<a class="reference internal" href="propagator_base.html#propagator_base.PropagatorBase" title="propagator_base.PropagatorBase"><em>PropagatorBase</em></a>) – Propagator class pointer used for <a class="reference internal" href="space_object.html#space_object.SpaceObject" title="space_object.SpaceObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">space_object.SpaceObject</span></code></a>.</li>
+<li><strong>propagator_options</strong> (<em>dict</em>) – Propagator initialization keyword arguments.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="population.Population.allocate">
+<code class="descname">allocate</code><span class="sig-paren">(</span><em>length</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/population.html#Population.allocate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#population.Population.allocate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Allocate the internal data array for assignment of objects.</p>
+<p><strong>Warning:</strong> This removes all internal data.</p>
+<p><strong>Example:</strong></p>
+<p>Create a population with two objects. Here the <code class="code docutils literal notranslate"><span class="pre">load_data</span></code> function is a fictional function that creates a row with the needed data.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">population</span> <span class="kn">import</span> <span class="n">Population</span>
+<span class="kn">from</span> <span class="nn">my_data_loader</span> <span class="kn">import</span> <span class="n">load_data</span>
+
+<span class="n">my_pop</span> <span class="o">=</span> <span class="n">Population</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;two objects&#39;</span><span class="p">,</span>
+    <span class="n">extra_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;m&#39;</span><span class="p">,</span> <span class="s1">&#39;color&#39;</span><span class="p">],</span>
+    <span class="n">dtypes</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Float64&#39;</span><span class="p">,</span> <span class="s1">&#39;U20&#39;</span><span class="p">],</span>
+    <span class="n">space_object_uses</span> <span class="o">=</span> <span class="p">[</span><span class="bp">True</span><span class="p">,</span> <span class="bp">False</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">my_pop</span><span class="p">))</span> <span class="c1">#will output 0</span>
+<span class="n">my_pop</span><span class="o">.</span><span class="n">allocate</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">my_pop</span><span class="p">))</span> <span class="c1">#will output 2</span>
+
+<span class="n">my_pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">load_data</span><span class="p">(</span><span class="s1">&#39;obj1&#39;</span><span class="p">)</span>
+<span class="n">my_pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">load_data</span><span class="p">(</span><span class="s1">&#39;obj2&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="population.Population.filter">
+<code class="descname">filter</code><span class="sig-paren">(</span><em>col</em>, <em>fun</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/population.html#Population.filter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#population.Population.filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filters the population using a boolean function, keeping true values.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>col</strong> (<em>str</em>) – Column to filter, must match exactly one entry in the <code class="code docutils literal notranslate"><span class="pre">header</span></code> attribute.</li>
+<li><strong>fun</strong> (<em>function</em>) – Function that returns boolean array used for filtering.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example:</strong></p>
+<p>Filter Master population keeping only objects below 45.0 degrees inclination.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">population_library</span> <span class="kn">import</span> <span class="n">master_catalog</span>
+
+<span class="n">master</span> <span class="o">=</span> <span class="n">master_catalog</span><span class="p">()</span>
+<span class="n">master</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+    <span class="n">col</span><span class="o">=</span><span class="s1">&#39;i&#39;</span><span class="p">,</span>
+    <span class="n">fun</span><span class="o">=</span><span class="k">lambda</span> <span class="n">inc</span><span class="p">:</span> <span class="n">inc</span> <span class="o">&lt;</span> <span class="mf">45.0</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="population.Population.get_all_orbits">
+<code class="descname">get_all_orbits</code><span class="sig-paren">(</span><em>order_angs=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/population.html#Population.get_all_orbits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#population.Population.get_all_orbits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the orbital elements for all rows from internal data array.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>order_angs</strong> (<em>bool</em>) – Order the orbital element angles according to aop before raan or not.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="population.Population.get_object">
+<code class="descname">get_object</code><span class="sig-paren">(</span><em>n</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/population.html#Population.get_object"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#population.Population.get_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the one row from the population as a <a class="reference internal" href="space_object.html#space_object.SpaceObject" title="space_object.SpaceObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">space_object.SpaceObject</span></code></a> instance.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="population.Population.get_orbit">
+<code class="descname">get_orbit</code><span class="sig-paren">(</span><em>n</em>, <em>order_angs=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/population.html#Population.get_orbit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#population.Population.get_orbit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the orbital elements for one row from internal data array.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>n</strong> (<em>int</em>) – Row number.</li>
+<li><strong>order_angs</strong> (<em>bool</em>) – Order the orbital element angles according to aop before raan or not.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="population.Population.next">
+<code class="descname">next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#population.Population.next" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="population.Population.object_generator">
+<code class="descname">object_generator</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/population.html#Population.object_generator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#population.Population.object_generator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a generator that iterates trough the entire population returning space objects.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="population.Population.print_row">
+<code class="descname">print_row</code><span class="sig-paren">(</span><em>n</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/population.html#Population.print_row"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#population.Population.print_row" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print a specific row with Header information.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="population.Population.shape">
+<code class="descname">shape</code><a class="headerlink" href="#population.Population.shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the shape of the internal data matrix</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="doc.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="doc.html#simulation-handler">Simulation handler</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="doc.html#class-modules">Class modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#function-modules">Function modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#instance-libraries">Instance libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#integrator-interfaces">Integrator interfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#tests">Tests</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="propagator_base.html"
+                        title="previous chapter">base_propagator</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="radar_scans.html"
+                        title="next chapter">radar_scans</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="radar_scans.html" title="radar_scans"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="propagator_base.html" title="base_propagator"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">SORTS++ 2.8.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" >Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

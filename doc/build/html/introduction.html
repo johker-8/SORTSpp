@@ -1,0 +1,867 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Introduction &#8212; SORTS++ 2.8.0 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Usage examples" href="usage_examples.html" />
+    <link rel="prev" title="Welcome to SORTS++’s documentation!" href="index.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="usage_examples.html" title="Usage examples"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to SORTS++’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">SORTS++ 2.8.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="what-is-sorts">
+<h2>What is SORTS++<a class="headerlink" href="#what-is-sorts" title="Permalink to this headline">¶</a></h2>
+<p>SORTS++ stands for Next-generation (++) Space Object Radar Tracking Simulator (SORTS). It is a collection of modules designed for research purposes concerning the tracking and detection of objects in space. Its ultimate goal is to simulate the tracking and discovery of objects in space using radar systems in a very general fashion.</p>
+</div>
+<div class="section" id="install">
+<h2>Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="system-requirements">
+<h3>System requirements<a class="headerlink" href="#system-requirements" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Unix (tested on Ubuntu-16.04 LTS, Ubuntu-server-16.04 LTS)</li>
+<li>Python 2.7</li>
+</ul>
+</div>
+<div class="section" id="dependencies">
+<h3>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">h5py</span><span class="o">&gt;=</span><span class="mf">2.7</span><span class="o">.</span><span class="mi">1</span>
+<span class="n">matplotlib</span><span class="o">&gt;=</span><span class="mf">2.2</span><span class="o">.</span><span class="mi">2</span>
+<span class="n">mpi4py</span><span class="o">&gt;=</span><span class="mf">3.0</span><span class="o">.</span><span class="mi">0</span>
+<span class="n">numpy</span><span class="o">&gt;=</span><span class="mf">1.14</span><span class="o">.</span><span class="mi">3</span>
+<span class="n">pyproj</span><span class="o">&gt;=</span><span class="mf">1.9</span><span class="o">.</span><span class="mf">5.1</span>
+<span class="n">python</span><span class="o">-</span><span class="n">dateutil</span><span class="o">==</span><span class="mf">2.7</span><span class="o">.</span><span class="mi">3</span>
+<span class="n">scipy</span><span class="o">==</span><span class="mf">1.1</span><span class="o">.</span><span class="mi">0</span>
+<span class="n">sgp4</span><span class="o">==</span><span class="mf">1.4</span>
+<span class="n">pytest</span><span class="o">&gt;=</span><span class="mf">4.1</span><span class="o">.</span><span class="mi">1</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="optional-dependencies">
+<h3>Optional dependencies<a class="headerlink" href="#optional-dependencies" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">basemap</span><span class="o">&gt;=</span><span class="mf">1.1</span><span class="o">.</span><span class="mi">0</span>
+<span class="n">ffmpeg</span><span class="o">&gt;=</span><span class="mf">1.4</span>
+<span class="n">sphinx</span><span class="o">&gt;=</span><span class="mf">1.8</span><span class="o">.</span><span class="mi">1</span>
+</pre></div>
+</div>
+<div class="section" id="basemap">
+<h4>Basemap<a class="headerlink" href="#basemap" title="Permalink to this headline">¶</a></h4>
+<p>To install <strong>basemap</strong>:</p>
+<p>Install proj-bin:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo apt-get install proj-bin
+</pre></div>
+</div>
+<p>Get the basemap source</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>wget --no-check-certificate https://github.com/matplotlib/basemap/archive/master.tar.gz
+</pre></div>
+</div>
+<p>Un-tar the basemap version X.Y.Z source tar.gz file, and enter the basemap-X.Y.Z directory</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span> <span class="nv">GEOS_DIR</span><span class="o">=</span>&lt;where you want the libs and headers to go&gt;
+</pre></div>
+</div>
+<p>Then go to the geos distribution in the un-tar’ed basemap and run</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./configure --prefix<span class="o">=</span><span class="nv">$GEOS_DIR</span>
+make<span class="p">;</span> make install
+</pre></div>
+</div>
+<p>Lastly be sure to use the python bin in the virtualenv to install basemap as:: bash</p>
+<blockquote>
+<div>/…./SORTSpp/env2.7/bin/python setup.py install</div></blockquote>
+</div>
+<div class="section" id="pyglow">
+<h4>Pyglow<a class="headerlink" href="#pyglow" title="Permalink to this headline">¶</a></h4>
+<p>Follow the installation guide on <a class="reference external" href="https://github.com/timduly4/pyglow">Pyglow</a>.</p>
+</div>
+</div>
+</div>
+<div class="section" id="step-by-step-guides">
+<h2>Step by step guides<a class="headerlink" href="#step-by-step-guides" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="step-by-step-fresh-ubuntu-16-04-lts">
+<h3>Step by step: fresh Ubuntu 16.04 LTS<a class="headerlink" href="#step-by-step-fresh-ubuntu-16-04-lts" title="Permalink to this headline">¶</a></h3>
+<p>If needed:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo dpkg --configure -a
+</pre></div>
+</div>
+<p>Proceed to:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo apt-get install git
+<span class="nb">cd</span> /my/projects_dir/
+git clone https://gitlab.irf.se/danielk/SORTSpp.git
+<span class="nb">cd</span> SORTSpp/
+</pre></div>
+</div>
+<p>Check your currently installed python versions:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python --version
+</pre></div>
+</div>
+<p>If this does NOT return <cite>Python 2.7.x</cite>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo apt-get install python-dev
+</pre></div>
+</div>
+<p>Check that pip is installed and bound to your python 2.7:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip --version
+</pre></div>
+</div>
+<p>If pip is NOT installed:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo apt-get install python-pip
+</pre></div>
+</div>
+<p>At this stage: DO NOT UPGRADE PIP. Do this after the virtualenv is installed and activated.</p>
+<p>Then install and create a virtualenv, here the name “env2.7” is used since this name is included in the .gitignore file and will not be detected by git:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install virtualenv
+virtualenv --version
+virtualenv env2.7
+</pre></div>
+</div>
+<p>Activate virtualenv:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span> env2.7/bin/activate
+</pre></div>
+</div>
+<p>If needed (should already be latest version), upgrade the pip inside the virtualenv:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install --upgrade pip
+</pre></div>
+</div>
+<p>Then make sure additional requirements are fulfilled:</p>
+<ul class="simple">
+<li>Used by matplotlib</li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo apt-get install libfreetype6-dev
+sudo apt-get install libpng12-dev
+sudo apt-get install python-tk
+</pre></div>
+</div>
+<ul class="simple">
+<li>Used by mpi4py</li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo apt-get install libopenmpi-dev
+</pre></div>
+</div>
+<p>Then install the dependency requirement for SORTS++</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install -r pip_req.txt
+</pre></div>
+</div>
+<p>Then test the installation following the test section below.</p>
+</div>
+</div>
+<div class="section" id="i-m-feeling-lucky-install">
+<h2>“I’m feeling lucky” Install<a class="headerlink" href="#i-m-feeling-lucky-install" title="Permalink to this headline">¶</a></h2>
+<p>All of the series of install instructions can also be performed by running the <code class="code docutils literal notranslate"><span class="pre">build.sh</span></code> file from the <code class="code docutils literal notranslate"><span class="pre">SORTSpp/</span></code> folder after cloning the repository:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>#!/usr/bin/env bash
+
+sudo dkpg --configure -a
+sudo apt-get install git
+sudo apt-get install python-dev
+
+python_v=&quot;`python -c &#39;import sys; print(sys.version_info[0])&#39;`&quot;
+
+if [ &quot;$python_v&quot; -ne &quot;2&quot; ]; then
+  python_v=&quot;`python2.7 -c &#39;import sys; print(sys.version_info[0])&#39;`&quot;
+
+  if [ &quot;$python_v&quot; -ne &quot;2&quot; ]; then
+    exit 1
+  fi
+fi
+
+sudo apt-get install python-pip
+sudo apt-get install python-tk
+sudo apt-get install libfreetype6-dev
+sudo apt-get install libpng12-dev
+sudo apt-get install libopenmpi-dev
+pip install virtualenv
+virtualenv env2.7
+source env2.7/bin/activate
+pip install --upgrade pip
+pip install -r pip_req.txt
+
+#orekit
+mkdir orekit_build
+cd orekit_build/
+
+sudo apt-get install openjdk-8-jdk
+sudo apt install maven
+
+pip install jcc
+pip install scipy
+pip install matplotlib
+pip install pytest
+
+export JCC_JDK=&quot;/usr/lib/jvm/java-8-openjdk-amd64&quot;
+export SRC_DIR=&quot;`pwd`&quot;
+
+git clone https://github.com/petrushy/Orekit.git
+cd Orekit/
+mvn package
+cd ..
+mv Orekit/target/*.jar .
+
+git clone https://gitlab.orekit.org/orekit-labs/python-wrapper.git
+mv python-wrapper/python_files/* .
+
+
+curl https://www.hipparchus.org/downloads/hipparchus-1.3-bin.zip
+tar -xvf hipparchus-1.3-bin.zip
+mv hipparchus-1.3-bin/*.jar .
+
+python -m jcc \
+--use_full_names \
+--python orekit \
+--version 9.3 \
+--jar $SRC_DIR/orekit-9.2.jar \
+--jar $SRC_DIR/hipparchus-core-1.3.jar \
+--jar $SRC_DIR/hipparchus-filtering-1.3.jar \
+--jar $SRC_DIR/hipparchus-fitting-1.3.jar \
+--jar $SRC_DIR/hipparchus-geometry-1.3.jar \
+--jar $SRC_DIR/hipparchus-ode-1.3.jar \
+--jar $SRC_DIR/hipparchus-optim-1.3.jar \
+--jar $SRC_DIR/hipparchus-stat-1.3.jar \
+--package java.io \
+--package java.util \
+--package java.text \
+--package org.orekit \
+java.io.BufferedReader \
+java.io.FileInputStream \
+java.io.FileOutputStream \
+java.io.InputStream \
+java.io.InputStreamReader \
+java.io.ObjectInputStream \
+java.io.ObjectOutputStream \
+java.io.PrintStream \
+java.io.StringReader \
+java.io.StringWriter \
+java.lang.System \
+java.text.DecimalFormat \
+java.text.DecimalFormatSymbols \
+java.util.ArrayList \
+java.util.Arrays \
+java.util.Collection \
+java.util.Collections \
+java.util.Date \
+java.util.HashMap \
+java.util.HashSet \
+java.util.List \
+java.util.Locale \
+java.util.Map \
+java.util.Set \
+java.util.TreeSet \
+--module $SRC_DIR/pyhelpers.py \
+--reserved INFINITE \
+--reserved ERROR \
+--reserved OVERFLOW \
+--reserved NO_DATA \
+--reserved NAN \
+--reserved min \
+--reserved max \
+--reserved mean \
+--build \
+--install
+
+
+cd test/
+python -m pytest
+
+cd ..
+cd ..
+
+
+
+#basemap
+mkdir basemap_build
+cd basemap_build
+
+sudo apt-get install proj-bin
+
+wget --no-check-certificate https://github.com/matplotlib/basemap/archive/master.tar.gz
+tar -xvf master.tar.gz
+export GEOS_DIR=
+
+./configure --prefix=$GEOS_DIR
+make; make install
+
+python setup.py install
+</pre></div>
+</div>
+</div>
+<div class="section" id="installing-propagators">
+<h2>Installing propagators<a class="headerlink" href="#installing-propagators" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="orekit">
+<h3>Orekit<a class="headerlink" href="#orekit" title="Permalink to this headline">¶</a></h3>
+<p>(Unknown if this step is required? Needs testing on clean VM machine)
+sudo apt-get install jcc</p>
+<p>Firstly check openJDK version:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>java -version
+</pre></div>
+</div>
+<p>if OpenJDK not installed:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo apt-get install openjdk-7-jdk
+</pre></div>
+</div>
+<p>or</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo apt-get install openjdk-8-jdk
+</pre></div>
+</div>
+<p>Then create a Python-2.7 environment in an appropriate folder:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>virtualenv env
+</pre></div>
+</div>
+<p>Activate the environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span> env/bin/activate
+</pre></div>
+</div>
+<p>Depending on your installation, make sure that the <code class="code docutils literal notranslate"><span class="pre">JCC_JDK</span></code> variable is set:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span> <span class="nv">JCC_JDK</span><span class="o">=</span><span class="s2">&quot;/usr/lib/jvm/java-8-openjdk-amd64&quot;</span>
+</pre></div>
+</div>
+<p>Again, this DOES NOT work with java-9, needs 8 or 7.</p>
+<p>Then install JCC into the environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install jcc
+</pre></div>
+</div>
+<p>go to: <a class="reference external" href="https://www.hipparchus.org/downloads.html">Hipparchus</a> and download binary for version 1.3.
+Extract the .jar files with some archive manager, e.g. <em>tar</em>.</p>
+<p>Clone the modified orekit including python package java classes: <a class="reference external" href="https://github.com/petrushy/Orekit.git">Orekit with python</a> .</p>
+<p>Follow the instructions in:
+<a class="reference external" href="https://github.com/petrushy/Orekit/blob/develop/BUILDING.txt">Build orekit</a></p>
+<p>Tested building on Ubuntu 16.04:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span> sudo apt install maven
+mvn package
+</pre></div>
+</div>
+<p>If you have problem with some tests failing when building orekit, make sure you check the <em>petrushy/Orekit.git</em>
+repository status and ensure that you have the correct branch checked out before compiling (as of writing, tested branch on Ubuntu 16.04 is <em>cs_93</em>).</p>
+<p>After compilation is complete, go to “/Orekit/target/” and to find the <strong>orekit-x.jar</strong></p>
+<p>Clone the python wrapper repository: <a class="reference external" href="https://gitlab.orekit.org/orekit-labs/python-wrapper.git">Orekit python wrapper</a></p>
+<p>Copy the contents of the “python_files” folder (from the python wrapper repository) to the folder where you intend to build the python library.</p>
+<p>Then place all the <strong>hipparchus-Y.jar</strong> files and your modified compiled <strong>orekit-x.jar</strong> file in your build folder.</p>
+<p>More specifically these files are needed:</p>
+<blockquote>
+<div><ul class="simple">
+<li>orekit-x.jar</li>
+<li>hipparchus-core-1.3.jar</li>
+<li>hipparchus-filtering-1.3.jar</li>
+<li>hipparchus-fitting-1.3.jar</li>
+<li>hipparchus-geometry-1.3.jar</li>
+<li>hipparchus-ode-1.3.jar</li>
+<li>hipparchus-optim-1.3.jar</li>
+<li>hipparchus-stat-1.3.jar</li>
+</ul>
+</div></blockquote>
+<p>Set the environment variable for building:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span> <span class="nv">SRC_DIR</span><span class="o">=</span><span class="s2">&quot;my/orekit/build/folder&quot;</span>
+<span class="nb">export</span> <span class="nv">_JAVA_OPTIONS</span><span class="o">=</span><span class="s2">&quot;-Dorekit.data.path=/full/path/to/Orekit/&quot;</span>
+</pre></div>
+</div>
+<p>In this folder create a build.sh file with the following contents (remember to replace the <strong>x</strong>’es with the correct version compiled):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+
+python -m jcc <span class="se">\</span>
+--use_full_names <span class="se">\</span>
+--python orekit <span class="se">\</span>
+--version x <span class="se">\</span>
+--jar <span class="nv">$SRC_DIR</span>/orekit-x.jar <span class="se">\</span>
+--jar <span class="nv">$SRC_DIR</span>/hipparchus-core-1.3.jar <span class="se">\</span>
+--jar <span class="nv">$SRC_DIR</span>/hipparchus-filtering-1.3.jar <span class="se">\</span>
+--jar <span class="nv">$SRC_DIR</span>/hipparchus-fitting-1.3.jar <span class="se">\</span>
+--jar <span class="nv">$SRC_DIR</span>/hipparchus-geometry-1.3.jar <span class="se">\</span>
+--jar <span class="nv">$SRC_DIR</span>/hipparchus-ode-1.3.jar <span class="se">\</span>
+--jar <span class="nv">$SRC_DIR</span>/hipparchus-optim-1.3.jar <span class="se">\</span>
+--jar <span class="nv">$SRC_DIR</span>/hipparchus-stat-1.3.jar <span class="se">\</span>
+--package java.io <span class="se">\</span>
+--package java.util <span class="se">\</span>
+--package java.text <span class="se">\</span>
+--package org.orekit <span class="se">\</span>
+java.io.BufferedReader <span class="se">\</span>
+java.io.FileInputStream <span class="se">\</span>
+java.io.FileOutputStream <span class="se">\</span>
+java.io.InputStream <span class="se">\</span>
+java.io.InputStreamReader <span class="se">\</span>
+java.io.ObjectInputStream <span class="se">\</span>
+java.io.ObjectOutputStream <span class="se">\</span>
+java.io.PrintStream <span class="se">\</span>
+java.io.StringReader <span class="se">\</span>
+java.io.StringWriter <span class="se">\</span>
+java.lang.System <span class="se">\</span>
+java.text.DecimalFormat <span class="se">\</span>
+java.text.DecimalFormatSymbols <span class="se">\</span>
+java.util.ArrayList <span class="se">\</span>
+java.util.Arrays <span class="se">\</span>
+java.util.Collection <span class="se">\</span>
+java.util.Collections <span class="se">\</span>
+java.util.Date <span class="se">\</span>
+java.util.HashMap <span class="se">\</span>
+java.util.HashSet <span class="se">\</span>
+java.util.List <span class="se">\</span>
+java.util.Locale <span class="se">\</span>
+java.util.Map <span class="se">\</span>
+java.util.Set <span class="se">\</span>
+java.util.TreeSet <span class="se">\</span>
+--module <span class="nv">$SRC_DIR</span>/pyhelpers.py <span class="se">\</span>
+--reserved INFINITE <span class="se">\</span>
+--reserved ERROR <span class="se">\</span>
+--reserved OVERFLOW <span class="se">\</span>
+--reserved NO_DATA <span class="se">\</span>
+--reserved NAN <span class="se">\</span>
+--reserved min <span class="se">\</span>
+--reserved max <span class="se">\</span>
+--reserved mean <span class="se">\</span>
+--reserved SNAN <span class="se">\</span>
+--build <span class="se">\</span>
+--install
+</pre></div>
+</div>
+<p>This command is taken from the <em>conda-recipe</em> <a class="reference external" href="https://gitlab.orekit.org/orekit-labs/python-wrapper/blob/master/orekit-conda-recipe/build.sh">build sh</a> file.</p>
+<p>Make the file executable</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>chmod +x build.sh
+</pre></div>
+</div>
+<p>Run the build file</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./build.sh
+</pre></div>
+</div>
+<p>This may take some time.</p>
+<p>Check installation by</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip freeze
+</pre></div>
+</div>
+<p>it should output:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">JCC</span><span class="o">==</span><span class="m">3</span>.4
+<span class="nv">orekit</span><span class="o">==</span><span class="m">9</span>.2
+</pre></div>
+</div>
+<p>Then install some additional libraries</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install scipy
+pip install matplotlib
+pip install pytest
+</pre></div>
+</div>
+<p>Make sure that you test that the installation and compilation worked.
+Enter into the “test” folder (should have been part of the “python_files” folder) and run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rm IodGibbsTest.py
+python -m pytest
+</pre></div>
+</div>
+</div>
+<div class="section" id="sgp4">
+<h3>SGP4<a class="headerlink" href="#sgp4" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install sgp4
+</pre></div>
+</div>
+</div>
+<div class="section" id="neptune">
+<h3>NEPTUNE<a class="headerlink" href="#neptune" title="Permalink to this headline">¶</a></h3>
+<p>Binaries included in package.</p>
+<p>Requires (maybe?):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo apt-get install mpich
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="coordinate-conventions">
+<h2>Coordinate conventions<a class="headerlink" href="#coordinate-conventions" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt><strong>Orientation of the ellipse in the coordinate system:</strong></dt>
+<dd><ul class="first last simple">
+<li>For zero inclination <span class="math notranslate nohighlight">\(i\)</span>: the ellipse is located in the x-y plane.</li>
+<li>The direction of motion as True anoamly <span class="math notranslate nohighlight">\(\\nu\)</span>: increases for a zero inclination <span class="math notranslate nohighlight">\(i\)</span>: orbit is anti-coockwise, i.e. from +x towards +y.</li>
+<li>If the eccentricity <span class="math notranslate nohighlight">\(e\)</span>: is increased, the periapsis will lie in +x direction.</li>
+<li>If the inclination <span class="math notranslate nohighlight">\(i\)</span>: is increased, the ellipse will rotate around the x-axis, so that +y is rotated toward +z.</li>
+<li>An increase in Longitude of ascending node <span class="math notranslate nohighlight">\(\Omega\)</span>: corresponds to a rotation around the z-axis so that +x is rotated toward +y.</li>
+<li>Changing argument of perihelion <span class="math notranslate nohighlight">\(\omega\)</span>: will not change the plane of the orbit, it will rotate the orbit in the plane.</li>
+<li>The periapsis is shifted in the direction of motion.</li>
+<li>True anomaly measures from the +x axis, i.e <span class="math notranslate nohighlight">\(\\nu = 0\)</span> is located at periapsis and <span class="math notranslate nohighlight">\(\\nu = \pi\)</span> at apoapsis.</li>
+<li>All anomalies and orientation angles reach between 0 and <span class="math notranslate nohighlight">\(2\pi\)</span></li>
+</ul>
+</dd>
+</dl>
+<p><em>Reference:</em> “Orbital Motion” by A.E. Roy.</p>
+</div>
+<div class="section" id="test-installation">
+<h2>Test installation<a class="headerlink" href="#test-installation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="modules">
+<h3>Modules<a class="headerlink" href="#modules" title="Permalink to this headline">¶</a></h3>
+<p>Simply navigate to the <code class="code docutils literal notranslate"><span class="pre">SORTSpp</span></code> directory and run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pytest
+</pre></div>
+</div>
+<p>And it will automatically use the <code class="code docutils literal notranslate"><span class="pre">pytest.ini</span></code> file to discover and run all tests.</p>
+</div>
+<div class="section" id="simulation">
+<h3>Simulation<a class="headerlink" href="#simulation" title="Permalink to this headline">¶</a></h3>
+<p>To test the installation run the <strong>test.py</strong> file.</p>
+<dl class="docutils">
+<dt>To test the simulation capabilities:</dt>
+<dd><ul class="first last simple">
+<li>Go to the folder <strong>SIMULATIONS/</strong></li>
+<li>Configure the files ending with <code class="code docutils literal notranslate"><span class="pre">*_test.py</span></code> to output data to desired paths.</li>
+</ul>
+</dd>
+</dl>
+<p>Remember, To run the simulation with MPI the file must be executable. To test a capability run the corresponding <code class="code docutils literal notranslate"><span class="pre">test_*</span></code> file with</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python ./SIMULATIONS/test_simulation.py
+</pre></div>
+</div>
+<p>or with</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mpirun -np <span class="m">8</span> ./SIMULATIONS/test_simulation.py
+</pre></div>
+</div>
+<p>if you wish to test the MPI implementation of the simulation. The <em>-np</em> specifies how many processes should be launched and should not be larger then the number of cores available.</p>
+</div>
+</div>
+<div class="section" id="general-simulation">
+<h2>General simulation<a class="headerlink" href="#general-simulation" title="Permalink to this headline">¶</a></h2>
+<p>To perform a general simulation using SORTS++ you need to use the <code class="xref py py-class docutils literal notranslate"><span class="pre">simulation</span></code> class.</p>
+<p>To construct a simulation class instance you need:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Radar instance:</th><td class="field-body">Manually constructed from <code class="xref py py-class docutils literal notranslate"><span class="pre">radar_system</span></code> or a preset instance from <a class="reference internal" href="radar_library.html#module-radar_library" title="radar_library"><code class="xref py py-mod docutils literal notranslate"><span class="pre">radar_library</span></code></a>.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Population instance:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">Manually constructed from <code class="xref py py-class docutils literal notranslate"><span class="pre">population</span></code> or a preset instance from <a class="reference internal" href="population.html#module-population" title="population"><code class="xref py py-mod docutils literal notranslate"><span class="pre">population</span></code></a>.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">Simulation root:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">A designated root folder where simulation files will be stored.</td>
+</tr>
+</tbody>
+</table>
+<p>These are the bare minimum, it is also recommended to have:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Radar scan:</th><td class="field-body">Manually constructed from <a class="reference internal" href="radar_scans.html#radar_scans.radar_scan" title="radar_scans.radar_scan"><code class="xref py py-class docutils literal notranslate"><span class="pre">radar_scan</span></code></a> or a preset instance from <a class="reference internal" href="radar_scan_library.html#module-radar_scan_library" title="radar_scan_library"><code class="xref py py-mod docutils literal notranslate"><span class="pre">radar_scan_library</span></code></a>. The radar_scan instance should be set in the radar_system instance using the <code class="xref py py-func docutils literal notranslate"><span class="pre">set_scan()</span></code> method.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Scheduler instance:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">A scheduler instance is a function declaration located in <a class="reference internal" href="scheduler_library.html#module-scheduler_library" title="scheduler_library"><code class="xref py py-mod docutils literal notranslate"><span class="pre">scheduler_library</span></code></a>. Different schedulers need different configurations and auxiliary functions and instances.</td>
+</tr>
+</tbody>
+</table>
+<p>Below is an example simulation of catalogue maintenance:</p>
+<div class="highlight-python notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1">#</span>
+<span class="c1">#</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">n</span>
+<span class="kn">from</span> <span class="nn">mpi4py</span> <span class="kn">import</span> <span class="n">MPI</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;/home/danielk/IRF/IRF_GITLAB/SORTSpp/&quot;</span><span class="p">)</span>
+<span class="c1"># SORTS imports CORE</span>
+<span class="kn">import</span> <span class="nn">population</span> <span class="kn">as</span> <span class="nn">p</span>
+<span class="kn">import</span> <span class="nn">simulation</span> <span class="kn">as</span> <span class="nn">s</span>
+
+<span class="c1">#SORTS Libraries</span>
+<span class="kn">import</span> <span class="nn">radar_library</span> <span class="kn">as</span> <span class="nn">rl</span>
+<span class="kn">import</span> <span class="nn">radar_scan_library</span> <span class="kn">as</span> <span class="nn">rslib</span>
+<span class="kn">import</span> <span class="nn">scheduler_library</span> <span class="kn">as</span> <span class="nn">sch</span>
+<span class="kn">import</span> <span class="nn">antenna_library</span> <span class="kn">as</span> <span class="nn">alib</span>
+
+<span class="n">sim_root</span> <span class="o">=</span> <span class="s1">&#39;/home/danielk/test_SORTSpp_sim&#39;</span>
+
+<span class="c1">#initialize the radar setup</span>
+<span class="n">e3d</span> <span class="o">=</span> <span class="n">rl</span><span class="o">.</span><span class="n">eiscat_3d</span><span class="p">()</span>
+
+<span class="n">e3d</span><span class="o">.</span><span class="n">set_FOV</span><span class="p">(</span><span class="n">max_on_axis</span><span class="o">=</span><span class="mf">25.0</span><span class="p">,</span><span class="n">horizon_elevation</span><span class="o">=</span><span class="mf">30.0</span><span class="p">)</span>
+<span class="n">e3d</span><span class="o">.</span><span class="n">set_SNR_limits</span><span class="p">(</span><span class="n">min_total_SNRdb</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span><span class="n">min_pair_SNRdb</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+
+<span class="c1">#initialize the observing mode</span>
+<span class="n">e3d_scan</span> <span class="o">=</span> <span class="n">rslib</span><span class="o">.</span><span class="n">ns_fence_rng_model</span><span class="p">(</span><span class="n">min_el</span> <span class="o">=</span> <span class="mf">30.0</span><span class="p">,</span> <span class="n">angle_step</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span> <span class="n">dwell_time</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="n">e3d_scan</span><span class="o">.</span><span class="n">set_radar_location</span><span class="p">(</span><span class="n">e3d</span><span class="p">)</span>
+<span class="n">e3d</span><span class="o">.</span><span class="n">set_scan</span><span class="p">(</span><span class="n">e3d_scan</span><span class="p">)</span>
+
+<span class="c1">#load the input population</span>
+<span class="n">pop</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">master_catalog_factor</span><span class="p">()</span>
+
+<span class="c1">#keep only object above 1m Diameter, should be 4,668 left</span>
+<span class="n">pop</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s1">&#39;Diameter&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">d</span><span class="p">:</span> <span class="n">d</span> <span class="o">&gt;</span> <span class="mf">1.0</span><span class="p">)</span>
+
+<span class="n">sim</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">simulation</span><span class="p">(</span>
+    <span class="n">radar</span> <span class="o">=</span> <span class="n">e3d</span><span class="p">,</span>
+    <span class="n">population</span> <span class="o">=</span> <span class="n">pop</span><span class="p">,</span>
+    <span class="n">sim_root</span> <span class="o">=</span> <span class="n">sim_root</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">sim</span><span class="o">.</span><span class="n">calc_observation_params</span><span class="p">(</span>
+    <span class="n">duty_cycle</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span>
+    <span class="n">SST_fraction</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">tracking_fraction</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">SST_time_slice</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">sim</span><span class="o">.</span><span class="n">maintain_all</span><span class="p">()</span>
+
+<span class="n">sim</span><span class="o">.</span><span class="n">run_scan</span><span class="p">(</span><span class="n">t</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">load_detections</span><span class="p">()</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">maint_statistics</span><span class="p">(</span><span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+
+</pre></div>
+</td></tr></table></div>
+<p>The simulation can be found in <code class="code docutils literal notranslate"><span class="pre">SIMULATION_EXAMPLES/simple_sim.py</span></code>, remember to change the simulation root before running, it can be run using</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mpirun -np <span class="m">4</span> ./SIMULATION_EXAMPLES/simple_sim.py
+</pre></div>
+</div>
+</div>
+<div class="section" id="license">
+<h2>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h2>
+<p>MIT License</p>
+<p>Copyright (c) [2019] [Daniel Kastinen, Juha Vierinen]</p>
+<p>Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the “Software”), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:</p>
+<p>The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.</p>
+<p>THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</p>
+</div>
+<div class="section" id="coordinate-transformation-guide">
+<h2>Coordinate transformation guide<a class="headerlink" href="#coordinate-transformation-guide" title="Permalink to this headline">¶</a></h2>
+<p>In general there are 2 classes of coordinate systems:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Earth Centered Inertial (ECI)</li>
+<li>Earth Centered Earth Fixed (ECEF)</li>
+</ul>
+</div></blockquote>
+<p>There are several realizations of these classes of coordinate systems that take into account different effects and perturbations. The difference between an Inertial and an Earth Fixed frame is that in an inertial system all motion comes from classical orbit dynamics (N-body solutions) and are not caused by the coordinate frame transformation.</p>
+<p>As an example, consider a Keplerian orbit (i.e. a point moving on a ellipse) around the Earth. An inertial frame here is any barycentric Cartesian fixed frame (barycentric can be approximated as the Earth Centric due to the small mass of the orbiting object). An example of a non-inertial frame could be a translating Cartesian frame, here the object would seem to be “spiraling” away from us. In this frame the movement away from us is not induced by fundamental orbital dynamics but due to the coordinate frame transformation. The same is true in a Earth Fixed system, the orbit would seem to rotate at the speed of the Earths rotation.</p>
+<p>Since any barycentric Cartesian fixed frame is Inertial it is customary to choose 2 reference directions to make the frame choice unique. These reference directions are usually the rotational axis of the Earth and the Vernal Equinox, i.e. the direction in space formed by the intersection of the Earths orbital plane around the Sun and the Earth equatorial plane. The direction chosen for the +x axis is usually defined so that it is aligned with the direction when axial tilt of the Earth in +z direction (the Earth moving counter-clockwise) is moving from towards the Sun to away from the Sun. The Vernal Equinox with this definition is also the ascending node of the ecliptic on the celestial equator.</p>
+<p>Since the orbital dynamics of the Earth in the solar-system has no analytic solutions due to perturbations, the definition of Vernal Equinox and the Earth ecliptic also changes with respect to time, thus is it customary to choose the common reference direction for the Vernal Equinox at a specific time, called the Epoch of that equinox.</p>
+<p>From numerical simulations the drift of the Obliquity of the ecliptic (inclination of ecliptic with respect to the celestial equator) does not vary more then 1 degree on the order of 10,000 years.</p>
+<p>Most commonly used ECI’s are:</p>
+<blockquote>
+<div><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">True Equator Mean Equinox (TEME):</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<p>This is the frame after a Two-Line Element (TLE) orbit has been converted to an Cartesian state. The Mean Equinox refers to the Vernal Equinox but averaged over time to remove nutation. The Mean Vernal Equinox here is aligned to coincide with the +x axis. Thus the instantaneous Vernal Equinox is different at any point in time and needs to be modeled. True Equator refers to the fact that the instantaneous axis of rotation of the Earth is used to align the +z axis with.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">The International Terrestrial Reference Frame (ITRF):</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+<p>The ITRF contains models of movement of both the Earth and the Equinox. Thus the frame itself is a function of time. As the models are updated it is customary to denote the reference frame by a Epoch, or the time around witch they “center”.</p>
+<p>Going from a “Mean” element definition to a Instantaneous one requires a model of nutation.</p>
+<p>To transform from e.g. TEME to ITRF one would first need to find the difference between the instantanius mean equionox</p>
+<p>Then find the instantanius earth rotation….</p>
+<p>then find the rotation of the earth, also known as GMST</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#what-is-sorts">What is SORTS++</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#install">Install</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-by-step-guides">Step by step guides</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#i-m-feeling-lucky-install">“I’m feeling lucky” Install</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installing-propagators">Installing propagators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#coordinate-conventions">Coordinate conventions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#test-installation">Test installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#general-simulation">General simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#license">License</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#coordinate-transformation-guide">Coordinate transformation guide</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="doc.html">Documentation</a></li>
+</ul>
+
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Introduction</a><ul>
+<li><a class="reference internal" href="#what-is-sorts">What is SORTS++</a></li>
+<li><a class="reference internal" href="#install">Install</a><ul>
+<li><a class="reference internal" href="#system-requirements">System requirements</a></li>
+<li><a class="reference internal" href="#dependencies">Dependencies</a></li>
+<li><a class="reference internal" href="#optional-dependencies">Optional dependencies</a><ul>
+<li><a class="reference internal" href="#basemap">Basemap</a></li>
+<li><a class="reference internal" href="#pyglow">Pyglow</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#step-by-step-guides">Step by step guides</a><ul>
+<li><a class="reference internal" href="#step-by-step-fresh-ubuntu-16-04-lts">Step by step: fresh Ubuntu 16.04 LTS</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#i-m-feeling-lucky-install">“I’m feeling lucky” Install</a></li>
+<li><a class="reference internal" href="#installing-propagators">Installing propagators</a><ul>
+<li><a class="reference internal" href="#orekit">Orekit</a></li>
+<li><a class="reference internal" href="#sgp4">SGP4</a></li>
+<li><a class="reference internal" href="#neptune">NEPTUNE</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#coordinate-conventions">Coordinate conventions</a></li>
+<li><a class="reference internal" href="#test-installation">Test installation</a><ul>
+<li><a class="reference internal" href="#modules">Modules</a></li>
+<li><a class="reference internal" href="#simulation">Simulation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#general-simulation">General simulation</a></li>
+<li><a class="reference internal" href="#license">License</a></li>
+<li><a class="reference internal" href="#coordinate-transformation-guide">Coordinate transformation guide</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to SORTS++’s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="usage_examples.html"
+                        title="next chapter">Usage examples</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="usage_examples.html" title="Usage examples"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to SORTS++’s documentation!"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">SORTS++ 2.8.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

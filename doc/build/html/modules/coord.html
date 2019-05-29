@@ -1,0 +1,225 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>coord &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="dpt_tools" href="dpt_tools.html" />
+    <link rel="prev" title="ccsds_write" href="ccsds_write.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dpt_tools.html" title="dpt_tools"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="ccsds_write.html" title="ccsds_write"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" accesskey="U">Documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-coord">
+<span id="coord"></span><h1>coord<a class="headerlink" href="#module-coord" title="Permalink to this headline">¶</a></h1>
+<p>Collection of common coordinate transformations.</p>
+<p>Some bits and pieces are from PySatel, but changed to work with numpy.
+There was a bug in geodetic2ecef in PySatel that is fixed. The other functions
+are implemented using information from wikipedia.</p>
+<p>Juha Vierinen 2013.
+Daniel Kastinen 2019: Bug-fixes and updates</p>
+<dl class="function">
+<dt id="coord.angle_deg">
+<code class="descclassname">coord.</code><code class="descname">angle_deg</code><span class="sig-paren">(</span><em>a</em>, <em>b</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/coord.html#angle_deg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coord.angle_deg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Angle in degrees between two vectors.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>a</strong> (<em>numpy.ndarray</em>) – Vector a</li>
+<li><strong>a</strong> – Vector b</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Angle in degrees between vectors a and b</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="coord.az_el_r2geodetic">
+<code class="descclassname">coord.</code><code class="descname">az_el_r2geodetic</code><span class="sig-paren">(</span><em>obs_lat</em>, <em>obs_lon</em>, <em>obs_h</em>, <em>az</em>, <em>el</em>, <em>r</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/coord.html#az_el_r2geodetic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coord.az_el_r2geodetic" title="Permalink to this definition">¶</a></dt>
+<dd><p>When given a observer lat,long,h and az,el and r, return lat,long,h of target</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="coord.azel_ecef">
+<code class="descclassname">coord.</code><code class="descname">azel_ecef</code><span class="sig-paren">(</span><em>lat</em>, <em>lon</em>, <em>alt</em>, <em>az</em>, <em>el</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/coord.html#azel_ecef"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coord.azel_ecef" title="Permalink to this definition">¶</a></dt>
+<dd><p>Radar pointing (az,el) degrees to unit vector in ECEF.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="coord.azel_to_cart">
+<code class="descclassname">coord.</code><code class="descname">azel_to_cart</code><span class="sig-paren">(</span><em>az</em>, <em>el</em>, <em>r</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/coord.html#azel_to_cart"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coord.azel_to_cart" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert from spherical coordinates to Cartesian in a degrees east of north and elevation fashion</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="coord.cart_to_azel">
+<code class="descclassname">coord.</code><code class="descname">cart_to_azel</code><span class="sig-paren">(</span><em>vec</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/coord.html#cart_to_azel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coord.cart_to_azel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert from Cartesian coordinates to spherical in a degrees east of north and elevation fashion</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="coord.cbrt">
+<code class="descclassname">coord.</code><code class="descname">cbrt</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/coord.html#cbrt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coord.cbrt" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="coord.ecef2geodetic">
+<code class="descclassname">coord.</code><code class="descname">ecef2geodetic</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>z</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/coord.html#ecef2geodetic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coord.ecef2geodetic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert ECEF coordinates to geodetic.
+J. Zhu, “Conversion of Earth-centered Earth-fixed coordinates
+to geodetic coordinates,” IEEE Transactions on Aerospace and
+Electronic Systems, vol. 30, pp. 957-961, 1994.</p>
+<p>According to WGS84.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="coord.ecef2local">
+<code class="descclassname">coord.</code><code class="descname">ecef2local</code><span class="sig-paren">(</span><em>lat</em>, <em>lon</em>, <em>alt</em>, <em>x</em>, <em>y</em>, <em>z</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/coord.html#ecef2local"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coord.ecef2local" title="Permalink to this definition">¶</a></dt>
+<dd><p>NED (east,north,up) from ECEF coordinate system conversion.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="coord.enu2ecef">
+<code class="descclassname">coord.</code><code class="descname">enu2ecef</code><span class="sig-paren">(</span><em>lat</em>, <em>lon</em>, <em>alt</em>, <em>n</em>, <em>e</em>, <em>u</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/coord.html#enu2ecef"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coord.enu2ecef" title="Permalink to this definition">¶</a></dt>
+<dd><p>NEU (north/east/up) to ECEF coordinate system conversion. Degrees are used.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="coord.geodetic2ecef">
+<code class="descclassname">coord.</code><code class="descname">geodetic2ecef</code><span class="sig-paren">(</span><em>lat</em>, <em>lon</em>, <em>alt</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/coord.html#geodetic2ecef"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coord.geodetic2ecef" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert geodetic coordinates to ECEF.
+&#64;lat, &#64;lon in decimal degrees
+&#64;alt in meters</p>
+<p>Uses WGS84.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="coord.geodetic_to_az_el_r">
+<code class="descclassname">coord.</code><code class="descname">geodetic_to_az_el_r</code><span class="sig-paren">(</span><em>obs_lat</em>, <em>obs_lon</em>, <em>obs_h</em>, <em>target_lat</em>, <em>target_lon</em>, <em>target_h</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/coord.html#geodetic_to_az_el_r"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coord.geodetic_to_az_el_r" title="Permalink to this definition">¶</a></dt>
+<dd><p>When given a observer lat,long,h and target lat,long,h, provide azimuth, elevation, and range to target</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="coord.ned2ecef">
+<code class="descclassname">coord.</code><code class="descname">ned2ecef</code><span class="sig-paren">(</span><em>lat</em>, <em>lon</em>, <em>alt</em>, <em>n</em>, <em>e</em>, <em>d</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/coord.html#ned2ecef"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coord.ned2ecef" title="Permalink to this definition">¶</a></dt>
+<dd><p>NED (north/east/down) to ECEF coordinate system conversion. Degrees are used.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../introduction/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="doc.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="doc.html#simulation-handler">Simulation handler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#class-modules">Class modules</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="doc.html#function-modules">Function modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#instance-libraries">Instance libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#integrator-interfaces">Integrator interfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#tests">Tests</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="ccsds_write.html"
+                        title="previous chapter">ccsds_write</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="dpt_tools.html"
+                        title="next chapter">dpt_tools</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dpt_tools.html" title="dpt_tools"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="ccsds_write.html" title="ccsds_write"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" >Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

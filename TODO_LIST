@@ -1,0 +1,49 @@
+TODO LIST:
+
+- do one last simulation of the catalouge of the piggyback cat
+- try the long term cold start fence 100%
+
+    * Restructure SORTS++ to:
+        /SORTSpp
+        |-- data/
+            |-- master/
+            |-- orekit/
+            |-- JPL/
+            ...
+        |-- SORTSpp/
+            |-- __init__.py
+            ...
+        |-- doc/
+        |-- scripts/
+            |-- simulations/
+            |-- module/
+        |-- tests/
+        |-- examples/
+        |-- make
+        |-- LICENSE
+        |-- README
+
+	make the makefile not dependant on specifically env but dynamic with respect to aliases
+        the makefile should have several options:
+        - make <propagator> : should compile the appropriate compiler
+        - make install : should automatically create the virtual environment and install all dependencies and pip-packages into the environment and add the root /SORTSpp folder to the python path when source env is used. This way scripts can just do "import SORTSpp" or "from SORTSpp import *" since we have a __all__ defined.
+        - make venv?
+
+    * Save even more meta data in "simulation.py"! It should be easy to just "get" the statistics with a File('data.h5') command in ipython.
+
+Course work
+    * Write an MCMC orbit determination algorithm
+
+For later:
+    * Change the "radar system" idea to be one coherrent system that we KNOW can talk with itself
+    * Make sure tx/rx and frequncies works (tx of wrong frequency cannot be recived at rx)
+    * make a "radar network " class that connects data from several radar systems (i.e. a VHF can measure stuff and E3D can measure stuff but their signals cannot be measured by one and another but their data can excanged)
+    * Start raising more exceptions in classes!
+    * Add log exception functionality to logging library
+    * Implement the "logging_setup" in each module so that each module actually logs if needed. Probably on the module / class level it is best to init a logger as a global at the top of each file but with a logger="only console logger" in all classes and as function inputs. Then if needed the logger can be modified as a global of that package before functions are called and class instances created: e.g. 
+      import dpt
+      import logging
+      dpt.logger.file('path.txt')
+      dpt.logger.logLevel = logging.DEBUG
+    and so on!
+

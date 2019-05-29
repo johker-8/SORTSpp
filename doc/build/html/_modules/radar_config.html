@@ -1,0 +1,369 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>radar_config &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for radar_config</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="sd">&#39;&#39;&#39;This module is used to define the radar network configuration.</span>
+
+<span class="sd"># TODO: Change all attribute names according to convention: &#39;var&#39; public, &#39;_var&#39; internal, &#39;__var&#39; private.</span>
+<span class="sd"># TODO: It would make sens to change it so that a rx antenna is always a reciver but a TX antenna inherrents RX antenna as it is now but that every TX antenna is also automatically counted as a RX antenna so that you do not e.g. have to specify &#39;skibotten RX&#39; and &#39;skibotten TX&#39;, instead it would only be &#39;skibotten&#39; but a instance of TX instead of RX and then you intead only loop over stations in radar system and know that all have RX capabilities but at least one have to have TX capabilities.</span>
+<span class="sd"># TODO: Change name of this module to radar.py</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.constants</span> <span class="k">as</span> <span class="nn">c</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="c1"># SORTS imports</span>
+<span class="kn">import</span> <span class="nn">coord</span>
+<span class="kn">import</span> <span class="nn">radar_scans</span> <span class="k">as</span> <span class="nn">rs</span>
+<span class="kn">import</span> <span class="nn">antenna</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">geopandas</span>
+    <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+    <span class="kn">from</span> <span class="nn">shapely.geometry</span> <span class="k">import</span> <span class="n">Point</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">geopandas</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">pd</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">Point</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="RadarSystem"><a class="viewcode-back" href="../modules/radar_config.html#radar_config.RadarSystem">[docs]</a><span class="k">class</span> <span class="nc">RadarSystem</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;A network of transmitting and receiving radar systems.</span>
+<span class="sd">        </span>
+<span class="sd">        :ivar list _tx: List of transmitting sites, i.e. instances of :class:`antenna.AntennaTX`</span>
+<span class="sd">        :ivar list _rx: List of receiving sites, i.e. instances of :class:`antenna.AntennaRX`</span>
+<span class="sd">        :ivar float max_on_axis: Maximum angle between pointing direction and a received signal.</span>
+<span class="sd">        :ivar string name: Verbose name of the radar system</span>
+<span class="sd">        :ivar float _horizon_elevation: Elevation in degrees of the horizon, i.e. minimum elevation the radar system can measure and point.</span>
+<span class="sd">        :ivar float min_SNRdb: Minimum SNR detectable by radar system in dB.</span>
+
+<span class="sd">        :param list tx_lst: List of transmitting sites, i.e. instances of :class:`antenna.AntennaTX`</span>
+<span class="sd">        :param list rx_lst: List of receiving sites, i.e. instances of :class:`antenna.AntennaRX`</span>
+<span class="sd">        :param string name: Verbose name of the radar system</span>
+<span class="sd">        :param float max_on_axis: Maximum angle between pointing direction and a received signal.</span>
+<span class="sd">        :param float min_SNRdb: Minimum SNR detectable by radar system in dB.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tx_lst</span><span class="p">,</span> <span class="n">rx_lst</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">max_on_axis</span><span class="o">=</span><span class="mf">90.0</span><span class="p">,</span> <span class="n">min_SNRdb</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tx</span> <span class="o">=</span> <span class="n">tx_lst</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rx</span> <span class="o">=</span> <span class="n">rx_lst</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_on_axis</span> <span class="o">=</span> <span class="n">max_on_axis</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_SNRdb</span> <span class="o">=</span> <span class="n">min_SNRdb</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_horizon_elevation</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="RadarSystem.set_FOV"><a class="viewcode-back" href="../modules/radar_config.html#radar_config.RadarSystem.set_FOV">[docs]</a>    <span class="k">def</span> <span class="nf">set_FOV</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_on_axis</span><span class="p">,</span> <span class="n">horizon_elevation</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Set the Field of View (FOV) for this radar system. The FOV is imposed on every receiving station and transmitting station in the network. The FOV is assumed to be azimutally symmetric.</span>
+<span class="sd">        </span>
+<span class="sd">        :param float max_on_axis: Maximum angle in degrees from the pointing direction at witch a detection can be made.</span>
+<span class="sd">        :param float horizon_elevation: The elevation angle in degrees of the FOV.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_on_axis</span> <span class="o">=</span> <span class="n">max_on_axis</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_horizon_elevation</span> <span class="o">=</span> <span class="n">horizon_elevation</span>
+        <span class="k">for</span> <span class="n">rx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rx</span><span class="p">:</span>
+            <span class="n">rx</span><span class="o">.</span><span class="n">el_thresh</span> <span class="o">=</span> <span class="n">horizon_elevation</span>
+        <span class="k">for</span> <span class="n">tx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tx</span><span class="p">:</span>
+            <span class="n">tx</span><span class="o">.</span><span class="n">el_thresh</span> <span class="o">=</span> <span class="n">horizon_elevation</span></div>
+
+
+<div class="viewcode-block" id="RadarSystem.set_SNR_limits"><a class="viewcode-back" href="../modules/radar_config.html#radar_config.RadarSystem.set_SNR_limits">[docs]</a>    <span class="k">def</span> <span class="nf">set_SNR_limits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">min_total_SNRdb</span><span class="p">,</span> <span class="n">min_pair_SNRdb</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Set the Signal to Noise Ratio (SNR) limits for the system.</span>
+<span class="sd">        </span>
+<span class="sd">        :param float min_total_SNRdb: The minimum SNR in dB that is required on at least one transmitter-receiver pair for a detection to be made.</span>
+<span class="sd">        :param float min_pair_SNRdb: The minimum SNR in dB that is required for a transmitter-receiver pair to have a detection.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_SNRdb</span> <span class="o">=</span> <span class="n">min_total_SNRdb</span>
+        <span class="k">for</span> <span class="n">tx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tx</span><span class="p">:</span>
+            <span class="n">tx</span><span class="o">.</span><span class="n">enr_thresh</span> <span class="o">=</span> <span class="mf">10.0</span><span class="o">**</span><span class="p">(</span><span class="n">min_pair_SNRdb</span><span class="o">/</span><span class="mf">10.0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RadarSystem.set_scan"><a class="viewcode-back" href="../modules/radar_config.html#radar_config.RadarSystem.set_scan">[docs]</a>    <span class="k">def</span> <span class="nf">set_scan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">SST</span><span class="p">,</span> <span class="n">secondary_list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Set the observation schema that the radar system will use.</span>
+<span class="sd">        </span>
+<span class="sd">        :param radar_scan SST: Sets the main SST observation schema.</span>
+<span class="sd">        :param list secondary_list: Sets a list of other observation schema&#39;s, i.e. instances of :class:`radar_scans.radar_scan`, that are interleaved with the main SST scan.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">tx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tx</span><span class="p">:</span>
+            <span class="n">tx</span><span class="o">.</span><span class="n">scan</span> <span class="o">=</span> <span class="n">SST</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">tx</span><span class="o">.</span><span class="n">scan</span><span class="o">.</span><span class="n">set_tx_location</span><span class="p">(</span><span class="n">tx</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">secondary_list</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">tx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tx</span><span class="p">:</span>
+                <span class="n">tx</span><span class="o">.</span><span class="n">extra_scans</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">secondary_list</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">scan</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">secondary_list</span><span class="p">):</span>
+                    <span class="n">tx</span><span class="o">.</span><span class="n">extra_scans</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">scan</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                    <span class="n">tx</span><span class="o">.</span><span class="n">extra_scans</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span><span class="o">.</span><span class="n">set_tx_location</span><span class="p">(</span><span class="n">tx</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RadarSystem.set_TX_bandwith"><a class="viewcode-back" href="../modules/radar_config.html#radar_config.RadarSystem.set_TX_bandwith">[docs]</a>    <span class="k">def</span> <span class="nf">set_TX_bandwith</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bw</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Set the transmission bandwidth in Hz of all transmitters in the radar system.</span>
+<span class="sd">        </span>
+<span class="sd">        :param float bw: Transmission bandwidth in Hz. This is basically what range of frequencies available for wave forming the transmission, e.g. how fast bit-key-shifting code can switch from 0 to :math:`\pi` and can then be calculated as the inverse of the baud length.</span>
+<span class="sd">        </span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">tx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tx</span><span class="p">:</span>
+            <span class="n">tx</span><span class="o">.</span><span class="n">tx_bandwidth</span> <span class="o">=</span> <span class="n">bw</span></div>
+    
+    
+<div class="viewcode-block" id="RadarSystem.set_beam"><a class="viewcode-back" href="../modules/radar_config.html#radar_config.RadarSystem.set_beam">[docs]</a>    <span class="k">def</span> <span class="nf">set_beam</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beam</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Sets the radiation pattern for transmitters, receivers or entire radar system.</span>
+<span class="sd">        </span>
+<span class="sd">        To manually set custom beams for each transmitter and receiver in the radar system, set the attributes directly using instances of :class:`antenna.BeamPattern`.</span>
+<span class="sd">        </span>
+<span class="sd">        :param BeamPattern beam: The radiation pattern to set for radar system.</span>
+<span class="sd">        :param str mode: String describing what part of radar system to set beam for: Options are ``&#39;TX&#39;`` for transmission, ``&#39;RX&#39;`` for reception, or both when left unset.</span>
+<span class="sd">        </span>
+<span class="sd">        **Example:**</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            import antenna_library as alib</span>
+<span class="sd">            from my_radar import radar</span>
+<span class="sd">           </span>
+<span class="sd">            #radar is a instance of RadarSystem</span>
+<span class="sd">            radar.set_beam(</span>
+<span class="sd">                alib.planar_beam(az0=0, el0=90, lat=68, lon=0, I_0=10**4.5, a0=40.0, az1=0.0, el1=90.0, f=233e6),</span>
+<span class="sd">                &#39;TX&#39;</span>
+<span class="sd">            )</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">mode</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;tx&#39;</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">tx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tx</span><span class="p">:</span>
+                <span class="n">tx</span><span class="o">.</span><span class="n">beam</span> <span class="o">=</span> <span class="n">beam</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">mode</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;rx&#39;</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">rx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rx</span><span class="p">:</span>
+                <span class="n">rx</span><span class="o">.</span><span class="n">beam</span> <span class="o">=</span> <span class="n">beam</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">mode</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;all&#39;</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">rx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rx</span><span class="p">:</span>
+                <span class="n">rx</span><span class="o">.</span><span class="n">beam</span> <span class="o">=</span> <span class="n">beam</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">tx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tx</span><span class="p">:</span>
+                <span class="n">tx</span><span class="o">.</span><span class="n">beam</span> <span class="o">=</span> <span class="n">beam</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Mode &quot;</span><span class="si">{}</span><span class="s1">&quot; not found, cannot set beam to radar system.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mode</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="RadarSystem.draw3d"><a class="viewcode-back" href="../modules/radar_config.html#radar_config.RadarSystem.draw3d">[docs]</a>    <span class="k">def</span> <span class="nf">draw3d</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">):</span>
+        <span class="n">plot_radar_earth</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="plot_radar_earth"><a class="viewcode-back" href="../modules/radar_config.html#radar_config.plot_radar_earth">[docs]</a><span class="k">def</span> <span class="nf">plot_radar_earth</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">radar</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">tx</span> <span class="ow">in</span> <span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">:</span>
+        <span class="n">ecef</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">geodetic2ecef</span><span class="p">(</span><span class="n">tx</span><span class="o">.</span><span class="n">lat</span><span class="p">,</span> <span class="n">tx</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span> <span class="n">tx</span><span class="o">.</span><span class="n">alt</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">ecef</span><span class="p">[</span><span class="mi">0</span><span class="p">]],[</span><span class="n">ecef</span><span class="p">[</span><span class="mi">1</span><span class="p">]],[</span><span class="n">ecef</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span><span class="s2">&quot;x&quot;</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="n">tx</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>    
+    <span class="k">for</span> <span class="n">rx</span> <span class="ow">in</span> <span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">:</span>
+        <span class="n">ecef</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">geodetic2ecef</span><span class="p">(</span><span class="n">rx</span><span class="o">.</span><span class="n">lat</span><span class="p">,</span> <span class="n">rx</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span> <span class="n">rx</span><span class="o">.</span><span class="n">alt</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">ecef</span><span class="p">[</span><span class="mi">0</span><span class="p">]],[</span><span class="n">ecef</span><span class="p">[</span><span class="mi">1</span><span class="p">]],[</span><span class="n">ecef</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span><span class="s2">&quot;x&quot;</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="n">rx</span><span class="o">.</span><span class="n">name</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="plot_radar_geo"><a class="viewcode-back" href="../modules/radar_config.html#radar_config.plot_radar_geo">[docs]</a><span class="k">def</span> <span class="nf">plot_radar_geo</span><span class="p">(</span><span class="n">radar</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Plot the geographical location of the radar system using the GeoPandas library.</span>
+
+<span class="sd">    To get:</span>
+
+<span class="sd">    pip install git+git://github.com/geopandas/geopandas.git</span>
+<span class="sd">    pip install descartes</span>
+
+<span class="sd">    include in basic SORTS++ install?</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">7</span><span class="p">))</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">geopandas</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">geopandas</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="s1">&#39;naturalearth_lowres&#39;</span><span class="p">))</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;lightgrey&#39;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+
+    <span class="n">max_min_geo</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;lat&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;lon&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]}</span>
+    <span class="n">sites</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">lats</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">lons</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">:</span>
+        <span class="n">lons</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">lon</span><span class="p">)</span>
+        <span class="n">lats</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">lat</span><span class="p">)</span>
+        <span class="n">sites</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">df_sites_tx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+        <span class="p">{</span><span class="s1">&#39;Site&#39;</span><span class="p">:</span> <span class="n">sites</span><span class="p">,</span>
+         <span class="s1">&#39;Latitude&#39;</span><span class="p">:</span> <span class="n">lats</span><span class="p">,</span>
+         <span class="s1">&#39;Longitude&#39;</span><span class="p">:</span> <span class="n">lons</span><span class="p">}</span>
+    <span class="p">)</span>
+    <span class="n">sites_rx</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">lats_rx</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">lons_rx</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">:</span>
+        <span class="n">lons_rx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">lon</span><span class="p">)</span>
+        <span class="n">lats_rx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">lat</span><span class="p">)</span>
+        <span class="n">sites_rx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">df_sites_rx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+        <span class="p">{</span><span class="s1">&#39;Site&#39;</span><span class="p">:</span> <span class="n">sites_rx</span><span class="p">,</span>
+         <span class="s1">&#39;Latitude&#39;</span><span class="p">:</span> <span class="n">lats_rx</span><span class="p">,</span>
+         <span class="s1">&#39;Longitude&#39;</span><span class="p">:</span> <span class="n">lons_rx</span><span class="p">}</span>
+    <span class="p">)</span>
+    
+    <span class="n">max_min_geo</span><span class="p">[</span><span class="s1">&#39;lat&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">lats</span> <span class="o">+</span> <span class="n">lats_rx</span><span class="p">]))</span>
+    <span class="n">max_min_geo</span><span class="p">[</span><span class="s1">&#39;lat&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">lats</span> <span class="o">+</span> <span class="n">lats_rx</span><span class="p">]))</span>
+    <span class="n">max_min_geo</span><span class="p">[</span><span class="s1">&#39;lon&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">lons</span> <span class="o">+</span> <span class="n">lons_rx</span><span class="p">]))</span>
+    <span class="n">max_min_geo</span><span class="p">[</span><span class="s1">&#39;lon&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">lons</span> <span class="o">+</span> <span class="n">lons_rx</span><span class="p">]))</span>
+    <span class="n">_lat_df</span> <span class="o">=</span> <span class="mf">5.0</span>
+    <span class="n">_lon_df</span> <span class="o">=</span> <span class="mf">10.0</span>
+
+    <span class="k">if</span> <span class="n">max_min_geo</span><span class="p">[</span><span class="s1">&#39;lat&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="o">-</span><span class="p">(</span><span class="mf">90.0</span> <span class="o">-</span> <span class="n">_lat_df</span><span class="p">):</span>
+        <span class="n">max_min_geo</span><span class="p">[</span><span class="s1">&#39;lat&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-=</span> <span class="n">_lat_df</span>
+    <span class="k">if</span> <span class="n">max_min_geo</span><span class="p">[</span><span class="s1">&#39;lat&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">90.0</span> <span class="o">-</span> <span class="n">_lat_df</span><span class="p">:</span>
+        <span class="n">max_min_geo</span><span class="p">[</span><span class="s1">&#39;lat&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="n">_lat_df</span>
+
+    <span class="k">if</span> <span class="n">max_min_geo</span><span class="p">[</span><span class="s1">&#39;lon&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="o">-</span><span class="p">(</span><span class="mf">180.0</span> <span class="o">-</span> <span class="n">_lon_df</span><span class="p">):</span>
+        <span class="n">max_min_geo</span><span class="p">[</span><span class="s1">&#39;lon&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-=</span> <span class="n">_lon_df</span>
+    <span class="k">if</span> <span class="n">max_min_geo</span><span class="p">[</span><span class="s1">&#39;lon&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">180.0</span> <span class="o">-</span> <span class="n">_lon_df</span><span class="p">:</span>
+        <span class="n">max_min_geo</span><span class="p">[</span><span class="s1">&#39;lon&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="n">_lon_df</span>
+
+    <span class="n">_font</span> <span class="o">=</span> <span class="mi">8</span>
+
+    <span class="n">df_sites_rx</span><span class="p">[</span><span class="s1">&#39;Coordinates&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">df_sites_rx</span><span class="o">.</span><span class="n">Longitude</span><span class="p">,</span> <span class="n">df_sites_rx</span><span class="o">.</span><span class="n">Latitude</span><span class="p">))</span>
+    <span class="n">df_sites_rx</span><span class="p">[</span><span class="s1">&#39;Coordinates&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_sites_rx</span><span class="p">[</span><span class="s1">&#39;Coordinates&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">Point</span><span class="p">)</span>
+    <span class="n">gdf_rx</span> <span class="o">=</span> <span class="n">geopandas</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">(</span><span class="n">df_sites_rx</span><span class="p">,</span> <span class="n">geometry</span><span class="o">=</span><span class="s1">&#39;Coordinates&#39;</span><span class="p">)</span>
+    <span class="n">gdf_rx</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;h&#39;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">gdf_rx</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">gdf_rx</span><span class="p">[</span><span class="s1">&#39;Coordinates&#39;</span><span class="p">][</span><span class="n">ind</span><span class="p">]</span><span class="o">.</span><span class="n">x</span><span class="o">+</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">gdf_rx</span><span class="p">[</span><span class="s1">&#39;Coordinates&#39;</span><span class="p">][</span><span class="n">ind</span><span class="p">]</span><span class="o">.</span><span class="n">y</span><span class="o">+</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">sites_rx</span><span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">_font</span><span class="p">)</span>
+
+
+    <span class="n">df_sites_tx</span><span class="p">[</span><span class="s1">&#39;Coordinates&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">df_sites_tx</span><span class="o">.</span><span class="n">Longitude</span><span class="p">,</span> <span class="n">df_sites_tx</span><span class="o">.</span><span class="n">Latitude</span><span class="p">))</span>
+    <span class="n">df_sites_tx</span><span class="p">[</span><span class="s1">&#39;Coordinates&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_sites_tx</span><span class="p">[</span><span class="s1">&#39;Coordinates&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">Point</span><span class="p">)</span>
+    <span class="n">gdf</span> <span class="o">=</span> <span class="n">geopandas</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">(</span><span class="n">df_sites_tx</span><span class="p">,</span> <span class="n">geometry</span><span class="o">=</span><span class="s1">&#39;Coordinates&#39;</span><span class="p">)</span>
+    <span class="n">gdf</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;X&#39;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">18</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">gdf</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">gdf</span><span class="p">[</span><span class="s1">&#39;Coordinates&#39;</span><span class="p">][</span><span class="n">ind</span><span class="p">]</span><span class="o">.</span><span class="n">x</span><span class="o">+</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">gdf</span><span class="p">[</span><span class="s1">&#39;Coordinates&#39;</span><span class="p">][</span><span class="n">ind</span><span class="p">]</span><span class="o">.</span><span class="n">y</span><span class="o">+</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">sites</span><span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">_font</span><span class="p">)</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Geographical location for: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">*</span><span class="n">max_min_geo</span><span class="p">[</span><span class="s1">&#39;lon&#39;</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">*</span><span class="n">max_min_geo</span><span class="p">[</span><span class="s1">&#39;lat&#39;</span><span class="p">])</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s1">&#39;equal&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span></div>
+
+
+<div class="viewcode-block" id="plot_radar"><a class="viewcode-back" href="../modules/radar_config.html#radar_config.plot_radar">[docs]</a><span class="k">def</span> <span class="nf">plot_radar</span><span class="p">(</span><span class="n">radar</span><span class="p">,</span> <span class="n">save_folder</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Plots aspects of the radar system.</span>
+
+<span class="sd">    **Current plots:**</span>
+
+<span class="sd">       * Geographical locations.</span>
+<span class="sd">       * Antenna patterns.</span>
+<span class="sd">       * Scan patterns.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    
+    <span class="k">for</span> <span class="n">tx</span> <span class="ow">in</span> <span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">:</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">rs</span><span class="o">.</span><span class="n">plot_radar_scan</span><span class="p">(</span><span class="n">tx</span><span class="o">.</span><span class="n">scan</span><span class="p">,</span> <span class="n">earth</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">save_folder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">save_folder</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">tx</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="s1">&#39;_&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;_scan.png&#39;</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">tx</span> <span class="ow">in</span> <span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">:</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">antenna</span><span class="o">.</span><span class="n">plot_gain_heatmap</span><span class="p">(</span><span class="n">tx</span><span class="o">.</span><span class="n">beam</span><span class="p">,</span> <span class="n">res</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">min_el</span> <span class="o">=</span> <span class="mf">75.0</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">tx</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">save_folder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">save_folder</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">tx</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="s1">&#39;_&#39;</span><span class="p">)</span> <span class="o">+</span><span class="s1">&#39;_&#39;</span><span class="o">+</span> <span class="n">tx</span><span class="o">.</span><span class="n">beam</span><span class="o">.</span><span class="n">beam_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="s1">&#39;_&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.png&#39;</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">rx</span> <span class="ow">in</span> <span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">:</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">antenna</span><span class="o">.</span><span class="n">plot_gain_heatmap</span><span class="p">(</span><span class="n">rx</span><span class="o">.</span><span class="n">beam</span><span class="p">,</span> <span class="n">res</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">min_el</span> <span class="o">=</span> <span class="mf">75.0</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">rx</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">save_folder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">save_folder</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">rx</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="s1">&#39;_&#39;</span><span class="p">)</span> <span class="o">+</span><span class="s1">&#39;_&#39;</span><span class="o">+</span> <span class="n">rx</span><span class="o">.</span><span class="n">beam</span><span class="o">.</span><span class="n">beam_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="s1">&#39;_&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.png&#39;</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+
+    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_radar_geo</span><span class="p">(</span><span class="n">radar</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">save_folder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">save_folder</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">radar</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="s1">&#39;_&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.png&#39;</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">save_folder</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/doc.html">Documentation</a></li>
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

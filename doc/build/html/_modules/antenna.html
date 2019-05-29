@@ -1,0 +1,592 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>antenna &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for antenna</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="sd">&#39;&#39;&#39;Defines an antenna&#39;s or entire radar system&#39;s radiation pattern, also defines physical antennas for RX and TX.</span>
+
+<span class="sd">(c) 2016-2019 Juha Vierinen, Daniel Kastinen</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">n</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">cm</span>
+<span class="kn">from</span> <span class="nn">mpl_toolkits.mplot3d</span> <span class="k">import</span> <span class="n">Axes3D</span>
+<span class="kn">import</span> <span class="nn">scipy.constants</span> <span class="k">as</span> <span class="nn">c</span>
+<span class="kn">import</span> <span class="nn">scipy.special</span> <span class="k">as</span> <span class="nn">s</span>
+
+<span class="c1"># SORTS imports</span>
+<span class="kn">import</span> <span class="nn">coord</span>
+
+
+<div class="viewcode-block" id="inst_gain2full_gain"><a class="viewcode-back" href="../modules/antenna.html#antenna.inst_gain2full_gain">[docs]</a><span class="k">def</span> <span class="nf">inst_gain2full_gain</span><span class="p">(</span><span class="n">gain</span><span class="p">,</span><span class="n">groups</span><span class="p">,</span><span class="n">N_IPP</span><span class="p">,</span><span class="n">IPP_scale</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span><span class="n">units</span> <span class="o">=</span> <span class="s1">&#39;dB&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Using pulse encoding schema, subgroup setup and coherrent integration setup; convert from instantanius gain to coherrently integrated gain.</span>
+<span class="sd">    </span>
+<span class="sd">    :param float gain: Instantanius gain, linear units or in dB.</span>
+<span class="sd">    :param int groups: Number of subgroups from witch signals are coherrently combined, assumes subgroups are identical.</span>
+<span class="sd">    :param int N_IPP: Number of pulses to coherrently integrate.</span>
+<span class="sd">    :param float IPP_scale: Scale the IPP effective length in case e.g. the IPP is the same but the actual TX length is lowered.</span>
+<span class="sd">    :param str units: If string equals &#39;dB&#39;, assume input and output units should be dB, else use linear scale.</span>
+<span class="sd">    </span>
+<span class="sd">    :return float: Gain after coherrent integration, linear units or in dB.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="n">units</span> <span class="o">==</span> <span class="s1">&#39;dB&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">gain</span> <span class="o">+</span> <span class="mf">10.0</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span> <span class="n">groups</span><span class="o">*</span><span class="n">N_IPP</span><span class="o">*</span><span class="n">IPP_scale</span> <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">gain</span><span class="o">*</span><span class="p">(</span><span class="n">groups</span><span class="o">*</span><span class="n">N_IPP</span><span class="o">*</span><span class="n">IPP_scale</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="full_gain2inst_gain"><a class="viewcode-back" href="../modules/antenna.html#antenna.full_gain2inst_gain">[docs]</a><span class="k">def</span> <span class="nf">full_gain2inst_gain</span><span class="p">(</span><span class="n">gain</span><span class="p">,</span><span class="n">groups</span><span class="p">,</span><span class="n">N_IPP</span><span class="p">,</span><span class="n">IPP_scale</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span><span class="n">units</span> <span class="o">=</span> <span class="s1">&#39;dB&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Using pulse encoding schema, subgroup setup and coherrent integration setup; convert from coherrently integrated gain to instantanius gain.</span>
+<span class="sd">    </span>
+<span class="sd">    :param float gain: Coherrently integrated gain, linear units or in dB.</span>
+<span class="sd">    :param int groups: Number of subgroups from witch signals are coherrently combined, assumes subgroups are identical.</span>
+<span class="sd">    :param int N_IPP: Number of pulses to coherrently integrate.</span>
+<span class="sd">    :param float IPP_scale: Scale the IPP effective length in case e.g. the IPP is the same but the actual TX length is lowered.</span>
+<span class="sd">    :param str units: If string equals &#39;dB&#39;, assume input and output units should be dB, else use linear scale.</span>
+<span class="sd">    </span>
+<span class="sd">    :return float: Instantanius gain, linear units or in dB.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="n">units</span> <span class="o">==</span> <span class="s1">&#39;dB&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">gain</span> <span class="o">-</span> <span class="mf">10.0</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span> <span class="n">groups</span><span class="o">*</span><span class="n">N_IPP</span><span class="o">*</span><span class="n">IPP_scale</span> <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">gain</span><span class="o">/</span><span class="p">(</span><span class="n">groups</span><span class="o">*</span><span class="n">N_IPP</span><span class="o">*</span><span class="n">IPP_scale</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="plot_gains"><a class="viewcode-back" href="../modules/antenna.html#antenna.plot_gains">[docs]</a><span class="k">def</span> <span class="nf">plot_gains</span><span class="p">(</span><span class="n">beams</span><span class="p">,</span> <span class="n">res</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">min_el</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Plot the gain of a list of beam patterns as a function of elevation at :math:`0^\circ` degrees azimuth.</span>
+<span class="sd">    </span>
+<span class="sd">    :param list beams: List of instances of :class:`antenna.BeamPattern`.</span>
+<span class="sd">    :param int res: Number of points to devide the set elevation range into.</span>
+<span class="sd">    :param float min_el: Minimum elevation in degrees, elevation range is from this number to :math:`90^\circ`.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c1">#turn on TeX interperter</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s1">&#39;text&#39;</span><span class="p">,</span> <span class="n">usetex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">7</span><span class="p">))</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+    
+    
+    <span class="n">theta</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">min_el</span><span class="p">,</span><span class="mf">90.0</span><span class="p">,</span><span class="n">num</span><span class="o">=</span><span class="n">res</span><span class="p">)</span>
+    
+    <span class="n">S</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">res</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">beams</span><span class="p">)))</span>
+    <span class="k">for</span> <span class="n">b</span><span class="p">,</span><span class="n">beam</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">beams</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">th</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">theta</span><span class="p">):</span>
+            <span class="n">k</span><span class="o">=</span><span class="n">coord</span><span class="o">.</span><span class="n">azel_to_cart</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">th</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+            <span class="n">S</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">b</span><span class="p">]</span><span class="o">=</span><span class="n">beam</span><span class="o">.</span><span class="n">gain</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">beams</span><span class="p">)):</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="mi">90</span><span class="o">-</span><span class="n">theta</span><span class="p">,</span><span class="n">n</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">S</span><span class="p">[:,</span><span class="n">b</span><span class="p">])</span><span class="o">*</span><span class="mf">10.0</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Gain &quot;</span> <span class="o">+</span> <span class="n">beams</span><span class="p">[</span><span class="n">b</span><span class="p">]</span><span class="o">.</span><span class="n">beam_name</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    <span class="n">bottom</span><span class="p">,</span> <span class="n">top</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="n">top</span><span class="p">))</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Zenith angle [deg]&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">17</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">17</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Gain $G$ [dB]&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Gain patterns&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">28</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span></div>
+
+<div class="viewcode-block" id="plot_gain_heatmap"><a class="viewcode-back" href="../modules/antenna.html#antenna.plot_gain_heatmap">[docs]</a><span class="k">def</span> <span class="nf">plot_gain_heatmap</span><span class="p">(</span><span class="n">beam</span><span class="p">,</span> <span class="n">res</span><span class="o">=</span><span class="mi">201</span><span class="p">,</span> <span class="n">min_el</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">title</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">title_size</span> <span class="o">=</span> <span class="mi">28</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Creates a heatmap of the beam-patters as a function of azimuth and elevation in terms of wave vector ground projection coordinates.</span>
+<span class="sd">    </span>
+<span class="sd">    :param BeamPattern beam: Beam pattern to plot.</span>
+<span class="sd">    :param int res: Number of points to devide the wave vector x and y component range into, total number of caluclation points is the square of this number.</span>
+<span class="sd">    :param float min_el: Minimum elevation in degrees, elevation range is from this number to :math:`90^\circ`. This number defines the half the length of the square that the gain is calculated over, i.e. :math:`\cos(el_{min})`.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c1">#turn on TeX interperter</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s1">&#39;text&#39;</span><span class="p">,</span> <span class="n">usetex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">7</span><span class="p">))</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+    <span class="n">kx</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span>
+        <span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">n</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">min_el</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.0</span><span class="p">),</span>
+        <span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">n</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">min_el</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.0</span><span class="p">),</span>
+        <span class="n">num</span><span class="o">=</span><span class="n">res</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">ky</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span>
+        <span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">n</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">min_el</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.0</span><span class="p">),</span>
+        <span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">n</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">min_el</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.0</span><span class="p">),</span>
+        <span class="n">num</span><span class="o">=</span><span class="n">res</span><span class="p">,</span>
+    <span class="p">)</span>
+    
+    <span class="n">S</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">res</span><span class="p">,</span><span class="n">res</span><span class="p">))</span>
+    <span class="n">K</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">res</span><span class="p">,</span><span class="n">res</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">kx</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span><span class="n">y</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ky</span><span class="p">):</span>
+            <span class="n">z2_c</span> <span class="o">=</span> <span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">x</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">y</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+            <span class="n">z2</span> <span class="o">=</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="o">**</span><span class="mi">2</span>
+            <span class="k">if</span> <span class="n">z2_c</span> <span class="o">&lt;</span> <span class="n">n</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">min_el</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="ow">and</span> <span class="n">z2</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">:</span>
+                <span class="n">k</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">n</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">z2</span><span class="p">)])</span>
+                <span class="n">S</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">=</span><span class="n">beam</span><span class="o">.</span><span class="n">gain</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">S</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+            <span class="n">K</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">=</span><span class="n">x</span>
+            <span class="n">K</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="n">y</span>
+    <span class="n">SdB</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">S</span><span class="p">)</span><span class="o">*</span><span class="mf">10.0</span>
+    <span class="n">SdB</span><span class="p">[</span><span class="n">SdB</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">conf</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">contourf</span><span class="p">(</span><span class="n">K</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">K</span><span class="p">[:,:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">SdB</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cm</span><span class="o">.</span><span class="n">plasma</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">SdB</span><span class="p">))</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;$k_x$ [1]&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;$k_y$ [1]&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
+    
+    <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">17</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">17</span><span class="p">)</span>
+    <span class="n">cbar</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">conf</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+    <span class="n">cbar</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Gain $G$ [dB]&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span> <span class="n">beam</span><span class="o">.</span><span class="n">beam_name</span> <span class="o">+</span> <span class="s1">&#39; gain pattern&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">title_size</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Gain pattern &#39;</span> <span class="o">+</span> <span class="n">beam</span><span class="o">.</span><span class="n">beam_name</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">title_size</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span></div>
+
+<div class="viewcode-block" id="plot_gain"><a class="viewcode-back" href="../modules/antenna.html#antenna.plot_gain">[docs]</a><span class="k">def</span> <span class="nf">plot_gain</span><span class="p">(</span><span class="n">beam</span><span class="p">,</span><span class="n">res</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span><span class="n">min_el</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Plot the gain of a beam patterns as a function of elevation at :math:`0^\circ` degrees azimuth.</span>
+<span class="sd">    </span>
+<span class="sd">    :param BeamPattern beam: Beam pattern to plot.</span>
+<span class="sd">    :param int res: Number of points to devide the set elevation range into.</span>
+<span class="sd">    :param float min_el: Minimum elevation in degrees, elevation range is from this number to :math:`90^\circ`.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c1">#turn on TeX interperter</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s1">&#39;text&#39;</span><span class="p">,</span> <span class="n">usetex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">7</span><span class="p">))</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+    
+    
+    <span class="n">theta</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">min_el</span><span class="p">,</span><span class="mf">90.0</span><span class="p">,</span><span class="n">num</span><span class="o">=</span><span class="n">res</span><span class="p">)</span>
+    
+    <span class="n">S</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">res</span><span class="p">,))</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">th</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">theta</span><span class="p">):</span>
+        <span class="n">k</span><span class="o">=</span><span class="n">coord</span><span class="o">.</span><span class="n">azel_ecef</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">lat</span><span class="p">,</span> <span class="n">beam</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">th</span><span class="p">)</span>
+        <span class="n">S</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">=</span><span class="n">beam</span><span class="o">.</span><span class="n">gain</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span><span class="n">n</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">S</span><span class="p">)</span><span class="o">*</span><span class="mf">10.0</span><span class="p">)</span>
+    <span class="n">bottom</span><span class="p">,</span> <span class="n">top</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="n">top</span><span class="p">))</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Elevation [deg]&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Gain $G$ [dB]&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">17</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">17</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Gain pattern &#39;</span> <span class="o">+</span> <span class="n">beam</span><span class="o">.</span><span class="n">beam_name</span><span class="p">,</span>\
+        <span class="n">fontsize</span><span class="o">=</span><span class="mi">28</span><span class="p">)</span>
+    
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="plot_gain3d"><a class="viewcode-back" href="../modules/antenna.html#antenna.plot_gain3d">[docs]</a><span class="k">def</span> <span class="nf">plot_gain3d</span><span class="p">(</span><span class="n">beam</span><span class="p">,</span> <span class="n">res</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">min_el</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Creates a 3d plot of the beam-patters as a function of azimuth and elevation in terms of wave vector ground projection coordinates.</span>
+<span class="sd">    </span>
+<span class="sd">    :param BeamPattern beam: Beam pattern to plot.</span>
+<span class="sd">    :param int res: Number of points to devide the wave vector x and y component range into, total number of caluclation points is the square of this number.</span>
+<span class="sd">    :param float min_el: Minimum elevation in degrees, elevation range is from this number to :math:`90^\circ`. This number defines the half the length of the square that the gain is calculated over, i.e. :math:`\cos(el_{min})`.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c1">#turn on TeX interperter</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s1">&#39;text&#39;</span><span class="p">,</span> <span class="n">usetex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">7</span><span class="p">))</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3d&#39;</span><span class="p">)</span>
+    
+    
+    <span class="n">kx</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">n</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">min_el</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.0</span><span class="p">),</span><span class="n">n</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">min_el</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.0</span><span class="p">),</span><span class="n">num</span><span class="o">=</span><span class="n">res</span><span class="p">)</span>
+    <span class="n">ky</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">n</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">min_el</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.0</span><span class="p">),</span><span class="n">n</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">min_el</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.0</span><span class="p">),</span><span class="n">num</span><span class="o">=</span><span class="n">res</span><span class="p">)</span>
+    
+    <span class="n">S</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">res</span><span class="p">,</span><span class="n">res</span><span class="p">))</span>
+    <span class="n">K</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">res</span><span class="p">,</span><span class="n">res</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">kx</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span><span class="n">y</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ky</span><span class="p">):</span>
+            <span class="n">z2</span> <span class="o">=</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="o">**</span><span class="mi">2</span>
+            <span class="k">if</span> <span class="n">z2</span> <span class="o">&lt;</span> <span class="n">n</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">min_el</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">:</span>
+                <span class="n">k</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">n</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">z2</span><span class="p">)])</span>
+                <span class="n">S</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">=</span><span class="n">beam</span><span class="o">.</span><span class="n">gain</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">S</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+            <span class="n">K</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">=</span><span class="n">x</span>
+            <span class="n">K</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="n">y</span>
+    <span class="n">SdB</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">S</span><span class="p">)</span><span class="o">*</span><span class="mf">10.0</span>
+    <span class="n">SdB</span><span class="p">[</span><span class="n">SdB</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">surf</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot_surface</span><span class="p">(</span><span class="n">K</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">],</span><span class="n">K</span><span class="p">[:,:,</span><span class="mi">1</span><span class="p">],</span><span class="n">SdB</span><span class="p">,</span><span class="n">cmap</span><span class="o">=</span><span class="n">cm</span><span class="o">.</span><span class="n">plasma</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">antialiased</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">SdB</span><span class="p">))</span>
+    <span class="c1">#surf = ax.plot_surface(K[:,:,0],K[:,:,1],S.T,cmap=cm.plasma,linewidth=0)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;$k_x$ [1]&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;$k_y$ [1]&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span><span class="s1">&#39;Gain $G$ [dB]&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">17</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">17</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Gain pattern &#39;</span> <span class="o">+</span> <span class="n">beam</span><span class="o">.</span><span class="n">beam_name</span><span class="p">,</span>\
+        <span class="n">fontsize</span><span class="o">=</span><span class="mi">28</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="AntennaRX"><a class="viewcode-back" href="../modules/antenna.html#antenna.AntennaRX">[docs]</a><span class="k">class</span> <span class="nc">AntennaRX</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;A receiving radar system (antenna or array of antennas).</span>
+
+<span class="sd">        :param str name: Name of transmitting radar.</span>
+<span class="sd">        :param float lat: Geographical latitude of radar system in decimal degrees  (North+).</span>
+<span class="sd">        :param float lon: Geographical longitude of radar system in decimal degrees (East+).</span>
+<span class="sd">        :param float alt: Geographical altitude above geoid surface of radar system in meter.</span>
+<span class="sd">        :param float el_thresh: Elevation threshold for radar station, i.e. it cannot detect or point below this elevation.</span>
+<span class="sd">        :param float freq: Operating frequency of radar station in Hz, i.e. carrier wave frequncy.</span>
+<span class="sd">        :param float rx_noise: Receiver noise in Kelvin, i.e. system temperature.</span>
+<span class="sd">        :param BeamPattern ant: Radiation pattern for radar station.</span>
+<span class="sd">        :param bool phased: Is this a phased array that can perform post-analysis beam-forming?</span>
+
+<span class="sd">        :ivar str name: Name of transmitting radar.</span>
+<span class="sd">        :ivar float lat: Geographical latitude of radar system in decimal degrees  (North+).</span>
+<span class="sd">        :ivar float lon: Geographical longitude of radar system in decimal degrees (East+).</span>
+<span class="sd">        :ivar float alt: Geographical altitude above geoid surface of radar system in meter.</span>
+<span class="sd">        :ivar float el_thresh: Elevation threshold for radar station, i.e. it cannot detect or point below this elevation.</span>
+<span class="sd">        :ivar float freq: Operating frequency of radar station in Hz, i.e. carrier wave frequncy.</span>
+<span class="sd">        :ivar float wavelength: Operating wavelength of radar station in meter.</span>
+<span class="sd">        :ivar float rx_noise: Reviver noise in Kelvin, i.e. system temperature.</span>
+<span class="sd">        :ivar BeamPattern beam: Radiation pattern for radar station.</span>
+<span class="sd">        :ivar bool phased: Is this a phased array that can perform post-analysis beam-forming?</span>
+<span class="sd">        :ivar numpy.array ecef: The ECEF coordinates of the radar system calculated using :func:`coord.geodetic2ecef`.</span>
+<span class="sd">        </span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">alt</span><span class="p">,</span> <span class="n">el_thresh</span><span class="p">,</span> <span class="n">freq</span><span class="p">,</span> <span class="n">rx_noise</span><span class="p">,</span> <span class="n">beam</span><span class="p">,</span> <span class="n">scan</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">phased</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lat</span> <span class="o">=</span> <span class="n">lat</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lon</span> <span class="o">=</span> <span class="n">lon</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alt</span> <span class="o">=</span> <span class="n">alt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">el_thresh</span> <span class="o">=</span> <span class="n">el_thresh</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rx_noise</span> <span class="o">=</span> <span class="n">rx_noise</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beam</span> <span class="o">=</span> <span class="n">beam</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">freq</span> <span class="o">=</span> <span class="n">freq</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">phased</span> <span class="o">=</span> <span class="n">phased</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wavelength</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">c</span><span class="o">/</span><span class="n">freq</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ecef</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">geodetic2ecef</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">alt</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">scan</span> <span class="o">=</span> <span class="n">scan</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extra_scans</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scan_controler</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="AntennaRX.point_ecef"><a class="viewcode-back" href="../modules/antenna.html#antenna.AntennaRX.point_ecef">[docs]</a>    <span class="k">def</span> <span class="nf">point_ecef</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">point</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Point antenna beam in location of ECEF coordinate. Returns local pointing direction.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">k_obj</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">ecef2local</span><span class="p">(</span>
+            <span class="n">lat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lat</span><span class="p">,</span>
+            <span class="n">lon</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span>
+            <span class="n">alt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alt</span><span class="p">,</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">z</span> <span class="o">=</span> <span class="n">point</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beam</span><span class="o">.</span><span class="n">point_k0</span><span class="p">(</span><span class="n">k_obj</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">k_obj</span><span class="o">/</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">k_obj</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AntennaRX.set_scan"><a class="viewcode-back" href="../modules/antenna.html#antenna.AntennaRX.set_scan">[docs]</a>    <span class="k">def</span> <span class="nf">set_scan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scan</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">extra_scans</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">scan_controler</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Set the scan this TX-antenna will use.</span>
+<span class="sd">        </span>
+<span class="sd">        :param RadarScan scan: The main observation mode of the transmitter. If not given or :code:`None` the scan set at initialization will be used.</span>
+<span class="sd">        :param list extra_scans: List of additional observation schemes the transmitter will switch between, i.e. instances of :class:`radar_scans.radar_scan`.</span>
+<span class="sd">        :param function scan_controler: The scan_controler function takes the :class:`antenna.AntennaTX` instance and the time as arguments. The function should, based on the time, return either the :attr:`antenna.AntennaTX.scan` attribute, or one of the scans in the list :attr:`antenna.AntennaTX.extra_scans` attribute. If the function pointer is set to ``None``, it is assumed only one scan exists and by default :attr:`antenna.AntennaTX.scan` is returned.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extra_scans</span> <span class="o">=</span> <span class="n">extra_scans</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scan_controler</span> <span class="o">=</span> <span class="n">scan_controler</span>
+        <span class="k">if</span> <span class="n">scan</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scan</span> <span class="o">=</span> <span class="n">scan</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scan</span><span class="o">.</span><span class="n">set_tx_location</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scan</span><span class="o">.</span><span class="n">check_tx_compatibility</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">extra_scans</span><span class="p">:</span>
+            <span class="n">sc</span><span class="o">.</span><span class="n">set_tx_location</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="n">sc</span><span class="o">.</span><span class="n">check_tx_compatibility</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AntennaRX.get_scan"><a class="viewcode-back" href="../modules/antenna.html#antenna.AntennaRX.get_scan">[docs]</a>    <span class="k">def</span> <span class="nf">get_scan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Return the current scan at a particular time.</span>
+<span class="sd">           </span>
+<span class="sd">           Depending on the scan_controler function return the current observation schema that the system is running. If no scan_controler function is set, return the default scan.</span>
+<span class="sd">           </span>
+<span class="sd">           The :attr:`antenna.AntennaTX.scan_controler` function takes the :class:`antenna.AntennaTX` instance and a time as arguments.</span>
+<span class="sd">           </span>
+<span class="sd">           :param float t: Current time.</span>
+<span class="sd">           </span>
+<span class="sd">           :return: The currently running radar scan at time :code:`t`.</span>
+<span class="sd">           :rtype: RadarScan</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scan_controler</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scan</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scan_controler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="AntennaRX.get_pointing"><a class="viewcode-back" href="../modules/antenna.html#antenna.AntennaRX.get_pointing">[docs]</a>    <span class="k">def</span> <span class="nf">get_pointing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Return the instantanius pointing of the TX antenna based on the currently running scan. Uses :func:`antenna.AntennaTX.get_scan`.</span>
+<span class="sd">        </span>
+<span class="sd">           :param float t: Current time.</span>
+<span class="sd">           :return: Current TX-location in WGS84 ECEF and current pointing direction in ECEF. Both are 1-D arrays of 3 elements (lists, tuples or numpy.ndarray).</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_scan</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">.</span><span class="n">antenna_pointing</span><span class="p">(</span><span class="n">t</span><span class="p">)</span></div>
+        
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">members</span> <span class="o">=</span> <span class="p">[</span><span class="n">attr</span> <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">))</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">attr</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)]</span>
+        <span class="n">string</span> <span class="o">=</span> <span class="s2">&quot;Antenna </span><span class="si">%s</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">members</span><span class="p">:</span>
+            <span class="n">string</span> <span class="o">+=</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> = </span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m</span><span class="p">))))</span>
+        <span class="k">return</span><span class="p">(</span><span class="n">string</span><span class="p">)</span></div>
+    
+
+<div class="viewcode-block" id="AntennaTX"><a class="viewcode-back" href="../modules/antenna.html#antenna.AntennaTX">[docs]</a><span class="k">class</span> <span class="nc">AntennaTX</span><span class="p">(</span><span class="n">AntennaRX</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;A transmitting radar system (antenna or array of antennas)</span>
+<span class="sd">        </span>
+<span class="sd">        :param str name: Name of transmitting radar.</span>
+<span class="sd">        :param float lat: Geographical latitude of radar system in decimal degrees (North+).</span>
+<span class="sd">        :param float lon: Geographical longitude of radar system in decimal degrees (East+).</span>
+<span class="sd">        :param float alt: Geographical altitude above geoid surface of radar system in meter.</span>
+<span class="sd">        :param float el_tresh: Elevation threshold for radar station, i.e. it cannot detect or point below this elevation.</span>
+<span class="sd">        :param float freq: Operating frequency of radar station in Hz, i.e. carrier wave frequency.</span>
+<span class="sd">        :param float rx_noise: Receiver noise in Kelvin, i.e. system temperature.</span>
+<span class="sd">        :param BeamPattern beam: Radiation pattern for radar station.</span>
+<span class="sd">        :param float tx_bandwidth: Transmissions bandwidth.</span>
+<span class="sd">        :param float duty_cycle: Maximum duty cycle, i.e. fraction of time transmission can occur at maximum power.</span>
+<span class="sd">        :param float tx_power: Transmissions power in watts.</span>
+<span class="sd">        :param float pulse_length: Length of transmission pulse.</span>
+<span class="sd">        :param float ipp: Time between consecutive pulses.</span>
+<span class="sd">        :param int n_ipp: Number of pulses to coherently integrate.</span>
+
+<span class="sd">        :ivar str name: Name of transmitting radar.</span>
+<span class="sd">        :ivar float lat: Geographical latitude of radar system in decimal degrees  (North+).</span>
+<span class="sd">        :ivar float lon: Geographical longitude of radar system in decimal degrees (East+).</span>
+<span class="sd">        :ivar float alt: Geographical altitude above geoid surface of radar system in meter.</span>
+<span class="sd">        :ivar float el_thresh: Elevation threshold for radar station, i.e. it cannot detect or point below this elevation.</span>
+<span class="sd">        :ivar float freq: Operating frequency of radar station in Hz, i.e. carrier wave frequency.</span>
+<span class="sd">        :ivar float wavelength: Operating wavelength of radar station in meter.</span>
+<span class="sd">        :ivar float rx_noise: Reviver noise in Kelvin, i.e. system temperature.</span>
+<span class="sd">        :ivar BeamPattern beam: Radiation pattern for radar station.</span>
+<span class="sd">        :ivar numpy.array ecef: The ECEF coordinates of the radar system calculated using :func:`coord.geodetic2ecef`.</span>
+<span class="sd">        :ivar float tx_bandwidth: Transmissions bandwidth.</span>
+<span class="sd">        :ivar float duty_cycle: Maximum duty cycle, i.e. fraction of time transmission can occur at maximum power.</span>
+<span class="sd">        :ivar float tx_power: Transmissions power in watts.</span>
+<span class="sd">        :ivar float enr_thresh: Minimum detectable target SNR (after coherent integration)</span>
+<span class="sd">        :ivar float pulse_length: Length of transmission pulse.</span>
+<span class="sd">        :ivar float ipp: Time between consecutive pulses.</span>
+<span class="sd">        :ivar int n_ipp: Number of pulses to coherently integrate.</span>
+<span class="sd">        :ivar float coh_int_bandwidth: Effective bandwidth of receiver noise after coherent integration.</span>
+<span class="sd">        :ivar list extra_scans: List of additional observation schemes the transmitter will switch between, i.e. instances of :class:`radar_scans.radar_scan`.</span>
+<span class="sd">        :ivar radar_scan scan: The main observation mode of the transmitter.</span>
+<span class="sd">        :ivar function scan_controler: The scan_controler function takes the :class:`antenna.AntennaTX` instance and the time as arguments. The function should, based on the time, return either the :attr:`antenna.AntennaTX.scan` attribute, or one of the scans in the list :attr:`antenna.AntennaTX.extra_scans` attribute. If the function pointer is set to ``None``, it is assumed only one scan exists and by default :attr:`antenna.AntennaTX.scan` is returned.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">alt</span><span class="p">,</span> <span class="n">el_thresh</span><span class="p">,</span> <span class="n">freq</span><span class="p">,</span> <span class="n">rx_noise</span><span class="p">,</span> <span class="n">beam</span><span class="p">,</span> <span class="n">scan</span><span class="p">,</span> <span class="n">tx_power</span><span class="p">,</span> <span class="n">tx_bandwidth</span><span class="p">,</span> <span class="n">duty_cycle</span><span class="p">,</span> <span class="n">pulse_length</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">ipp</span><span class="o">=</span><span class="mf">10e-3</span><span class="p">,</span> <span class="n">n_ipp</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">AntennaTX</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">alt</span><span class="p">,</span> <span class="n">el_thresh</span><span class="p">,</span> <span class="n">freq</span><span class="p">,</span> <span class="n">rx_noise</span><span class="p">,</span> <span class="n">beam</span><span class="p">,</span> <span class="n">scan</span> <span class="o">=</span> <span class="n">scan</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tx_bandwidth</span> <span class="o">=</span> <span class="n">tx_bandwidth</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">duty_cycle</span> <span class="o">=</span> <span class="n">duty_cycle</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tx_power</span> <span class="o">=</span> <span class="n">tx_power</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enr_thresh</span> <span class="o">=</span> <span class="mf">10.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse_length</span> <span class="o">=</span> <span class="n">pulse_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ipp</span> <span class="o">=</span> <span class="n">ipp</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_ipp</span> <span class="o">=</span> <span class="n">n_ipp</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coh_int_bandwidth</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="n">pulse_length</span><span class="o">*</span><span class="n">n_ipp</span><span class="p">)</span></div>
+
+
+
+
+<div class="viewcode-block" id="BeamPattern"><a class="viewcode-back" href="../modules/antenna.html#antenna.BeamPattern">[docs]</a><span class="k">class</span> <span class="nc">BeamPattern</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Defines the radiation pattern of a radar station.</span>
+<span class="sd">    </span>
+<span class="sd">   </span>
+<span class="sd">    :param float I_0: Peak intensity of radiation pattern in linear scale, i.e. the peak gain.</span>
+<span class="sd">    :param float f: Frequency of radiation pattern.</span>
+<span class="sd">    :param float az0: Azimuth of pointing direction in dgreees.</span>
+<span class="sd">    :param float el0: Elevation of pointing direction in degrees.</span>
+<span class="sd">    :attr numpy.array on_axis: Cartesian vector in ECEF describing pointing direction.</span>
+<span class="sd">    :param function gain_func: Function describing gain as a function of incoming wave vector direction.</span>
+<span class="sd">    :param str beam_name: Name of the radiation pattern model.</span>
+<span class="sd">    </span>
+
+<span class="sd">    :ivar float I_0: Peak intensity of radiation pattern in linear scale, i.e. the peak gain.</span>
+<span class="sd">    :ivar float f: Frequency of radiation pattern.</span>
+<span class="sd">    :ivar float az0: Azimuth of pointing direction in dgreees.</span>
+<span class="sd">    :ivar float el0: Elevation of pointing direction in degrees.</span>
+<span class="sd">    :ivar numpy.array on_axis: Cartesian vector in local coordinates describing pointing direction.</span>
+<span class="sd">    :ivar function gain_func: Function describing gain as a function of incoming wave vector direction.</span>
+<span class="sd">    :ivar str beam_name: Name of the radiation pattern model.</span>
+<span class="sd">    </span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gain_func</span><span class="p">,</span> <span class="n">az0</span><span class="p">,</span> <span class="n">el0</span><span class="p">,</span> <span class="n">I_0</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">beam_name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">I_0</span> <span class="o">=</span> <span class="n">I_0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">f</span> <span class="o">=</span> <span class="n">f</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">az0</span> <span class="o">=</span> <span class="n">az0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">el0</span> <span class="o">=</span> <span class="n">el0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">on_axis</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">azel_to_cart</span><span class="p">(</span><span class="n">az0</span><span class="p">,</span> <span class="n">el0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gain_func</span> <span class="o">=</span> <span class="n">gain_func</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beam_name</span> <span class="o">=</span> <span class="n">beam_name</span>
+
+
+<div class="viewcode-block" id="BeamPattern.copy"><a class="viewcode-back" href="../modules/antenna.html#antenna.BeamPattern.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Return a copy of the current instance.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">beam</span> <span class="o">=</span> <span class="n">BeamPattern</span><span class="p">(</span>
+            <span class="n">gain_func</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">gain_func</span><span class="p">,</span>
+            <span class="n">az0</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">az0</span><span class="p">,</span>
+            <span class="n">el0</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">el0</span><span class="p">,</span>
+            <span class="n">I_0</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">I_0</span><span class="p">,</span>
+            <span class="n">f</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">,</span>
+            <span class="n">beam_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_name</span><span class="p">)</span>
+
+        <span class="c1">#add any additional attributes created by the model.</span>
+        <span class="n">attrs_self</span> <span class="o">=</span> <span class="nb">dir</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">attrs_copy</span> <span class="o">=</span> <span class="nb">dir</span><span class="p">(</span><span class="n">beam</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">attrs_self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">attr</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">attrs_copy</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">beam</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">)))</span>
+
+        <span class="k">return</span> <span class="n">beam</span></div>
+
+
+<div class="viewcode-block" id="BeamPattern.point"><a class="viewcode-back" href="../modules/antenna.html#antenna.BeamPattern.point">[docs]</a>    <span class="k">def</span> <span class="nf">point</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">az0</span><span class="p">,</span> <span class="n">el0</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Point beam towards azimuth and elevation coordinate.</span>
+<span class="sd">        </span>
+<span class="sd">            :param float az0: Azimuth of pointing direction in dgreees east of north.</span>
+<span class="sd">            :param float el0: Elevation of pointing direction in degrees from horizon.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">az0</span> <span class="o">=</span> <span class="n">az0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">el0</span> <span class="o">=</span> <span class="n">el0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">on_axis</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">azel_to_cart</span><span class="p">(</span><span class="n">az0</span><span class="p">,</span> <span class="n">el0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BeamPattern.point_k0"><a class="viewcode-back" href="../modules/antenna.html#antenna.BeamPattern.point_k0">[docs]</a>    <span class="k">def</span> <span class="nf">point_k0</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k0</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Point beam in local direction.</span>
+<span class="sd">        </span>
+<span class="sd">            :param numpy.ndarray k0: Pointing direction in local coordinates.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">on_axis</span> <span class="o">=</span> <span class="n">k0</span><span class="o">/</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">k0</span><span class="p">)</span>
+        <span class="n">az0</span><span class="p">,</span> <span class="n">el0</span><span class="p">,</span> <span class="n">r0</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">cart_to_azel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">on_axis</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">az0</span> <span class="o">=</span> <span class="n">az0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">el0</span> <span class="o">=</span> <span class="n">el0</span></div>
+        
+
+<div class="viewcode-block" id="BeamPattern.angle"><a class="viewcode-back" href="../modules/antenna.html#antenna.BeamPattern.angle">[docs]</a>    <span class="k">def</span> <span class="nf">angle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">az</span><span class="p">,</span> <span class="n">el</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Get angle between azimuth and elevation and pointing direction.</span>
+<span class="sd">        </span>
+<span class="sd">            :param float az: Azimuth in dgreees east of north to measure from.</span>
+<span class="sd">            :param float el: Elevation in degrees from horizon to measure from.</span>
+<span class="sd">            </span>
+<span class="sd">            :return: Angle in degrees.</span>
+<span class="sd">            :rtype: float</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">direction</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">azel_to_cart</span><span class="p">(</span><span class="n">az</span><span class="p">,</span> <span class="n">el</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">coord</span><span class="o">.</span><span class="n">angle_deg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">on_axis</span><span class="p">,</span> <span class="n">direction</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BeamPattern.angle_k"><a class="viewcode-back" href="../modules/antenna.html#antenna.BeamPattern.angle_k">[docs]</a>    <span class="k">def</span> <span class="nf">angle_k</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Get angle between azimuth and elevation and pointing direction.</span>
+<span class="sd">        </span>
+<span class="sd">            :param numpy.array k: Direction to evaluate angle to.</span>
+
+<span class="sd">            :return: Angle in degrees.</span>
+<span class="sd">            :rtype: float</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">coord</span><span class="o">.</span><span class="n">angle_deg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">on_axis</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BeamPattern.gain"><a class="viewcode-back" href="../modules/antenna.html#antenna.BeamPattern.gain">[docs]</a>    <span class="k">def</span> <span class="nf">gain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">k</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Return the gain using the gain-function. The gain function may change gain result for a specific direction based on the instance state, i.e. pointing direction.</span>
+<span class="sd">        </span>
+<span class="sd">        :param numpy.array k: Direction in local coordinates to evaluate gain in.</span>
+<span class="sd">        </span>
+<span class="sd">        :return float: Gain evaluated using current configuration.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">gain_func</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/doc.html">Documentation</a></li>
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

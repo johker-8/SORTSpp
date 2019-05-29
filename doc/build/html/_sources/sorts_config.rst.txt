@@ -1,0 +1,7 @@
+sorts_config
+===========================
+
+.. automodule:: sorts_config
+   :members:
+   :undoc-members:
+   :show-inheritance:

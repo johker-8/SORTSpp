@@ -1,0 +1,216 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>rewardf_library &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for rewardf_library</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">matplotlib.animation</span> <span class="k">as</span> <span class="nn">animation</span>
+<span class="kn">from</span> <span class="nn">mpl_toolkits.mplot3d</span> <span class="k">import</span> <span class="n">Axes3D</span>
+
+<span class="sd">&#39;&#39;&#39;A reward function takes in the current time and a row of the &quot;track&quot; array and calculates a reward-metric of observation based on the configuration.</span>
+
+<span class="sd">The row format is a numpy structured array:</span>
+
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    dtype = [</span>
+<span class="sd">        (&#39;t0&#39;, self._type),</span>
+<span class="sd">        (&#39;dt&#39;, self._type),</span>
+<span class="sd">        (&#39;tracklet&#39;, np.bool),</span>
+<span class="sd">        (&#39;tracklet_index&#39;, np.int64),</span>
+<span class="sd">        (&#39;tracklet_len&#39;, np.int64),</span>
+<span class="sd">        (&#39;SNRdB&#39;, self._type),</span>
+<span class="sd">        (&#39;SNRdB-t&#39;, self._type),</span>
+<span class="sd">        (&#39;index&#39;, np.int64),</span>
+<span class="sd">        (&#39;baselines&#39;, np.int64),</span>
+<span class="sd">        (&#39;type&#39;, &#39;|S8&#39;),</span>
+<span class="sd">    ]</span>
+
+<span class="sd">It also takes keyword arguments to allow for future expansion.</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="rewardf_TEMPLATE"><a class="viewcode-back" href="../modules/rewardf_library.html#rewardf_library.rewardf_TEMPLATE">[docs]</a><span class="k">def</span> <span class="nf">rewardf_TEMPLATE</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">track</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="rewardf_exp_peak_SNR_tracklet_len"><a class="viewcode-back" href="../modules/rewardf_library.html#rewardf_library.rewardf_exp_peak_SNR_tracklet_len">[docs]</a><span class="k">def</span> <span class="nf">rewardf_exp_peak_SNR_tracklet_len</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">track</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Reward function that uses time from peak SNR and the number of accumulated data points as parameters to a normal and exponential distribution.</span>
+
+<span class="sd">    **Config:**</span>
+
+<span class="sd">        * sigma_t [float]: Desc</span>
+<span class="sd">        * lambda_N [float]: Desc</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">dt</span> <span class="o">=</span> <span class="n">t</span> <span class="o">-</span> <span class="n">track</span><span class="p">[</span><span class="s1">&#39;SNRdB-t&#39;</span><span class="p">]</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">track</span><span class="p">[</span><span class="s1">&#39;tracklet_len&#39;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span><span class="o">/</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;sigma_t&#39;</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">N</span><span class="o">/</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;lambda_N&#39;</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="rewardf_exp_peak_SNR"><a class="viewcode-back" href="../modules/rewardf_library.html#rewardf_library.rewardf_exp_peak_SNR">[docs]</a><span class="k">def</span> <span class="nf">rewardf_exp_peak_SNR</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">track</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Desc</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="n">t</span> <span class="o">-</span> <span class="n">track</span><span class="p">[</span><span class="s1">&#39;SNRdB-t&#39;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span><span class="o">/</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;sigma_t&#39;</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span></div>
+
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">def que_value_dyn_v2(t, track, config):</span>
+<span class="sd">    peak_snr = data[&#39;peak_snr&#39;]</span>
+<span class="sd">    tracklets_n = data[&#39;tracklets&#39;]</span>
+<span class="sd">    dt = data[&#39;dt&#39;]</span>
+<span class="sd">    N = data[&#39;N&#39;]</span>
+
+<span class="sd">    fN = lambda N: n.exp(-N/config[&#39;N_rate&#39;])*config[&#39;N_scale&#39;]</span>
+<span class="sd">    fSNR = lambda dt: n.exp(-0.5*( ((dt-config[&#39;dt_offset&#39;])/((1.0 + float(dt-config[&#39;dt_offset&#39;] &gt;= 0)*config[&#39;dt_sqew&#39;])*config[&#39;dt_sigma&#39;]))**2))*config[&#39;dt_scale&#39;]</span>
+<span class="sd">    ftracklets = lambda tracklets: n.exp(-tracklets/config[&#39;tracklets_rate&#39;])*config[&#39;tracklets_scale&#39;]</span>
+<span class="sd">    fpeak = lambda peak_snr: n.exp(-peak_snr/config[&#39;peak_snr_rate&#39;])*config[&#39;peak_snr_scale&#39;]</span>
+<span class="sd">    ftracklet_complete = lambda N: 1.0 + (float(N)/config[&#39;tracklet_completion_rate&#39;] - 1.0)*float(N &lt;= config[&#39;tracklet_completion_rate&#39;])</span>
+
+<span class="sd">    if data[&#39;source&#39;] == &#39;track&#39;:</span>
+<span class="sd">        source_f = config[&#39;track-scan_ratio&#39;]</span>
+<span class="sd">    elif data[&#39;source&#39;] == &#39;scan&#39;:</span>
+<span class="sd">        source_f = 1.0</span>
+<span class="sd">    else:</span>
+<span class="sd">        source_f = 1.0</span>
+
+<span class="sd">    tracklets = n.sum( ftracklet_complete(N) for N in tracklets_n )</span>
+
+<span class="sd">    #if n.sum(tracklets_n) == 0 and dt &lt; 3*60.: #if we have a tracklet with no points, make sure it gets to top of que</span>
+<span class="sd">    #    return 1e6</span>
+
+
+<span class="sd">    if debug:</span>
+<span class="sd">        fig, axs = plt.subplots(2, 2, figsize=(14, 10), tight_layout=True)</span>
+<span class="sd">        x = n.linspace(1.,100,num=1000)</span>
+<span class="sd">        axs[0,0].plot(x,fpeak(x))</span>
+<span class="sd">        axs[0,0].set(ylabel=&#39;weight&#39;,xlabel=&#39;peak_snr [dB]&#39;)</span>
+<span class="sd">        x = n.arange(1,500)</span>
+<span class="sd">        axs[1,0].plot(x,fN(x))</span>
+<span class="sd">        axs[1,0].set(ylabel=&#39;weight&#39;,xlabel=&#39;measurnment points&#39;)</span>
+<span class="sd">        x = n.linspace(-15.0*60,15.0*60.0,num=1000)</span>
+<span class="sd">        fsnrv = n.empty(x.shape)</span>
+<span class="sd">        for i in range(1000):</span>
+<span class="sd">            fsnrv[i] = fSNR(x[i])</span>
+<span class="sd">        axs[0,1].plot(x/60.0,fsnrv)</span>
+<span class="sd">        axs[0,1].set(xlabel=&#39;time from peak SNR [min]&#39;)</span>
+<span class="sd">        x = n.arange(1,10)</span>
+<span class="sd">        axs[1,1].plot(x,ftracklets(x))</span>
+<span class="sd">        axs[1,1].set(xlabel=&#39;number of passes&#39;)</span>
+<span class="sd">        fig, axs = plt.subplots(1, 1, figsize=(14, 10), sharey=True, tight_layout=True)</span>
+<span class="sd">        x = n.arange(1,51)</span>
+<span class="sd">        ftr = n.empty(x.shape)</span>
+<span class="sd">        for i in range(50):</span>
+<span class="sd">            ftr[i] = ftracklet_complete(x[i])</span>
+<span class="sd">        axs.plot(x,ftr)</span>
+<span class="sd">        axs.set(</span>
+<span class="sd">            xlabel=&#39;Number of tracklet points&#39;, </span>
+<span class="sd">            ylabel=&#39;Tracklet completion&#39;, </span>
+<span class="sd">            title=&#39;Tracklet completion function&#39;)</span>
+<span class="sd">        plt.show()</span>
+
+<span class="sd">    ret_val = 1.0</span>
+<span class="sd">    if config[&#39;N_on&#39;]:</span>
+<span class="sd">        ret_val*=fN(N)</span>
+<span class="sd">    if config[&#39;dt_on&#39;]:</span>
+<span class="sd">        ret_val*=fSNR(dt)</span>
+<span class="sd">    if config[&#39;tracklets_on&#39;]:</span>
+<span class="sd">        ret_val*=ftracklets(tracklets)</span>
+<span class="sd">    if config[&#39;peak_snr_on&#39;]:</span>
+<span class="sd">        ret_val*=fpeak(peak_snr)</span>
+<span class="sd">    if config[&#39;source_on&#39;]:</span>
+<span class="sd">        ret_val*=source_f</span>
+<span class="sd">    </span>
+<span class="sd">    return ret_val</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/doc.html">Documentation</a></li>
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

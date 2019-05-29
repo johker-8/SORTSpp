@@ -1,0 +1,195 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>correlator &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="radar_library" href="radar_library.html" />
+    <link rel="prev" title="lgeom" href="lgeom.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="radar_library.html" title="radar_library"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="lgeom.html" title="lgeom"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" accesskey="U">Documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-correlator">
+<span id="correlator"></span><h1>correlator<a class="headerlink" href="#module-correlator" title="Permalink to this headline">¶</a></h1>
+<p>Correlate measurement time series with a population of objects to find the best match.</p>
+<p>Currently only works for Mono-static measurements.</p>
+<p># TODO: Assume a uniform prior distribution over population index, posterior distribution is the probability of what object generated the data. Probability comes from measurement covariance.</p>
+<dl class="function">
+<dt id="correlator.correlate">
+<code class="descclassname">correlator.</code><code class="descname">correlate</code><span class="sig-paren">(</span><em>data</em>, <em>station</em>, <em>population</em>, <em>metric</em>, <em>n_closest=1</em>, <em>out_file=None</em>, <em>verbose=False</em>, <em>MPI_on=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correlator.html#correlate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#correlator.correlate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a mono-static measurement of ranges and rage-rates, a radar model and a population: correlate measurements with population.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>data</strong> (<em>dict</em>) – Dictionary that contains measurement data. Contents are described below.</li>
+<li><strong>station</strong> (<a class="reference internal" href="antenna.html#antenna.AntennaRX" title="antenna.AntennaRX"><em>AntennaRX</em></a>) – Model of receiver station that performed the measurement.</li>
+<li><strong>population</strong> (<a class="reference internal" href="population.html#population.Population" title="population.Population"><em>Population</em></a>) – Population to correlate against.</li>
+<li><strong>metric</strong> (<em>function</em>) – Metric used to correlate measurement and simulation of population.</li>
+<li><strong>n_closest</strong> (<em>int</em>) – Number of closest matches to output.</li>
+<li><strong>out_file</strong> (<em>str</em>) – If not <code class="code docutils literal notranslate"><span class="pre">None</span></code>, save the output data to this path.</li>
+<li><strong>MPI_on</strong> (<em>bool</em>) – If True use internal parallelization with MPI to calculate correlation. Turn to False to externally parallelize with MPI.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Measurement data:</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt>The file must be a dictionary that contains three data-sets:</dt>
+<dd><ul class="first last simple">
+<li>‘t’: Times in unix-seconds</li>
+<li>‘r’: Ranges in meters</li>
+<li>‘v’: Range-rates in meters per second</li>
+</ul>
+</dd>
+</dl>
+<p>They should all be numpy vectors of equal length.</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="correlator.plot_correlation">
+<code class="descclassname">correlator.</code><code class="descname">plot_correlation</code><span class="sig-paren">(</span><em>dat</em>, <em>cdat</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correlator.html#plot_correlation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#correlator.plot_correlation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the correlation between the measurement and simulated population object.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="correlator.residual_distribution_metric">
+<code class="descclassname">correlator.</code><code class="descname">residual_distribution_metric</code><span class="sig-paren">(</span><em>t</em>, <em>r</em>, <em>v</em>, <em>r_ref</em>, <em>v_ref</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correlator.html#residual_distribution_metric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#correlator.residual_distribution_metric" title="Permalink to this definition">¶</a></dt>
+<dd><p>Using the simulated and the measured ranges and rage-rates calculate a de-correlation metric.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>t</strong> (<em>numpy.ndarray</em>) – Times in seconds corresponding to measurement and simulation data.</li>
+<li><strong>r</strong> (<em>numpy.ndarray</em>) – Measured ranges in meters</li>
+<li><strong>v</strong> (<em>numpy.ndarray</em>) – Measured rage-rates in meters per second</li>
+<li><strong>r_ref</strong> (<em>numpy.ndarray</em>) – Simulated ranges in meters</li>
+<li><strong>v_ref</strong> (<em>numpy.ndarray</em>) – Simulated rage-rates in meters per second</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Metric value, smaller values indicate better match.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../introduction/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="doc.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="doc.html#simulation-handler">Simulation handler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#class-modules">Class modules</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="doc.html#function-modules">Function modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#instance-libraries">Instance libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#integrator-interfaces">Integrator interfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#tests">Tests</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="lgeom.html"
+                        title="previous chapter">lgeom</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="radar_library.html"
+                        title="next chapter">radar_library</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="radar_library.html" title="radar_library"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="lgeom.html" title="lgeom"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" >Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,197 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>base_propagator &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="population" href="population.html" />
+    <link rel="prev" title="antenna" href="antenna.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="population.html" title="population"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="antenna.html" title="antenna"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" accesskey="U">Documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-propagator_base">
+<span id="base-propagator"></span><h1>base_propagator<a class="headerlink" href="#module-propagator_base" title="Permalink to this headline">¶</a></h1>
+<p>A parent class used for interfacing any propagator.</p>
+<dl class="class">
+<dt id="propagator_base.PropagatorBase">
+<em class="property">class </em><code class="descclassname">propagator_base.</code><code class="descname">PropagatorBase</code><a class="reference internal" href="../_modules/propagator_base.html#PropagatorBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propagator_base.PropagatorBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="propagator_base.PropagatorBase.get_orbit">
+<code class="descname">get_orbit</code><span class="sig-paren">(</span><em>t</em>, <em>a</em>, <em>e</em>, <em>inc</em>, <em>raan</em>, <em>aop</em>, <em>mu0</em>, <em>mjd0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propagator_base.html#PropagatorBase.get_orbit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propagator_base.PropagatorBase.get_orbit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Propagate a Keplerian state forward in time.</p>
+<p>This function uses key-word argument to supply additional information to the propagator, such as area or mass.</p>
+<p>It is a good idea to only implement <a class="reference internal" href="#propagator_base.PropagatorBase.get_orbit" title="propagator_base.PropagatorBase.get_orbit"><code class="xref py py-func docutils literal notranslate"><span class="pre">propagator_base.PropagatorBase.get_orbit()</span></code></a> or <a class="reference internal" href="#propagator_base.PropagatorBase.get_orbit_cart" title="propagator_base.PropagatorBase.get_orbit_cart"><code class="xref py py-func docutils literal notranslate"><span class="pre">propagator_base.PropagatorBase.get_orbit_cart()</span></code></a> and then link one to the other by simply using <a class="reference internal" href="dpt_tools.html#dpt_tools.kep2cart" title="dpt_tools.kep2cart"><code class="xref py py-func docutils literal notranslate"><span class="pre">dpt_tools.kep2cart()</span></code></a> or <a class="reference internal" href="dpt_tools.html#dpt_tools.cart2kep" title="dpt_tools.cart2kep"><code class="xref py py-func docutils literal notranslate"><span class="pre">dpt_tools.cart2kep()</span></code></a>.</p>
+<p>The coordinate frames used should be documented in the child class docstring.</p>
+<p>SI units are assumed unless implementation states otherwise.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>t</strong> (<em>float/list/numpy.ndarray</em>) – Time in seconds to propagate relative the initial state epoch.</li>
+<li><strong>mjd0</strong> (<em>float</em>) – The epoch of the initial state in fractional Julian Days.</li>
+<li><strong>a</strong> (<em>float</em>) – Semi-major axis</li>
+<li><strong>e</strong> (<em>float</em>) – Eccentricity</li>
+<li><strong>inc</strong> (<em>float</em>) – Inclination</li>
+<li><strong>aop</strong> (<em>float</em>) – Argument of perihelion</li>
+<li><strong>raan</strong> (<em>float</em>) – Longitude (right ascension) of ascending node</li>
+<li><strong>mu0</strong> (<em>float</em>) – Mean anomaly</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">6-D Cartesian state vector in SI-units.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="propagator_base.PropagatorBase.get_orbit_cart">
+<code class="descname">get_orbit_cart</code><span class="sig-paren">(</span><em>t</em>, <em>x</em>, <em>y</em>, <em>z</em>, <em>vx</em>, <em>vy</em>, <em>vz</em>, <em>mjd0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propagator_base.html#PropagatorBase.get_orbit_cart"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propagator_base.PropagatorBase.get_orbit_cart" title="Permalink to this definition">¶</a></dt>
+<dd><p>Propagate a Cartesian state forward in time.</p>
+<p>This function uses key-word argument to supply additional information to the propagator, such as area or mass.</p>
+<p>It is a good idea to only implement <a class="reference internal" href="#propagator_base.PropagatorBase.get_orbit" title="propagator_base.PropagatorBase.get_orbit"><code class="xref py py-func docutils literal notranslate"><span class="pre">propagator_base.PropagatorBase.get_orbit()</span></code></a> or <a class="reference internal" href="#propagator_base.PropagatorBase.get_orbit_cart" title="propagator_base.PropagatorBase.get_orbit_cart"><code class="xref py py-func docutils literal notranslate"><span class="pre">propagator_base.PropagatorBase.get_orbit_cart()</span></code></a> and then link one to the other by simply using <a class="reference internal" href="dpt_tools.html#dpt_tools.kep2cart" title="dpt_tools.kep2cart"><code class="xref py py-func docutils literal notranslate"><span class="pre">dpt_tools.kep2cart()</span></code></a> or <a class="reference internal" href="dpt_tools.html#dpt_tools.cart2kep" title="dpt_tools.cart2kep"><code class="xref py py-func docutils literal notranslate"><span class="pre">dpt_tools.cart2kep()</span></code></a>.</p>
+<p>The coordinate frames used should be documented in the child class docstring.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>t</strong> (<em>float/list/numpy.ndarray</em>) – Time in seconds to propagate relative the initial state epoch.</li>
+<li><strong>mjd0</strong> (<em>float</em>) – The epoch of the initial state in fractional Julian Days.</li>
+<li><strong>x</strong> (<em>float</em>) – X position</li>
+<li><strong>y</strong> (<em>float</em>) – Y position</li>
+<li><strong>z</strong> (<em>float</em>) – Z position</li>
+<li><strong>vx</strong> (<em>float</em>) – X-direction velocity</li>
+<li><strong>vy</strong> (<em>float</em>) – Y-direction velocity</li>
+<li><strong>vz</strong> (<em>float</em>) – Z-direction velocity</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">6-D Cartesian state vector in SI-units.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="propagator_base.plot_orbit_3d">
+<code class="descclassname">propagator_base.</code><code class="descname">plot_orbit_3d</code><span class="sig-paren">(</span><em>ecefs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propagator_base.html#plot_orbit_3d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propagator_base.plot_orbit_3d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a set of ECEF’s in 3D using matplotlib.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../introduction/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="doc.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="doc.html#simulation-handler">Simulation handler</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="doc.html#class-modules">Class modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#function-modules">Function modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#instance-libraries">Instance libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#integrator-interfaces">Integrator interfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#tests">Tests</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="antenna.html"
+                        title="previous chapter">antenna</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="population.html"
+                        title="next chapter">population</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="population.html" title="population"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="antenna.html" title="antenna"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" >Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

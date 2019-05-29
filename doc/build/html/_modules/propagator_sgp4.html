@@ -1,0 +1,938 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>propagator_sgp4 &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for propagator_sgp4</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="sd">&#39;&#39;&#39;SGP4 interface with SORTS++.</span>
+
+<span class="sd">    Written in 2018 by Juha Vierinen</span>
+<span class="sd">    based on code from Jan Siminski, ESA.</span>
+<span class="sd">    Modified by Daniel Kastinen 2018/2019</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">sgp4.earth_gravity</span>
+<span class="kn">import</span> <span class="nn">sgp4.io</span>
+<span class="kn">import</span> <span class="nn">sgp4.propagation</span>
+<span class="kn">import</span> <span class="nn">sgp4.model</span>
+
+<span class="kn">import</span> <span class="nn">TLE_tools</span> <span class="k">as</span> <span class="nn">tle</span>
+<span class="kn">import</span> <span class="nn">dpt_tools</span> <span class="k">as</span> <span class="nn">dpt</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.constants</span> <span class="k">as</span> <span class="nn">consts</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">mpl_toolkits.mplot3d</span> <span class="k">import</span> <span class="n">Axes3D</span>
+
+<span class="kn">from</span> <span class="nn">propagator_base</span> <span class="k">import</span> <span class="n">PropagatorBase</span>
+
+
+<div class="viewcode-block" id="gstime"><a class="viewcode-back" href="../modules/propagator_sgp4.html#propagator_sgp4.gstime">[docs]</a><span class="k">def</span> <span class="nf">gstime</span><span class="p">(</span><span class="n">jdut1</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;This function finds the greenwich sidereal time (iau-82).</span>
+
+<span class="sd">    *References:* Vallado 2007, 193, Eq 3-43</span>
+
+<span class="sd">    Author: David Vallado 719-573-2600    7 jun 2002</span>
+<span class="sd">    Adapted to Python, Daniel Kastinen 2018</span>
+
+<span class="sd">    :param float jdut1: Julian date of ut1 in days from 4713 bc</span>
+
+<span class="sd">    :return: Greenwich sidereal time in radians, 0 to :math:`2\pi`</span>
+<span class="sd">    :rtype: float</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">twopi</span>      <span class="o">=</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">;</span>
+    <span class="n">deg2rad</span>    <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.0</span><span class="p">;</span>
+
+    <span class="c1"># ------------------------  implementation   ------------------</span>
+    <span class="n">tut1</span><span class="o">=</span> <span class="p">(</span> <span class="n">jdut1</span> <span class="o">-</span> <span class="mf">2451545.0</span> <span class="p">)</span> <span class="o">/</span> <span class="mf">36525.0</span>
+
+    <span class="n">temp</span> <span class="o">=</span> <span class="o">-</span> <span class="mf">6.2e-6</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">tut1</span><span class="p">,</span><span class="n">tut1</span><span class="p">),</span><span class="n">tut1</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.093104</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">tut1</span><span class="p">,</span><span class="n">tut1</span><span class="p">)</span> \
+           <span class="o">+</span> <span class="p">(</span><span class="mf">876600.0</span> <span class="o">*</span> <span class="mf">3600.0</span> <span class="o">+</span> <span class="mf">8640184.812866</span><span class="p">)</span> <span class="o">*</span> <span class="n">tut1</span> <span class="o">+</span> <span class="mf">67310.54841</span>
+
+    <span class="c1"># 360/86400 = 1/240, to deg, to rad</span>
+    <span class="n">temp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fmod</span><span class="p">(</span> <span class="n">temp</span><span class="o">*</span><span class="n">deg2rad</span><span class="o">/</span><span class="mf">240.0</span><span class="p">,</span><span class="n">twopi</span> <span class="p">)</span>
+
+    <span class="c1"># ------------------------ check quadrants --------------------</span>
+    <span class="n">temp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">temp</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">temp</span><span class="o">+</span><span class="n">twopi</span><span class="p">,</span> <span class="n">temp</span><span class="p">)</span>
+
+
+    <span class="n">gst</span> <span class="o">=</span> <span class="n">temp</span>
+    <span class="k">return</span> <span class="n">gst</span></div>
+
+
+
+<div class="viewcode-block" id="polarm"><a class="viewcode-back" href="../modules/propagator_sgp4.html#propagator_sgp4.polarm">[docs]</a><span class="k">def</span> <span class="nf">polarm</span> <span class="p">(</span> <span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">ttt</span><span class="p">,</span> <span class="n">opt</span> <span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;This function calculates the transformation matrix that accounts for polar motion. both the 1980 and 2000 theories are handled. note that the rotation order is different between 1980 and 2000.</span>
+
+<span class="sd">    *References:* Vallado 2004, 207-209, 211, 223-224.</span>
+
+<span class="sd">    Author: David Vallado 719-573-2600   25 jun 2002.</span>
+<span class="sd">    Adapted to Python, Daniel Kastinen 2018</span>
+
+
+<span class="sd">    :param float xp: x-axis polar motion coefficient in radians</span>
+<span class="sd">    :param float yp: y-axis polar motion coefficient in radians</span>
+<span class="sd">    :param float ttt: Julian centuries of tt (00 theory only)</span>
+<span class="sd">    :param str opt: Model for polar motion to use, options are &#39;01&#39;, &#39;02&#39;, &#39;80&#39;.</span>
+
+<span class="sd">    :return: Transformation matrix for ECEF to PEF</span>
+<span class="sd">    :rtype: numpy.ndarray (3x3 matrix)</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">cosxp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+    <span class="n">sinxp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+    <span class="n">cosyp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">yp</span><span class="p">)</span>
+    <span class="n">sinyp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">yp</span><span class="p">)</span>
+
+    <span class="n">pm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">opt</span> <span class="o">==</span> <span class="s1">&#39;80&#39;</span><span class="p">:</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span>  <span class="n">cosxp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span>  <span class="mf">0.0</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">sinxp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span>  <span class="n">sinxp</span> <span class="o">*</span> <span class="n">sinyp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span>  <span class="n">cosyp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span>  <span class="n">cosxp</span> <span class="o">*</span> <span class="n">sinyp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span>  <span class="n">sinxp</span> <span class="o">*</span> <span class="n">cosyp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">sinyp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span>  <span class="n">cosxp</span> <span class="o">*</span> <span class="n">cosyp</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">convrt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="p">(</span><span class="mf">3600.0</span><span class="o">*</span><span class="mf">180.0</span><span class="p">)</span>
+        <span class="c1"># approximate sp value in rad</span>
+        <span class="n">sp</span> <span class="o">=</span> <span class="o">-</span><span class="mf">47.0e-6</span> <span class="o">*</span> <span class="n">ttt</span> <span class="o">*</span> <span class="n">convrt</span>
+        <span class="n">cossp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">sp</span><span class="p">)</span>
+        <span class="n">sinsp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">sp</span><span class="p">)</span>
+
+        <span class="c1"># form the matrix</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span>  <span class="n">cosxp</span> <span class="o">*</span> <span class="n">cossp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">cosyp</span> <span class="o">*</span> <span class="n">sinsp</span> <span class="o">+</span> <span class="n">sinyp</span> <span class="o">*</span> <span class="n">sinxp</span> <span class="o">*</span> <span class="n">cossp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">sinyp</span> <span class="o">*</span> <span class="n">sinsp</span> <span class="o">-</span> <span class="n">cosyp</span> <span class="o">*</span> <span class="n">sinxp</span> <span class="o">*</span> <span class="n">cossp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span>  <span class="n">cosxp</span> <span class="o">*</span> <span class="n">sinsp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span>  <span class="n">cosyp</span> <span class="o">*</span> <span class="n">cossp</span> <span class="o">+</span> <span class="n">sinyp</span> <span class="o">*</span> <span class="n">sinxp</span> <span class="o">*</span> <span class="n">sinsp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span>  <span class="n">sinyp</span> <span class="o">*</span> <span class="n">cossp</span> <span class="o">-</span> <span class="n">cosyp</span> <span class="o">*</span> <span class="n">sinxp</span> <span class="o">*</span> <span class="n">sinsp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span>  <span class="n">sinxp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">sinyp</span> <span class="o">*</span> <span class="n">cosxp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span>  <span class="n">cosyp</span> <span class="o">*</span> <span class="n">cosxp</span>
+    <span class="k">return</span> <span class="n">pm</span></div>
+
+
+<div class="viewcode-block" id="ecef2teme"><a class="viewcode-back" href="../modules/propagator_sgp4.html#propagator_sgp4.ecef2teme">[docs]</a><span class="k">def</span> <span class="nf">ecef2teme</span><span class="p">(</span> <span class="n">t</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">mjd0</span><span class="o">=</span><span class="mi">57084</span><span class="p">,</span> <span class="n">xp</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">yp</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">&#39;80&#39;</span><span class="p">,</span> <span class="n">lod</span><span class="o">=</span><span class="mf">0.0015563</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Reverse operation, developed by Daniel Kastinen 2019</span>
+
+<span class="sd">    # TODO: Write proper docstring</span>
+<span class="sd">    p, v and output are all in units of km and km/s, as for teme2ecef</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;type(t) = </span><span class="si">{}</span><span class="s1"> not supported&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">t</span><span class="p">)))</span>
+
+
+    <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;t and p lengths conflicting, t </span><span class="si">{}</span><span class="s2">, p </span><span class="si">{}</span><span class="s2"> &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Reshaping failed: t-</span><span class="si">{}</span><span class="s1">, p-</span><span class="si">{}</span><span class="s1">, v-</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">t</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+            <span class="p">))</span>
+            <span class="k">raise</span>
+
+    <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">3</span> <span class="ow">or</span> <span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Reshaping failed: t-</span><span class="si">{}</span><span class="s1">, p-</span><span class="si">{}</span><span class="s1">, v-</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">t</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+            <span class="p">))</span>
+            <span class="k">raise</span>
+
+
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">yp</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-10</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">yp</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-10</span><span class="p">:</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="s1">&#39;no&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">t</span><span class="o">.</span><span class="n">size</span> <span class="ow">or</span> <span class="n">yp</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">t</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Polar motion lengths conflicting with time length, xp </span><span class="si">{}</span><span class="s2">, yp </span><span class="si">{}</span><span class="s2"> &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">xp</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">yp</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">t</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="n">xp</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+            <span class="n">yp</span> <span class="o">=</span> <span class="n">yp</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+
+    <span class="c1">#from MJD to J2000 relative JD to BC-relative JD to julian centuries, 2400000.5 - 2451545.0 = - 51544.5</span>
+    <span class="c1">#a Julian year (symbol: a) is a unit of measurement of time defined as exactly 365.25 days of 86400 SI seconds each</span>
+    <span class="n">ttt</span> <span class="o">=</span> <span class="p">(</span><span class="n">mjd0</span> <span class="o">+</span> <span class="n">t</span><span class="o">/</span><span class="mf">86400.0</span> <span class="o">-</span> <span class="mf">51544.5</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mf">365.25</span><span class="o">*</span><span class="mf">100.0</span><span class="p">)</span>
+
+    <span class="c1">#JDUT1 is actually in days from 4713 bc</span>
+    <span class="n">jdut1</span> <span class="o">=</span> <span class="n">mjd0</span> <span class="o">+</span> <span class="n">t</span><span class="o">/</span><span class="mf">86400.0</span> <span class="o">+</span> <span class="mf">2400000.5</span>
+
+    <span class="c1"># ------------------------ find gmst --------------------------</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">gstime</span><span class="p">(</span> <span class="n">jdut1</span> <span class="p">);</span>
+
+    <span class="c1">#find omega from nutation theory</span>
+    <span class="n">omega</span><span class="o">=</span>  <span class="mf">125.04452222</span>  <span class="o">+</span> <span class="p">(</span> <span class="o">-</span><span class="mf">6962890.5390</span> <span class="o">*</span><span class="n">ttt</span> <span class="o">+</span> <span class="mf">7.455</span> <span class="o">*</span><span class="n">ttt</span><span class="o">*</span><span class="n">ttt</span> <span class="o">+</span> <span class="mf">0.008</span> <span class="o">*</span><span class="n">ttt</span><span class="o">*</span><span class="n">ttt</span><span class="o">*</span><span class="n">ttt</span> <span class="p">)</span> <span class="o">/</span> <span class="mf">3600.0</span><span class="p">;</span>
+    <span class="n">omega</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fmod</span><span class="p">(</span> <span class="n">omega</span><span class="p">,</span> <span class="mf">360.0</span>  <span class="p">));</span>
+
+    <span class="c1"># ------------------------ find mean ast ----------------------</span>
+    <span class="c1"># teme does not include the geometric terms here</span>
+    <span class="c1"># after 1997, kinematic terms apply</span>
+    <span class="n">gmstg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+        <span class="n">jdut1</span> <span class="o">&gt;</span> <span class="mf">2450449.5</span><span class="p">,</span>
+        <span class="n">theta</span> <span class="o">+</span> <span class="mf">0.00264</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span><span class="p">(</span><span class="mi">3600</span><span class="o">*</span><span class="mi">180</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">omega</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.000063</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span><span class="p">(</span><span class="mi">3600</span><span class="o">*</span><span class="mi">180</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span><span class="n">omega</span><span class="p">),</span>
+        <span class="n">theta</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">gmstg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fmod</span><span class="p">(</span> <span class="n">gmstg</span><span class="p">,</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>  <span class="p">)</span>
+
+    <span class="n">recef</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">vecef</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">v</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">model</span> <span class="o">==</span> <span class="s1">&#39;no&#39;</span><span class="p">:</span>
+        <span class="n">recef</span> <span class="o">=</span> <span class="n">p</span>
+        <span class="n">vecef</span> <span class="o">=</span> <span class="n">v</span>
+    <span class="k">elif</span> <span class="n">model</span> <span class="o">==</span> <span class="s1">&#39;80&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">tind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+                <span class="n">pm</span> <span class="o">=</span> <span class="n">polarm</span><span class="p">(</span><span class="n">xp</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">tind</span><span class="p">],</span> <span class="n">yp</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">tind</span><span class="p">],</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+                <span class="n">pm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">pm</span><span class="p">)</span>
+                <span class="n">recef</span><span class="p">[:,</span><span class="n">tind</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span> <span class="n">p</span><span class="p">[:,</span><span class="n">tind</span><span class="p">])</span>
+                <span class="n">vecef</span><span class="p">[:,</span><span class="n">tind</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span> <span class="n">v</span><span class="p">[:,</span><span class="n">tind</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pm</span> <span class="o">=</span> <span class="n">polarm</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+            <span class="n">pm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">pm</span><span class="p">)</span>
+            <span class="n">recef</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+            <span class="n">vecef</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">tind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ttt</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+                <span class="n">pm</span> <span class="o">=</span> <span class="n">polarm</span><span class="p">(</span><span class="n">xp</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">tind</span><span class="p">],</span> <span class="n">yp</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">tind</span><span class="p">],</span> <span class="n">ttt</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">tind</span><span class="p">],</span> <span class="n">model</span><span class="p">)</span>
+                <span class="n">pm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">pm</span><span class="p">)</span>
+                <span class="n">recef</span><span class="p">[:,</span><span class="n">tind</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span> <span class="n">p</span><span class="p">[:,</span><span class="n">tind</span><span class="p">])</span>
+                <span class="n">vecef</span><span class="p">[:,</span><span class="n">tind</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span> <span class="n">v</span><span class="p">[:,</span><span class="n">tind</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">tind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ttt</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+                <span class="n">pm</span> <span class="o">=</span> <span class="n">polarm</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">ttt</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">tind</span><span class="p">],</span> <span class="n">model</span><span class="p">)</span>
+                <span class="n">pm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">pm</span><span class="p">)</span>
+                <span class="n">recef</span><span class="p">[:,</span><span class="n">tind</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span> <span class="n">rpef</span><span class="p">[:,</span><span class="n">tind</span><span class="p">])</span>
+                <span class="n">vecef</span><span class="p">[:,</span><span class="n">tind</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span> <span class="n">vpef</span><span class="p">[:,</span><span class="n">tind</span><span class="p">])</span>
+
+
+
+
+    <span class="n">thetasa</span>    <span class="o">=</span> <span class="mf">7.29211514670698e-05</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span>  <span class="o">-</span> <span class="n">lod</span><span class="o">/</span><span class="mf">86400.0</span><span class="p">)</span>
+    <span class="n">omegaearth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="o">-</span><span class="n">thetasa</span><span class="p">])</span>
+
+    <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="n">vecef</span><span class="p">[:,</span><span class="n">ind</span><span class="p">]</span> <span class="o">-=</span> <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">omegaearth</span><span class="p">,</span> <span class="n">recef</span><span class="p">[:,</span><span class="n">ind</span><span class="p">])</span>
+
+    <span class="n">rpef</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">vpef</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="c1"># direct calculation of rotation matrix with different rotation for each</span>
+    <span class="c1"># column of p</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="o">-</span><span class="n">theta</span>
+
+    <span class="n">rpef</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">recef</span><span class="p">[</span><span class="mi">0</span><span class="p">,:])</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">recef</span><span class="p">[</span><span class="mi">1</span><span class="p">,:])</span>
+    <span class="n">rpef</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span><span class="o">=-</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">recef</span><span class="p">[</span><span class="mi">0</span><span class="p">,:])</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">recef</span><span class="p">[</span><span class="mi">1</span><span class="p">,:])</span>
+    <span class="n">rpef</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span><span class="o">=</span><span class="n">recef</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span>
+
+    <span class="n">vpef</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">vecef</span><span class="p">[</span><span class="mi">0</span><span class="p">,:])</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">vecef</span><span class="p">[</span><span class="mi">1</span><span class="p">,:])</span>
+    <span class="n">vpef</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span><span class="o">=-</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">vecef</span><span class="p">[</span><span class="mi">0</span><span class="p">,:])</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">vecef</span><span class="p">[</span><span class="mi">1</span><span class="p">,:])</span>
+    <span class="n">vpef</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span><span class="o">=</span><span class="n">vecef</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span>
+
+
+    <span class="n">teme</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">6</span><span class="p">,</span><span class="n">t</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+    <span class="n">teme</span><span class="p">[:</span><span class="mi">3</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">rpef</span>
+    <span class="n">teme</span><span class="p">[</span><span class="mi">3</span><span class="p">:,:]</span> <span class="o">=</span> <span class="n">vpef</span>
+
+    <span class="k">return</span> <span class="n">teme</span></div>
+
+<div class="viewcode-block" id="teme2ecef"><a class="viewcode-back" href="../modules/propagator_sgp4.html#propagator_sgp4.teme2ecef">[docs]</a><span class="k">def</span> <span class="nf">teme2ecef</span><span class="p">(</span> <span class="n">t</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">mjd0</span><span class="o">=</span><span class="mi">57084</span><span class="p">,</span> <span class="n">xp</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">yp</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">&#39;80&#39;</span><span class="p">,</span> <span class="n">lod</span><span class="o">=</span><span class="mf">0.0015563</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;This function trsnforms a vector from the true equator mean equniox frame</span>
+<span class="sd">    (teme), to an earth fixed (ITRF) frame.  the results take into account</span>
+<span class="sd">    the effects of sidereal time, and polar motion.</span>
+
+
+<span class="sd">    *References:* Vallado  2007, 219-228.</span>
+
+<span class="sd">    Author: David Vallado 719-573-2600, 10 dec 2007.</span>
+<span class="sd">    Adapted to Python, Daniel Kastinen 2018</span>
+
+<span class="sd">    :param numpy.ndarray t: numpy vector row of seconds relative to :code:`mjd0`</span>
+<span class="sd">    :param numpy.ndarray p: numpy matrix of TEME positions, Cartesian coordinates in km. Columns correspond to times in t, and rows to x, y and z coordinates respectively.</span>
+<span class="sd">    :param numpy.ndarray v: numpy matrix of TEME velocities, Cartesian coordinates in km/s. Columns correspond to times in t, and rows to x, y and z coordinates respectively.</span>
+<span class="sd">    :param float mjd0: Modified julian date epoch that t vector is relative to</span>
+<span class="sd">    :param float xp: x-axis polar motion coefficient in radians</span>
+<span class="sd">    :param float yp: y-axis polar motion coefficient in radians</span>
+<span class="sd">    :param str model: The polar motion model used in transformation, options are &#39;80&#39; or &#39;00&#39;, see David Vallado documentation for more info.</span>
+<span class="sd">    :param float lod: Excess length of day in seconds</span>
+
+<span class="sd">    :return: State vector of position and velocity in km and km/s.</span>
+<span class="sd">    :rtype: numpy.ndarray (6-D vector)</span>
+
+<span class="sd">    **Uses:**</span>
+
+<span class="sd">       * :func:`propagator_sgp4.gstime`</span>
+<span class="sd">       * :func:`propagator_sgp4.polarm`</span>
+
+
+
+<span class="sd">     [recef,vecef,aecef] = teme2ecef  ( rteme,vteme,ateme,ttt,jdut1,lod,xp,yp );</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;type(t) = </span><span class="si">{}</span><span class="s1"> not supported&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">t</span><span class="p">)))</span>
+
+
+    <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;t and p lengths conflicting, t </span><span class="si">{}</span><span class="s2">, p </span><span class="si">{}</span><span class="s2"> &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Reshaping failed: t-</span><span class="si">{}</span><span class="s1">, p-</span><span class="si">{}</span><span class="s1">, v-</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">t</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+            <span class="p">))</span>
+            <span class="k">raise</span>
+
+    <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">3</span> <span class="ow">or</span> <span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Reshaping failed: t-</span><span class="si">{}</span><span class="s1">, p-</span><span class="si">{}</span><span class="s1">, v-</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">t</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+            <span class="p">))</span>
+            <span class="k">raise</span>
+
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">yp</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-10</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">yp</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-10</span><span class="p">:</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="s1">&#39;no&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">t</span><span class="o">.</span><span class="n">size</span> <span class="ow">or</span> <span class="n">yp</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">t</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Polar motion lengths conflicting with time length, xp </span><span class="si">{}</span><span class="s2">, yp </span><span class="si">{}</span><span class="s2"> &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">xp</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">yp</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">t</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="n">xp</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+            <span class="n">yp</span> <span class="o">=</span> <span class="n">yp</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+
+    <span class="c1">#from MJD to J2000 relative JD to BC-relative JD to julian centuries, 2400000.5 - 2451545.0 = - 51544.5</span>
+    <span class="c1">#a Julian year (symbol: a) is a unit of measurement of time defined as exactly 365.25 days of 86400 SI seconds each</span>
+    <span class="n">ttt</span> <span class="o">=</span> <span class="p">(</span><span class="n">mjd0</span> <span class="o">+</span> <span class="n">t</span><span class="o">/</span><span class="mf">86400.0</span> <span class="o">-</span> <span class="mf">51544.5</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mf">365.25</span><span class="o">*</span><span class="mf">100.0</span><span class="p">)</span>
+
+    <span class="c1">#JDUT1 is actually in days from 4713 bc</span>
+    <span class="n">jdut1</span> <span class="o">=</span> <span class="n">mjd0</span> <span class="o">+</span> <span class="n">t</span><span class="o">/</span><span class="mf">86400.0</span> <span class="o">+</span> <span class="mf">2400000.5</span>
+
+    <span class="c1"># ------------------------ find gmst --------------------------</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">gstime</span><span class="p">(</span> <span class="n">jdut1</span> <span class="p">);</span>
+
+    <span class="c1">#find omega from nutation theory</span>
+    <span class="n">omega</span><span class="o">=</span>  <span class="mf">125.04452222</span>  <span class="o">+</span> <span class="p">(</span> <span class="o">-</span><span class="mf">6962890.5390</span> <span class="o">*</span><span class="n">ttt</span> <span class="o">+</span> <span class="mf">7.455</span> <span class="o">*</span><span class="n">ttt</span><span class="o">*</span><span class="n">ttt</span> <span class="o">+</span> <span class="mf">0.008</span> <span class="o">*</span><span class="n">ttt</span><span class="o">*</span><span class="n">ttt</span><span class="o">*</span><span class="n">ttt</span> <span class="p">)</span> <span class="o">/</span> <span class="mf">3600.0</span><span class="p">;</span>
+    <span class="n">omega</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fmod</span><span class="p">(</span> <span class="n">omega</span><span class="p">,</span> <span class="mf">360.0</span>  <span class="p">));</span>
+
+    <span class="c1"># ------------------------ find mean ast ----------------------</span>
+    <span class="c1"># teme does not include the geometric terms here</span>
+    <span class="c1"># after 1997, kinematic terms apply</span>
+    <span class="n">gmstg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+        <span class="n">jdut1</span> <span class="o">&gt;</span> <span class="mf">2450449.5</span><span class="p">,</span>
+        <span class="n">theta</span> <span class="o">+</span> <span class="mf">0.00264</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span><span class="p">(</span><span class="mi">3600</span><span class="o">*</span><span class="mi">180</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">omega</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.000063</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span><span class="p">(</span><span class="mi">3600</span><span class="o">*</span><span class="mi">180</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span><span class="n">omega</span><span class="p">),</span>
+        <span class="n">theta</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">gmstg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fmod</span><span class="p">(</span> <span class="n">gmstg</span><span class="p">,</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>  <span class="p">)</span>
+
+    <span class="n">rpef</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">vpef</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="c1"># direct calculation of rotation matrix with different rotation for each</span>
+    <span class="c1"># column of p</span>
+    <span class="n">rpef</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">,:])</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">,:])</span>
+    <span class="n">rpef</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span><span class="o">=-</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">,:])</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">,:])</span>
+    <span class="n">rpef</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span><span class="o">=</span><span class="n">p</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span>
+
+    <span class="n">vpef</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">,:])</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">,:])</span>
+    <span class="n">vpef</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span><span class="o">=-</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">,:])</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">,:])</span>
+    <span class="n">vpef</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span><span class="o">=</span><span class="n">v</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span>
+
+    <span class="n">thetasa</span>    <span class="o">=</span> <span class="mf">7.29211514670698e-05</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span>  <span class="o">-</span> <span class="n">lod</span><span class="o">/</span><span class="mf">86400.0</span><span class="p">)</span>
+    <span class="n">omegaearth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">thetasa</span><span class="p">])</span>
+
+    <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="n">vpef</span><span class="p">[:,</span><span class="n">ind</span><span class="p">]</span> <span class="o">-=</span> <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">omegaearth</span><span class="p">,</span> <span class="n">rpef</span><span class="p">[:,</span><span class="n">ind</span><span class="p">])</span>
+
+    <span class="n">recef</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">rpef</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">rpef</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">vecef</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">vpef</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">vpef</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">model</span> <span class="o">==</span> <span class="s1">&#39;no&#39;</span><span class="p">:</span>
+        <span class="n">recef</span> <span class="o">=</span> <span class="n">rpef</span>
+        <span class="n">vecef</span> <span class="o">=</span> <span class="n">vpef</span>
+    <span class="k">elif</span> <span class="n">model</span> <span class="o">==</span> <span class="s1">&#39;80&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">tind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+                <span class="n">pm</span> <span class="o">=</span> <span class="n">polarm</span><span class="p">(</span><span class="n">xp</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">tind</span><span class="p">],</span> <span class="n">yp</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">tind</span><span class="p">],</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+                <span class="n">recef</span><span class="p">[:,</span><span class="n">tind</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span> <span class="n">rpef</span><span class="p">[:,</span><span class="n">tind</span><span class="p">])</span>
+                <span class="n">vecef</span><span class="p">[:,</span><span class="n">tind</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span> <span class="n">vpef</span><span class="p">[:,</span><span class="n">tind</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pm</span> <span class="o">=</span> <span class="n">polarm</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+            <span class="n">recef</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span> <span class="n">rpef</span><span class="p">)</span>
+            <span class="n">vecef</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span> <span class="n">vpef</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">tind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ttt</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+                <span class="n">pm</span> <span class="o">=</span> <span class="n">polarm</span><span class="p">(</span><span class="n">xp</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">tind</span><span class="p">],</span> <span class="n">yp</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">tind</span><span class="p">],</span> <span class="n">ttt</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">tind</span><span class="p">],</span> <span class="n">model</span><span class="p">)</span>
+                <span class="n">recef</span><span class="p">[:,</span><span class="n">tind</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span> <span class="n">rpef</span><span class="p">[:,</span><span class="n">tind</span><span class="p">])</span>
+                <span class="n">vecef</span><span class="p">[:,</span><span class="n">tind</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span> <span class="n">vpef</span><span class="p">[:,</span><span class="n">tind</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">tind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ttt</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+                <span class="n">pm</span> <span class="o">=</span> <span class="n">polarm</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">ttt</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">tind</span><span class="p">],</span> <span class="n">model</span><span class="p">)</span>
+                <span class="n">recef</span><span class="p">[:,</span><span class="n">tind</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span> <span class="n">rpef</span><span class="p">[:,</span><span class="n">tind</span><span class="p">])</span>
+                <span class="n">vecef</span><span class="p">[:,</span><span class="n">tind</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span> <span class="n">vpef</span><span class="p">[:,</span><span class="n">tind</span><span class="p">])</span>
+
+    <span class="n">ecef</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">6</span><span class="p">,</span><span class="n">t</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+    <span class="n">ecef</span><span class="p">[:</span><span class="mi">3</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">recef</span>
+    <span class="n">ecef</span><span class="p">[</span><span class="mi">3</span><span class="p">:,:]</span> <span class="o">=</span> <span class="n">vecef</span>
+
+    <span class="k">return</span> <span class="n">ecef</span></div>
+
+
+<div class="viewcode-block" id="SGP4"><a class="viewcode-back" href="../modules/propagator_sgp4.html#propagator_sgp4.SGP4">[docs]</a><span class="k">class</span> <span class="nc">SGP4</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The SGP4 class acts as a wrapper around the sgp4 module</span>
+<span class="sd">    uploaded by Brandon Rhodes (http://pypi.python.org/pypi/sgp4/).</span>
+
+<span class="sd">        </span>
+<span class="sd">    It converts orbital elements into the TLE-like &#39;satellite&#39;-structure which</span>
+<span class="sd">    is used by the module for the propagation.</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">        The class can be directly used for propagation. Alternatively,</span>
+<span class="sd">        a simple propagator function is provided below.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+    <span class="c1"># Geophysical constants (WGS 72 values) for notational convinience</span>
+    <span class="n">WGS</span>     <span class="o">=</span> <span class="n">sgp4</span><span class="o">.</span><span class="n">earth_gravity</span><span class="o">.</span><span class="n">wgs72</span>     <span class="c1"># Model used within SGP4</span>
+    <span class="n">R_EARTH</span> <span class="o">=</span> <span class="n">WGS</span><span class="o">.</span><span class="n">radiusearthkm</span>            <span class="c1"># Earth&#39;s radius [km]</span>
+    <span class="n">GM</span>      <span class="o">=</span> <span class="n">WGS</span><span class="o">.</span><span class="n">mu</span>                       <span class="c1"># Grav.coeff.[km^3/s^2]</span>
+    <span class="n">RHO0</span>    <span class="o">=</span> <span class="mf">2.461e-8</span>                     <span class="c1"># Density at q0[kg/m^3]</span>
+    <span class="n">Q0</span>      <span class="o">=</span> <span class="mf">120.0</span>                        <span class="c1"># Reference height [km]</span>
+    <span class="n">S0</span>      <span class="o">=</span> <span class="mf">78.0</span>                         <span class="c1"># Reference height [km]</span>
+
+    <span class="c1"># Time constants</span>
+
+    <span class="n">MJD_0</span> <span class="o">=</span> <span class="mf">2400000.5</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mjd_epoch</span><span class="p">,</span> <span class="n">mean_elements</span><span class="p">,</span> <span class="n">B</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize SGP4 object from mean orbital elements and</span>
+<span class="sd">        ballistic coefficient</span>
+
+<span class="sd">        Creates a sgp4.model.Satellite object for mean element propagation</span>
+<span class="sd">        First all units are converted to the ones used for TLEs, then</span>
+<span class="sd">        they are modified to the sgp4 module standard.</span>
+<span class="sd">        </span>
+<span class="sd">        Input</span>
+<span class="sd">        -----</span>
+<span class="sd">        mjd_epoch     : epoch as Modified Julian Date (MJD)</span>
+<span class="sd">        mean_elements : [a0,e0,i0,raan0,aop0,M0]</span>
+<span class="sd">        B             : Ballistic coefficient ( 0.5*C_D*A/m )</span>
+<span class="sd">        </span>
+<span class="sd">        Remarks</span>
+<span class="sd">        -------</span>
+<span class="sd">        </span>
+<span class="sd">        This object is not usable for TLE generation, but only for propagation</span>
+<span class="sd">        as internal variables are modified by sgp4init.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">a0</span>     <span class="o">=</span> <span class="n">mean_elements</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>         <span class="c1"># Semi-major (a&#39;) at epoch [km]</span>
+        <span class="n">e0</span>     <span class="o">=</span> <span class="n">mean_elements</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>         <span class="c1"># Eccentricity at epoch</span>
+        <span class="n">i0</span>     <span class="o">=</span> <span class="n">mean_elements</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>         <span class="c1"># Inclination at epoch</span>
+        <span class="n">raan0</span>  <span class="o">=</span> <span class="n">mean_elements</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>         <span class="c1"># RA of the ascending node at epoch</span>
+        <span class="n">aop0</span>   <span class="o">=</span> <span class="n">mean_elements</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>         <span class="c1"># Argument of perigee at epoch</span>
+        <span class="n">M0</span>     <span class="o">=</span> <span class="n">mean_elements</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>         <span class="c1"># Mean anomaly at epoch</span>
+    
+        <span class="c1"># Compute ballistic coefficient</span>
+        <span class="n">bstar</span>  <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">B</span><span class="o">*</span><span class="n">SGP4</span><span class="o">.</span><span class="n">RHO0</span> <span class="c1"># B* in [1/m]</span>
+        <span class="n">n0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">SGP4</span><span class="o">.</span><span class="n">GM</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">a0</span><span class="o">**</span><span class="mf">1.5</span><span class="p">)</span>
+        
+        <span class="c1"># Scaling</span>
+        <span class="n">n0</span>    <span class="o">=</span> <span class="n">n0</span><span class="o">*</span><span class="p">(</span><span class="mf">86400.0</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span>          <span class="c1"># Convert to [rev/d]</span>
+        <span class="n">bstar</span> <span class="o">=</span> <span class="n">bstar</span><span class="o">*</span><span class="p">(</span><span class="n">SGP4</span><span class="o">.</span><span class="n">R_EARTH</span><span class="o">*</span><span class="mf">1000.0</span><span class="p">)</span>     <span class="c1"># Convert from [1/m] to [1/R_EARTH]</span>
+    
+        <span class="c1"># Compute year and day of year</span>
+        <span class="n">d</span>   <span class="o">=</span> <span class="n">mjd_epoch</span> <span class="o">-</span> <span class="mf">16480.0</span>               <span class="c1"># Days since 1904 Jan 1.0</span>
+        <span class="n">y</span>   <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="o">/</span> <span class="mf">365.25</span><span class="p">)</span>                <span class="c1"># Number of years since 1904</span>
+        <span class="n">doy</span> <span class="o">=</span> <span class="n">d</span> <span class="o">-</span> <span class="nb">int</span><span class="p">(</span><span class="mf">365.25</span><span class="o">*</span><span class="n">y</span><span class="p">)</span>                 <span class="c1"># Day of year</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">y</span><span class="o">%</span><span class="mi">4</span><span class="o">==</span><span class="mi">0</span><span class="p">):</span>
+            <span class="n">doy</span><span class="o">+=</span><span class="mf">1.0</span>
+                    
+        <span class="c1"># Create Satellite object and fill member variables</span>
+        <span class="n">sat</span> <span class="o">=</span> <span class="n">sgp4</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">Satellite</span><span class="p">()</span>
+        <span class="c1">#Unique satellite number given in the TLE file.</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">satnum</span> <span class="o">=</span> <span class="mi">12345</span>
+        <span class="c1">#Full four-digit year of this element set&#39;s epoch moment.</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">epochyr</span> <span class="o">=</span> <span class="mi">1904</span><span class="o">+</span><span class="n">y</span>
+        <span class="c1">#Fractional days into the year of the epoch moment.</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">epochdays</span> <span class="o">=</span> <span class="n">doy</span>
+        <span class="c1">#Julian date of the epoch (computed from epochyr and epochdays).</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">jdsatepoch</span> <span class="o">=</span> <span class="n">mjd_epoch</span> <span class="o">+</span> <span class="n">SGP4</span><span class="o">.</span><span class="n">MJD_0</span>
+        
+        <span class="c1">#First time derivative of the mean motion (ignored by SGP4).</span>
+        <span class="c1">#sat.ndot</span>
+        <span class="c1">#Second time derivative of the mean motion (ignored by SGP4).</span>
+        <span class="c1">#sat.nddot</span>
+        <span class="c1">#Ballistic drag coefficient B* in inverse earth radii.</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">bstar</span> <span class="o">=</span> <span class="n">bstar</span>
+        <span class="c1">#Inclination in radians.</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">inclo</span> <span class="o">=</span> <span class="n">i0</span>
+        <span class="c1">#Right ascension of ascending node in radians.</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">nodeo</span> <span class="o">=</span> <span class="n">raan0</span>
+        <span class="c1">#Eccentricity.</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">ecco</span> <span class="o">=</span> <span class="n">e0</span>
+        <span class="c1">#Argument of perigee in radians.</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">argpo</span> <span class="o">=</span> <span class="n">aop0</span>
+        <span class="c1">#Mean anomaly in radians.</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">mo</span> <span class="o">=</span> <span class="n">M0</span>
+        <span class="c1">#Mean motion in radians per minute.</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">no</span> <span class="o">=</span> <span class="n">n0</span> <span class="o">/</span> <span class="p">(</span> <span class="mf">1440.0</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="p">)</span>
+        <span class="c1">#</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">whichconst</span> <span class="o">=</span> <span class="n">SGP4</span><span class="o">.</span><span class="n">WGS</span>
+        
+        <span class="n">sat</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="nb">pow</span><span class="p">(</span> <span class="n">sat</span><span class="o">.</span><span class="n">no</span><span class="o">*</span><span class="n">SGP4</span><span class="o">.</span><span class="n">WGS</span><span class="o">.</span><span class="n">tumin</span> <span class="p">,</span> <span class="p">(</span><span class="o">-</span><span class="mf">2.0</span><span class="o">/</span><span class="mf">3.0</span><span class="p">)</span> <span class="p">)</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">alta</span> <span class="o">=</span> <span class="n">sat</span><span class="o">.</span><span class="n">a</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">sat</span><span class="o">.</span><span class="n">ecco</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">altp</span> <span class="o">=</span> <span class="n">sat</span><span class="o">.</span><span class="n">a</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">sat</span><span class="o">.</span><span class="n">ecco</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span>
+    
+        <span class="n">sgp4</span><span class="o">.</span><span class="n">propagation</span><span class="o">.</span><span class="n">sgp4init</span><span class="p">(</span><span class="n">SGP4</span><span class="o">.</span><span class="n">WGS</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> \
+            <span class="n">sat</span><span class="o">.</span><span class="n">satnum</span><span class="p">,</span> <span class="n">sat</span><span class="o">.</span><span class="n">jdsatepoch</span><span class="o">-</span><span class="mf">2433281.5</span><span class="p">,</span> <span class="n">sat</span><span class="o">.</span><span class="n">bstar</span><span class="p">,</span>\
+            <span class="n">sat</span><span class="o">.</span><span class="n">ecco</span><span class="p">,</span> <span class="n">sat</span><span class="o">.</span><span class="n">argpo</span><span class="p">,</span> <span class="n">sat</span><span class="o">.</span><span class="n">inclo</span><span class="p">,</span> <span class="n">sat</span><span class="o">.</span><span class="n">mo</span><span class="p">,</span> <span class="n">sat</span><span class="o">.</span><span class="n">no</span><span class="p">,</span>\
+            <span class="n">sat</span><span class="o">.</span><span class="n">nodeo</span><span class="p">,</span> <span class="n">sat</span><span class="p">)</span>
+
+        <span class="c1"># Store satellite object and epoch</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sat</span>       <span class="o">=</span> <span class="n">sat</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mjd_epoch</span> <span class="o">=</span> <span class="n">mjd_epoch</span>
+        
+<div class="viewcode-block" id="SGP4.state"><a class="viewcode-back" href="../modules/propagator_sgp4.html#propagator_sgp4.SGP4.state">[docs]</a>    <span class="k">def</span> <span class="nf">state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mjd</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Inertial position and velocity ([m], [m/s]) at epoch mjd</span>
+<span class="sd">        </span>
+
+<span class="sd">        :param float mjd: epoch where satellite should be propagated to</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># minutes since reference epoch</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="p">(</span><span class="n">mjd</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">mjd_epoch</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1440.0</span>
+        <span class="n">r</span><span class="p">,</span><span class="n">v</span> <span class="o">=</span> <span class="n">sgp4</span><span class="o">.</span><span class="n">propagation</span><span class="o">.</span><span class="n">sgp4</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sat</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span>
+        <span class="c1"># convert to m and m/s ---- WHY IS THIS COMMENT HERE???</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">r</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span></div>
+        
+<div class="viewcode-block" id="SGP4.position"><a class="viewcode-back" href="../modules/propagator_sgp4.html#propagator_sgp4.SGP4.position">[docs]</a>    <span class="k">def</span> <span class="nf">position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mjd</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Inertial position at epoch mjd</span>
+<span class="sd">        </span>
+<span class="sd">        :param float mjd: epoch where satellite should be propagated to</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="n">mjd</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span></div>
+        
+<div class="viewcode-block" id="SGP4.velocity"><a class="viewcode-back" href="../modules/propagator_sgp4.html#propagator_sgp4.SGP4.velocity">[docs]</a>    <span class="k">def</span> <span class="nf">velocity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mjd</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Inertial velocity at epoch mjd</span>
+<span class="sd">                </span>
+<span class="sd">        :param float mjd: epoch where satellite should be propagated to</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="n">mjd</span><span class="p">)[</span><span class="mi">3</span><span class="p">:</span><span class="mi">7</span><span class="p">]</span></div></div>
+
+
+<span class="n">M_earth</span> <span class="o">=</span> <span class="n">SGP4</span><span class="o">.</span><span class="n">GM</span><span class="o">*</span><span class="mf">1e9</span><span class="o">/</span><span class="n">consts</span><span class="o">.</span><span class="n">G</span>
+<span class="sd">&#39;&#39;&#39;float: Mass of the Earth using the WGS72 convention.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="n">MU_earth</span> <span class="o">=</span> <span class="n">SGP4</span><span class="o">.</span><span class="n">GM</span><span class="o">*</span><span class="mf">1e9</span>
+<span class="sd">&#39;&#39;&#39;float: Standard gravitational parameter of the Earth using the WGS72 convention.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+
+<div class="viewcode-block" id="sgp4_propagation"><a class="viewcode-back" href="../modules/propagator_sgp4.html#propagator_sgp4.sgp4_propagation">[docs]</a><span class="k">def</span> <span class="nf">sgp4_propagation</span><span class="p">(</span> <span class="n">mjd_epoch</span><span class="p">,</span> <span class="n">mean_elements</span><span class="p">,</span> <span class="n">B</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Lazy SGP4 propagation using SGP4 class</span>
+<span class="sd">    </span>
+<span class="sd">    Create a satellite object from mean elements and propagate it</span>
+
+<span class="sd">    :param list/numpy.ndarray mean_elements : [a0,e0,i0,raan0,aop0,M0]</span>
+<span class="sd">    :param float B: Ballistic coefficient ( 0.5*C_D*A/m )</span>
+<span class="sd">    :param float dt: Time difference w.r.t. element epoch in seconds</span>
+<span class="sd">    :param float mjd_epoch: Epoch of elements as Modified Julian Date (MJD) Can be ignored if the exact epoch is unimportant.</span>
+<span class="sd">    :param str method: Forces use of SGP4 or SDP4 depending on string &#39;n&#39; or &#39;d&#39;</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mjd_</span> <span class="o">=</span> <span class="n">mjd_epoch</span> <span class="o">+</span> <span class="n">dt</span> <span class="o">/</span> <span class="mf">86400.0</span>
+    <span class="n">obj</span> <span class="o">=</span> <span class="n">SGP4</span><span class="p">(</span><span class="n">mjd_epoch</span><span class="p">,</span> <span class="n">mean_elements</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;n&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">]:</span>
+        <span class="n">obj</span><span class="o">.</span><span class="n">sat</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">method</span>
+    <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="n">mjd_</span><span class="p">)</span></div>
+    
+
+
+<div class="viewcode-block" id="PropagatorSGP4"><a class="viewcode-back" href="../modules/propagator_sgp4.html#propagator_sgp4.PropagatorSGP4">[docs]</a><span class="k">class</span> <span class="nc">PropagatorSGP4</span><span class="p">(</span><span class="n">PropagatorBase</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Propagator class implementing the SGP4 propagator.</span>
+
+<span class="sd">    :ivar bool polar_motion: Determines if polar motion should be used in calculating ITRF frame.</span>
+<span class="sd">    :ivar str polar_motion_model: String identifying the polar motion model to be used. Options are &#39;80&#39; or &#39;00&#39;.</span>
+<span class="sd">    :ivar str out_frame: String identifying the output frame. Options are &#39;ITRF&#39; or &#39;TEME&#39;.</span>
+
+<span class="sd">    The constructor creates a propagator instance with supplied options.</span>
+
+<span class="sd">    :param bool polar_motion: Determines if polar motion should be used in calculating ITRF frame.</span>
+<span class="sd">    :param str polar_motion_model: String identifying the polar motion model to be used. Options are &#39;80&#39; or &#39;00&#39;.</span>
+<span class="sd">    :param str out_frame: String identifying the output frame. Options are &#39;ITRF&#39; or &#39;TEME&#39;.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">polar_motion</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">polar_motion_model</span><span class="o">=</span><span class="s1">&#39;80&#39;</span><span class="p">,</span> <span class="n">out_frame</span><span class="o">=</span><span class="s1">&#39;ITRF&#39;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PropagatorSGP4</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">polar_motion</span> <span class="o">=</span> <span class="n">polar_motion</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">polar_motion_model</span> <span class="o">=</span> <span class="n">polar_motion_model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_frame</span> <span class="o">=</span> <span class="n">out_frame</span>
+
+
+<div class="viewcode-block" id="PropagatorSGP4.get_orbit"><a class="viewcode-back" href="../modules/propagator_sgp4.html#propagator_sgp4.PropagatorSGP4.get_orbit">[docs]</a>    <span class="k">def</span> <span class="nf">get_orbit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">inc</span><span class="p">,</span> <span class="n">raan</span><span class="p">,</span> <span class="n">aop</span><span class="p">,</span> <span class="n">mu0</span><span class="p">,</span> <span class="n">mjd0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        **Implementation:**</span>
+<span class="sd">    </span>
+<span class="sd">        All state-vector units are in meters.</span>
+
+<span class="sd">        Keyword arguments contain only information needed for ballistic coefficient :code:`B` used by SGP4. Either :code:`B` or :code:`C_D`, :code:`A` and :code:`m` must be supplied.</span>
+<span class="sd">        They also contain a option to give angles in radians or degrees. By default input is assumed to be degrees.</span>
+
+<span class="sd">        **Frame:**</span>
+
+<span class="sd">        The input frame is ECI (TEME) for orbital elements and Cartesian. The output frame is as standard ECEF (ITRF). But can be set to TEME.</span>
+
+<span class="sd">        :param float B: Ballistic coefficient</span>
+<span class="sd">        :param float C_D: Drag coefficient</span>
+<span class="sd">        :param float A: Cross-sectional Area</span>
+<span class="sd">        :param float m: Mass</span>
+<span class="sd">        :param bool radians: If true, all angles are assumed to be in radians.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="s1">&#39;m&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;m&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="k">if</span> <span class="s1">&#39;radians&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">radians</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;radians&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">radians</span> <span class="o">=</span> <span class="kc">False</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">radians</span><span class="p">:</span>
+            <span class="n">inc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">inc</span><span class="p">)</span>
+            <span class="n">mu0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">mu0</span><span class="p">)</span>
+            <span class="n">raan</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">raan</span><span class="p">)</span>
+            <span class="n">aop</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">aop</span><span class="p">)</span>
+
+        <span class="n">orb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">a</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">inc</span><span class="p">,</span> <span class="n">aop</span><span class="p">,</span> <span class="n">raan</span><span class="p">,</span> <span class="n">dpt</span><span class="o">.</span><span class="n">mean2true</span><span class="p">(</span><span class="n">mu0</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">radians</span><span class="o">=</span><span class="kc">True</span><span class="p">)],</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+
+        <span class="n">state_c</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">kep2cart</span><span class="p">(</span><span class="n">orb</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">M_cent</span><span class="o">=</span><span class="n">M_earth</span><span class="p">,</span> <span class="n">radians</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_orbit_cart</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">state_c</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="o">=</span><span class="n">state_c</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">z</span><span class="o">=</span><span class="n">state_c</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">vx</span><span class="o">=</span><span class="n">state_c</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">vy</span><span class="o">=</span><span class="n">state_c</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="n">vz</span><span class="o">=</span><span class="n">state_c</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">mjd0</span><span class="o">=</span><span class="n">mjd0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PropagatorSGP4.get_orbit_TLE"><a class="viewcode-back" href="../modules/propagator_sgp4.html#propagator_sgp4.PropagatorSGP4.get_orbit_TLE">[docs]</a>    <span class="k">def</span> <span class="nf">get_orbit_TLE</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">line1</span><span class="p">,</span> <span class="n">line2</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Takes a TLE and propagates it forward in time directly using the SGP4 algorithm.</span>
+
+<span class="sd">        :param float/list/numpy.ndarray t: Time in seconds to propagate relative the initial state epoch.</span>
+<span class="sd">        :param str line1: TLE line 1</span>
+<span class="sd">        :param str line2: TLE line 2</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">jd0</span> <span class="o">=</span> <span class="n">tle</span><span class="o">.</span><span class="n">tle_jd</span><span class="p">(</span><span class="n">line1</span><span class="p">)</span>
+        <span class="n">mjd0</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">jd_to_mjd</span><span class="p">(</span><span class="n">jd0</span><span class="p">)</span>
+
+        <span class="n">jddates</span> <span class="o">=</span> <span class="n">jd0</span> <span class="o">+</span> <span class="n">t</span><span class="o">/</span><span class="p">(</span><span class="mf">3600.0</span><span class="o">*</span><span class="mf">24.0</span><span class="p">)</span>
+
+        <span class="n">states_TEME</span> <span class="o">=</span> <span class="n">tle</span><span class="o">.</span><span class="n">TLE_propagation_TEME</span><span class="p">(</span><span class="n">line1</span><span class="p">,</span> <span class="n">line2</span><span class="p">,</span> <span class="n">jddates</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_frame</span> <span class="o">==</span> <span class="s1">&#39;TEME&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">states_TEME</span>
+            
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_frame</span> <span class="o">==</span> <span class="s1">&#39;ITRF&#39;</span><span class="p">:</span>
+            <span class="n">ecefs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">states_TEME</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">states_TEME</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polar_motion</span><span class="p">:</span>
+                <span class="n">PM_data</span> <span class="o">=</span> <span class="n">tle</span><span class="o">.</span><span class="n">get_Polar_Motion</span><span class="p">(</span><span class="n">jddates</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">jdi</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">jddates</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+                    <span class="n">ecefs</span><span class="p">[:,</span><span class="n">jdi</span><span class="p">]</span> <span class="o">=</span> <span class="n">tle</span><span class="o">.</span><span class="n">TEME_to_ITRF</span><span class="p">(</span>
+                        <span class="n">states_TEME</span><span class="p">[:,</span><span class="n">jdi</span><span class="p">],</span>
+                        <span class="n">jddates</span><span class="p">[</span><span class="n">jdi</span><span class="p">],</span>
+                        <span class="n">PM_data</span><span class="p">[</span><span class="n">jdi</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>
+                        <span class="n">PM_data</span><span class="p">[</span><span class="n">jdi</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span>
+                    <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">jdi</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">jddates</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+                    <span class="n">ecefs</span><span class="p">[:,</span><span class="n">jdi</span><span class="p">]</span> <span class="o">=</span> <span class="n">tle</span><span class="o">.</span><span class="n">TEME_to_ITRF</span><span class="p">(</span>
+                        <span class="n">states_TEME</span><span class="p">[:,</span><span class="n">jdi</span><span class="p">],</span>
+                        <span class="n">jddates</span><span class="p">[</span><span class="n">jdi</span><span class="p">],</span>
+                        <span class="mf">0.0</span><span class="p">,</span>
+                        <span class="mf">0.0</span><span class="p">,</span>
+                    <span class="p">)</span>
+            <span class="k">return</span> <span class="n">ecefs</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Output frame </span><span class="si">{}</span><span class="s1"> not found&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_frame</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="PropagatorSGP4.get_orbit_cart"><a class="viewcode-back" href="../modules/propagator_sgp4.html#propagator_sgp4.PropagatorSGP4.get_orbit_cart">[docs]</a>    <span class="k">def</span> <span class="nf">get_orbit_cart</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">vx</span><span class="p">,</span> <span class="n">vy</span><span class="p">,</span> <span class="n">vz</span><span class="p">,</span> <span class="n">mjd0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        **Implementation:**</span>
+
+<span class="sd">        All state-vector units are in meters.</span>
+
+<span class="sd">        Keyword arguments contain only information needed for ballistic coefficient :code:`B` used by SGP4. Either :code:`B` or :code:`C_D`, :code:`A` and :code:`m` must be supplied.</span>
+<span class="sd">        They also contain a option to give angles in radians or degrees. By default input is assumed to be degrees.</span>
+
+<span class="sd">        **Frame:**</span>
+
+<span class="sd">        The input frame is ECI (TEME) for orbital elements and Cartesian. The output frame is always ECEF.</span>
+
+<span class="sd">        :param float B: Ballistic coefficient</span>
+<span class="sd">        :param float C_D: Drag coefficient</span>
+<span class="sd">        :param float A: Cross-sectional Area</span>
+<span class="sd">        :param float m: Mass</span>
+<span class="sd">        :param bool radians: If true, all angles are assumed to be in radians.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_numpy</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s1">&#39;B&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">B</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">B</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;C_D&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;m&#39;</span><span class="p">]</span>
+
+        <span class="n">state_c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">,</span><span class="n">vx</span><span class="p">,</span><span class="n">vy</span><span class="p">,</span><span class="n">vz</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+        <span class="n">state_c</span> <span class="o">*=</span> <span class="mf">1e-3</span> <span class="c1">#to km</span>
+
+        <span class="n">mean_elements</span> <span class="o">=</span> <span class="n">tle</span><span class="o">.</span><span class="n">TEME_to_TLE</span><span class="p">(</span><span class="n">state_c</span><span class="p">,</span> <span class="n">mjd0</span><span class="o">=</span><span class="n">mjd0</span><span class="p">,</span> <span class="n">kepler</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">mean_elements</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Could not compute SGP4 initial state: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mean_elements</span><span class="p">))</span>
+
+        <span class="c1"># Create own SGP4 object</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">SGP4</span><span class="p">(</span><span class="n">mjd0</span><span class="p">,</span> <span class="n">mean_elements</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
+
+        <span class="n">mjdates</span> <span class="o">=</span> <span class="n">mjd0</span> <span class="o">+</span> <span class="n">t</span><span class="o">/</span><span class="mf">86400.0</span>
+        <span class="n">pos</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span><span class="n">t</span><span class="o">.</span><span class="n">size</span><span class="p">])</span>
+        <span class="n">vel</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span><span class="n">t</span><span class="o">.</span><span class="n">size</span><span class="p">])</span>
+
+        <span class="k">for</span> <span class="n">mi</span><span class="p">,</span><span class="n">mjd</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">mjdates</span><span class="p">):</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="n">mjd</span><span class="p">)</span>
+            <span class="n">pos</span><span class="p">[:,</span><span class="n">mi</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span>
+            <span class="n">vel</span><span class="p">[:,</span><span class="n">mi</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="mi">3</span><span class="p">:]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_frame</span> <span class="o">==</span> <span class="s1">&#39;TEME&#39;</span><span class="p">:</span>
+            <span class="n">states</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">6</span><span class="p">,</span><span class="n">t</span><span class="o">.</span><span class="n">size</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+            <span class="n">states</span><span class="p">[:</span><span class="mi">3</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">pos</span><span class="o">*</span><span class="mf">1e3</span>
+            <span class="n">states</span><span class="p">[</span><span class="mi">3</span><span class="p">:,:]</span> <span class="o">=</span> <span class="n">vel</span><span class="o">*</span><span class="mf">1e3</span>
+            <span class="k">return</span> <span class="n">states</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_frame</span> <span class="o">==</span> <span class="s1">&#39;ITRF&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polar_motion</span><span class="p">:</span>
+                <span class="n">PM_data</span> <span class="o">=</span> <span class="n">tle</span><span class="o">.</span><span class="n">get_Polar_Motion</span><span class="p">(</span><span class="n">dpt</span><span class="o">.</span><span class="n">mjd_to_jd</span><span class="p">(</span><span class="n">mjdates</span><span class="p">))</span>
+                <span class="n">xp</span> <span class="o">=</span> <span class="n">PM_data</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">xp</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">xp</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+                <span class="n">yp</span> <span class="o">=</span> <span class="n">PM_data</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">yp</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">yp</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">xp</span> <span class="o">=</span> <span class="mf">0.0</span>
+                <span class="n">yp</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+            <span class="n">ecefs</span> <span class="o">=</span> <span class="n">teme2ecef</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">vel</span><span class="p">,</span> <span class="n">mjd0</span><span class="o">=</span><span class="n">mjd0</span><span class="p">,</span> <span class="n">xp</span><span class="o">=</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="o">=</span><span class="n">yp</span> <span class="p">,</span><span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">polar_motion_model</span><span class="p">)</span>
+            <span class="n">ecefs</span> <span class="o">*=</span> <span class="mf">1e3</span> <span class="c1">#to meter</span>
+            <span class="k">return</span> <span class="n">ecefs</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Output frame </span><span class="si">{}</span><span class="s1"> not found&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_frame</span><span class="p">))</span></div></div>
+
+
+    
+
+<div class="viewcode-block" id="PropagatorTLE"><a class="viewcode-back" href="../modules/propagator_sgp4.html#propagator_sgp4.PropagatorTLE">[docs]</a><span class="k">class</span> <span class="nc">PropagatorTLE</span><span class="p">(</span><span class="n">PropagatorSGP4</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">polar_motion</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">polar_motion_model</span><span class="o">=</span><span class="s1">&#39;80&#39;</span><span class="p">,</span> <span class="n">out_frame</span><span class="o">=</span><span class="s1">&#39;ITRF&#39;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PropagatorTLE</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">polar_motion</span><span class="o">=</span><span class="n">polar_motion</span><span class="p">,</span> <span class="n">polar_motion_model</span><span class="o">=</span><span class="n">polar_motion_model</span><span class="p">,</span> <span class="n">out_frame</span><span class="o">=</span><span class="n">out_frame</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="PropagatorTLE.get_orbit"><a class="viewcode-back" href="../modules/propagator_sgp4.html#propagator_sgp4.PropagatorTLE.get_orbit">[docs]</a>    <span class="k">def</span> <span class="nf">get_orbit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">inc</span><span class="p">,</span> <span class="n">raan</span><span class="p">,</span> <span class="n">aop</span><span class="p">,</span> <span class="n">mu0</span><span class="p">,</span> <span class="n">mjd0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        **Implementation:**</span>
+
+<span class="sd">        Direct propagation of TLE. All input elements are ignored except for the two lines in :code:`**kwargs`.</span>
+
+<span class="sd">        **Frame:**</span>
+<span class="sd">            </span>
+<span class="sd">            The output frame is (ITRF) ECEF or (TEME) ECI.</span>
+
+<span class="sd">        :param str line1: TLE line 1</span>
+<span class="sd">        :param str line2: TLE line 2</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">line1</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;line1&#39;</span><span class="p">]</span>
+        <span class="n">line2</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;line2&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_orbit_TLE</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">line1</span><span class="p">,</span> <span class="n">line2</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PropagatorTLE.get_orbit_cart"><a class="viewcode-back" href="../modules/propagator_sgp4.html#propagator_sgp4.PropagatorTLE.get_orbit_cart">[docs]</a>    <span class="k">def</span> <span class="nf">get_orbit_cart</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">vx</span><span class="p">,</span> <span class="n">vy</span><span class="p">,</span> <span class="n">vz</span><span class="p">,</span> <span class="n">mjd0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        **Implementation:**</span>
+
+<span class="sd">        Direct propagation of TLE. All input elements are ignored except for the two lines in :code:`**kwargs`.</span>
+
+<span class="sd">        **Frame:**</span>
+<span class="sd">            </span>
+<span class="sd">            The output frame is (ITRF) ECEF or (TEME) ECI.</span>
+
+<span class="sd">        :param str line1: TLE line 1</span>
+<span class="sd">        :param str line2: TLE line 2</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">line1</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;line1&#39;</span><span class="p">]</span>
+        <span class="n">line2</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;line2&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_orbit_TLE</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">line1</span><span class="p">,</span> <span class="n">line2</span><span class="p">)</span></div></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">time</span>
+    <span class="kn">from</span> <span class="nn">propagator_base</span> <span class="k">import</span> <span class="n">plot_orbit_3d</span>
+
+
+    <span class="n">prop</span> <span class="o">=</span> <span class="n">PropagatorSGP4</span><span class="p">()</span>
+
+    <span class="n">mjd0</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">jd_to_mjd</span><span class="p">(</span><span class="mf">2457126.2729</span><span class="p">)</span>
+    <span class="n">C_D</span> <span class="o">=</span> <span class="mf">2.3</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="mi">8000</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+    <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">24</span><span class="o">*</span><span class="mi">3600</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+    
+    <span class="n">t0</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+    <span class="n">ecefs</span> <span class="o">=</span> <span class="n">prop</span><span class="o">.</span><span class="n">get_orbit</span><span class="p">(</span>
+        <span class="n">t</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="n">mjd0</span><span class="o">=</span><span class="n">mjd0</span><span class="p">,</span>
+        <span class="n">a</span><span class="o">=</span><span class="mf">7000e3</span><span class="p">,</span> <span class="n">e</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">inc</span><span class="o">=</span><span class="mf">90.0</span><span class="p">,</span>
+        <span class="n">raan</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">aop</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">mu0</span><span class="o">=</span><span class="mf">40.0</span><span class="p">,</span>
+        <span class="n">C_D</span><span class="o">=</span><span class="n">C_D</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">A</span><span class="o">=</span><span class="n">A</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">t1</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;exec time: </span><span class="si">{}</span><span class="s1"> sec&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">t1</span><span class="o">-</span><span class="n">t0</span><span class="p">))</span>
+    
+    <span class="n">plot_orbit_3d</span><span class="p">(</span><span class="n">ecefs</span><span class="p">)</span>
+
+    <span class="n">prop</span> <span class="o">=</span> <span class="n">PropagatorSGP4</span><span class="p">(</span><span class="n">polar_motion</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">polar_motion_model</span><span class="o">=</span><span class="s1">&#39;00&#39;</span><span class="p">)</span>
+    
+    <span class="n">t0</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+    <span class="n">ecefs</span> <span class="o">=</span> <span class="n">prop</span><span class="o">.</span><span class="n">get_orbit</span><span class="p">(</span>
+        <span class="n">t</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="n">mjd0</span><span class="o">=</span><span class="n">mjd0</span><span class="p">,</span>
+        <span class="n">a</span><span class="o">=</span><span class="mf">7000e3</span><span class="p">,</span> <span class="n">e</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">inc</span><span class="o">=</span><span class="mf">90.0</span><span class="p">,</span>
+        <span class="n">raan</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">aop</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">mu0</span><span class="o">=</span><span class="mf">40.0</span><span class="p">,</span>
+        <span class="n">C_D</span><span class="o">=</span><span class="n">C_D</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">A</span><span class="o">=</span><span class="n">A</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">t1</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;exec time: </span><span class="si">{}</span><span class="s1"> sec&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">t1</span><span class="o">-</span><span class="n">t0</span><span class="p">))</span>
+
+    <span class="n">plot_orbit_3d</span><span class="p">(</span><span class="n">ecefs</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/doc.html">Documentation</a></li>
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,314 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>radar_scan_library &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="scheduler_library" href="scheduler_library.html" />
+    <link rel="prev" title="antenna_library" href="antenna_library.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="scheduler_library.html" title="scheduler_library"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="antenna_library.html" title="antenna_library"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" accesskey="U">Documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-radar_scan_library">
+<span id="radar-scan-library"></span><h1>radar_scan_library<a class="headerlink" href="#module-radar_scan_library" title="Permalink to this headline">¶</a></h1>
+<p>A collection of <a class="reference internal" href="radar_scans.html#radar_scans.RadarScan" title="radar_scans.RadarScan"><code class="xref py py-class docutils literal notranslate"><span class="pre">radar_scans.RadarScan</span></code></a> instances, such as fence scans or ionospheric grids.</p>
+<dl class="function">
+<dt id="radar_scan_library.beampark_model">
+<code class="descclassname">radar_scan_library.</code><code class="descname">beampark_model</code><span class="sig-paren">(</span><em>az</em>, <em>el</em>, <em>lat</em>, <em>lon</em>, <em>alt</em>, <em>name='Beampark'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/radar_scan_library.html#beampark_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scan_library.beampark_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>A beampark model.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>az</strong> (<em>float</em>) – Azimuth in degrees east of north.</li>
+<li><strong>el</strong> (<em>float</em>) – Elevation in degrees above horizon.</li>
+<li><strong>lat</strong> (<em>float</em>) – Geographical latitude of radar system in decimal degrees  (North+).</li>
+<li><strong>lon</strong> (<em>float</em>) – Geographical longitude of radar system in decimal degrees (East+).</li>
+<li><strong>alt</strong> (<em>float</em>) – Geographical altitude above geoid surface of radar system in meter.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="radar_scan_library.calculate_fence_angles">
+<code class="descclassname">radar_scan_library.</code><code class="descname">calculate_fence_angles</code><span class="sig-paren">(</span><em>min_el</em>, <em>angle_step</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/radar_scan_library.html#calculate_fence_angles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scan_library.calculate_fence_angles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate a vector of angles to be used in a fence scan.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="radar_scan_library.ew_fence_model">
+<code class="descclassname">radar_scan_library.</code><code class="descname">ew_fence_model</code><span class="sig-paren">(</span><em>lat</em>, <em>lon</em>, <em>alt</em>, <em>min_el=30</em>, <em>angle_step=1.0</em>, <em>dwell_time=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/radar_scan_library.html#ew_fence_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scan_library.ew_fence_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="radar_scan_library.flat_grid_model">
+<code class="descclassname">radar_scan_library.</code><code class="descname">flat_grid_model</code><span class="sig-paren">(</span><em>lat</em>, <em>lon</em>, <em>alt</em>, <em>n_side=3</em>, <em>height=300000.0</em>, <em>side_len=100000.0</em>, <em>dwell_time=0.4</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/radar_scan_library.html#flat_grid_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scan_library.flat_grid_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="radar_scan_library.n_const_pointing_model">
+<code class="descclassname">radar_scan_library.</code><code class="descname">n_const_pointing_model</code><span class="sig-paren">(</span><em>az</em>, <em>el</em>, <em>lat</em>, <em>lon</em>, <em>alt</em>, <em>dwell_time=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/radar_scan_library.html#n_const_pointing_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scan_library.n_const_pointing_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Model for a n-point beampark with fixed dwell-times.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>az</strong> (<em>list</em>) – Azimuths in degrees east of north.</li>
+<li><strong>el</strong> (<em>list</em>) – Elevations in degrees above horizon.</li>
+<li><strong>lat</strong> (<em>float</em>) – Geographical latitude of radar system in decimal degrees  (North+).</li>
+<li><strong>lon</strong> (<em>float</em>) – Geographical longitude of radar system in decimal degrees (East+).</li>
+<li><strong>alt</strong> (<em>float</em>) – Geographical altitude above geoid surface of radar system in meter.</li>
+<li><strong>dwell_time</strong> (<em>float</em>) – Time spent at each azimuth-elevation pair of pointing direction.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="radar_scan_library.n_dyn_dwell_pointing_model">
+<code class="descclassname">radar_scan_library.</code><code class="descname">n_dyn_dwell_pointing_model</code><span class="sig-paren">(</span><em>az</em>, <em>el</em>, <em>dwells</em>, <em>lat</em>, <em>lon</em>, <em>alt</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/radar_scan_library.html#n_dyn_dwell_pointing_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scan_library.n_dyn_dwell_pointing_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Model for a n-point beampark with variable dwell-times.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>az</strong> (<em>list</em>) – Azimuths in degrees east of north.</li>
+<li><strong>el</strong> (<em>list</em>) – Elevations in degrees above horizon.</li>
+<li><strong>dwells</strong> (<em>list</em>) – Times to spend at each azimuth-elevation pair of pointing direction.</li>
+<li><strong>lat</strong> (<em>float</em>) – Geographical latitude of radar system in decimal degrees  (North+).</li>
+<li><strong>lon</strong> (<em>float</em>) – Geographical longitude of radar system in decimal degrees (East+).</li>
+<li><strong>alt</strong> (<em>float</em>) – Geographical altitude above geoid surface of radar system in meter.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="radar_scan_library.ns_fence_model">
+<code class="descclassname">radar_scan_library.</code><code class="descname">ns_fence_model</code><span class="sig-paren">(</span><em>lat</em>, <em>lon</em>, <em>alt</em>, <em>min_el=30</em>, <em>angle_step=1</em>, <em>dwell_time=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/radar_scan_library.html#ns_fence_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scan_library.ns_fence_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="radar_scan_library.ns_fence_rng_model">
+<code class="descclassname">radar_scan_library.</code><code class="descname">ns_fence_rng_model</code><span class="sig-paren">(</span><em>lat</em>, <em>lon</em>, <em>alt</em>, <em>min_el=30</em>, <em>angle_step=1</em>, <em>dwell_time=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/radar_scan_library.html#ns_fence_rng_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scan_library.ns_fence_rng_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="radar_scan_library.point_beampark">
+<code class="descclassname">radar_scan_library.</code><code class="descname">point_beampark</code><span class="sig-paren">(</span><em>t</em>, <em>az</em>, <em>el</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/radar_scan_library.html#point_beampark"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scan_library.point_beampark" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pointing function for a single point beampark. AZ-EL coordinate system.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>t</strong> (<em>float</em>) – Seconds past epoch.</li>
+<li><strong>az</strong> (<em>float</em>) – Azimuth in degrees east of north.</li>
+<li><strong>el</strong> (<em>float</em>) – Elevation in degrees above horizon.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="radar_scan_library.point_circle_fence">
+<code class="descclassname">radar_scan_library.</code><code class="descname">point_circle_fence</code><span class="sig-paren">(</span><em>t</em>, <em>az</em>, <em>el</em>, <em>dwell_time</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/radar_scan_library.html#point_circle_fence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scan_library.point_circle_fence" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="radar_scan_library.point_cross_fence_scan">
+<code class="descclassname">radar_scan_library.</code><code class="descname">point_cross_fence_scan</code><span class="sig-paren">(</span><em>t</em>, <em>angles</em>, <em>dwell_time</em>, <em>state</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/radar_scan_library.html#point_cross_fence_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scan_library.point_cross_fence_scan" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="radar_scan_library.point_ew_fence_scan">
+<code class="descclassname">radar_scan_library.</code><code class="descname">point_ew_fence_scan</code><span class="sig-paren">(</span><em>t</em>, <em>angles</em>, <em>dwell_time</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/radar_scan_library.html#point_ew_fence_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scan_library.point_ew_fence_scan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pointing function for a east-west fence scan. NED coordinate system.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="radar_scan_library.point_n_beampark">
+<code class="descclassname">radar_scan_library.</code><code class="descname">point_n_beampark</code><span class="sig-paren">(</span><em>t</em>, <em>az</em>, <em>el</em>, <em>dwell_time</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/radar_scan_library.html#point_n_beampark"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scan_library.point_n_beampark" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pointing function for a n-point beampark with fixed dwell-times. AZ-EL coordinate system.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>t</strong> (<em>float</em>) – Seconds past epoch.</li>
+<li><strong>az</strong> (<em>list</em>) – Azimuths in degrees east of north.</li>
+<li><strong>el</strong> (<em>list</em>) – Elevations in degrees above horizon.</li>
+<li><strong>dwell_time</strong> (<em>float</em>) – Time in seconds spent at each azimuth-elevation pair of pointing direction.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="radar_scan_library.point_n_dyn_beampark">
+<code class="descclassname">radar_scan_library.</code><code class="descname">point_n_dyn_beampark</code><span class="sig-paren">(</span><em>t</em>, <em>az</em>, <em>el</em>, <em>scan_time</em>, <em>dwell_time</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/radar_scan_library.html#point_n_dyn_beampark"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scan_library.point_n_dyn_beampark" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pointing function for a n-point beampark with variable dwell-times. AZ-EL coordinate system.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>t</strong> (<em>float</em>) – Seconds past epoch.</li>
+<li><strong>az</strong> (<em>list</em>) – Azimuths in degrees east of north.</li>
+<li><strong>el</strong> (<em>list</em>) – Elevations in degrees above horizon.</li>
+<li><strong>scan_time</strong> (<em>float</em>) – Total scan time, sum of dwell times.</li>
+<li><strong>dwell_time</strong> (<em>list</em>) – Times in seconds to spend at each azimuth-elevation pair of pointing direction.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="radar_scan_library.point_ns_fence_rng_scan">
+<code class="descclassname">radar_scan_library.</code><code class="descname">point_ns_fence_rng_scan</code><span class="sig-paren">(</span><em>t</em>, <em>angles</em>, <em>dwell_time</em>, <em>state</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/radar_scan_library.html#point_ns_fence_rng_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scan_library.point_ns_fence_rng_scan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pointing function for a uniform radnom north-south fence scan using a fixed state at epoch, i.e reproducable sequence. NED coordinate system.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="radar_scan_library.point_ns_fence_scan">
+<code class="descclassname">radar_scan_library.</code><code class="descname">point_ns_fence_scan</code><span class="sig-paren">(</span><em>t</em>, <em>angles</em>, <em>dwell_time</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/radar_scan_library.html#point_ns_fence_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scan_library.point_ns_fence_scan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pointing function for a north-south fence scan. NED coordinate system.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="radar_scan_library.point_sph_rng_scan">
+<code class="descclassname">radar_scan_library.</code><code class="descname">point_sph_rng_scan</code><span class="sig-paren">(</span><em>t</em>, <em>dwell_time</em>, <em>min_el</em>, <em>state</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/radar_scan_library.html#point_sph_rng_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scan_library.point_sph_rng_scan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pointing function for a spherically uniform random scan with a minimum elevation and fixed state at epoch, i.e reproducable sequence. NED coordinate system.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="radar_scan_library.sph_rng_model">
+<code class="descclassname">radar_scan_library.</code><code class="descname">sph_rng_model</code><span class="sig-paren">(</span><em>lat</em>, <em>lon</em>, <em>alt</em>, <em>min_el=30</em>, <em>dwell_time=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/radar_scan_library.html#sph_rng_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scan_library.sph_rng_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../introduction/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="doc.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="doc.html#simulation-handler">Simulation handler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#class-modules">Class modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#function-modules">Function modules</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="doc.html#instance-libraries">Instance libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#integrator-interfaces">Integrator interfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#tests">Tests</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="antenna_library.html"
+                        title="previous chapter">antenna_library</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="scheduler_library.html"
+                        title="next chapter">scheduler_library</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="scheduler_library.html" title="scheduler_library"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="antenna_library.html" title="antenna_library"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" >Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

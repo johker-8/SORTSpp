@@ -1,0 +1,456 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>radar_scans &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for radar_scans</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="sd">&#39;&#39;&#39;Defines what a radar observation schema is in the form of a class.</span>
+
+<span class="sd">A scan needs to return:</span>
+<span class="sd"> * radar position and radar pointing direction at any given time t (seconds since epoch)</span>
+<span class="sd"> * short name of scan</span>
+<span class="sd"> * title describing the scan</span>
+
+
+
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">n</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">mpl_toolkits.mplot3d</span> <span class="k">import</span> <span class="n">Axes3D</span>
+<span class="kn">import</span> <span class="nn">matplotlib.animation</span> <span class="k">as</span> <span class="nn">animation</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+
+<span class="kn">import</span> <span class="nn">coord</span>
+<span class="kn">import</span> <span class="nn">plothelp</span>
+
+
+<div class="viewcode-block" id="RadarScan"><a class="viewcode-back" href="../modules/radar_scans.html#radar_scans.RadarScan">[docs]</a><span class="k">class</span> <span class="nc">RadarScan</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Encapsulates the observation schema of a radar system, i.e. its &quot;scan&quot;.</span>
+<span class="sd">    </span>
+<span class="sd">    :ivar float _lat: Geographical latitude of radar system in decimal degrees  (North+).</span>
+<span class="sd">    :ivar float _lon: Geographical longitude of radar system in decimal degrees (East+).</span>
+<span class="sd">    :ivar float _alt: Geographical altitude above geoid surface of radar system in meter.</span>
+<span class="sd">    :ivar function _pointing_function: A function that takes in time as the first argument and then any number of keyword arguments and returns the pointing of the radar in a system specified by :code:`pointing_coord`.</span>
+<span class="sd">    :ivar str _pointing_coord: The coordinate system used by the :code:`_pointing_function`, may be &#39;azel&#39; or &#39;ned&#39;.</span>
+<span class="sd">    :ivar str name: Name of the scan.</span>
+<span class="sd">    :ivar dict _function_data: A dictionary contaning the data to be expanded as keyword parameters to the :code:`_pointing_function`.</span>
+<span class="sd">    :ivar str _info_str: A string describing the scan.</span>
+<span class="sd">    :ivar float _scan_time: If the scan has a repeating deterministic sequence, it is he time it takes to complete one sequence.</span>
+<span class="sd">    :ivar float _pulse_n: Number of pulses in a repeating pulse sequence.</span>
+<span class="sd">    :ivar float _min_el: Minimum elevation of the scanning sequence.</span>
+<span class="sd">    </span>
+<span class="sd">    </span>
+<span class="sd">    :param float lat: Geographical latitude of radar system in decimal degrees  (North+).</span>
+<span class="sd">    :param float lon: Geographical longitude of radar system in decimal degrees (East+).</span>
+<span class="sd">    :param float alt: Geographical altitude above geoid surface of radar system in meter.</span>
+<span class="sd">    :param float pointing_function: A function that takes in time as the first argument and then any number of keyword arguments and returns the pointing of the radar in a system specified by :code:`pointing_coord`.</span>
+<span class="sd">    :param str pointing_coord: The coordinate system used by the :code:`_pointing_function`, may be &#39;azel&#39; or &#39;ned&#39;.</span>
+<span class="sd">    :param str name: Name of the scan.</span>
+<span class="sd">    </span>
+<span class="sd">    **Pointing function:**</span>
+<span class="sd">    </span>
+<span class="sd">    The pointing function must follow the following standard:</span>
+
+<span class="sd">     * Take in time in seconds past reference epoch in seconds as first argument</span>
+<span class="sd">     * Take any number of keyword arguments, these arguments must be defined in the :code:`_function_data` dictionary.</span>
+<span class="sd">     * It must return the pointing coordinates as a object with get-item implemented (list, tuple, 1-D numpy array, ect) of 3 elements.</span>
+<span class="sd">     * Units are in meters or degrees.</span>
+<span class="sd">     </span>
+<span class="sd">    Example pointing function:</span>
+<span class="sd">    </span>
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        import numpy as np</span>
+<span class="sd">        </span>
+<span class="sd">        def point_east_west_fence(t, dwell_time, angles):</span>
+<span class="sd">            &quot;&quot;&quot;Pointing function for a east-to-west fence scan returning pointing coordinates in a NED (North-East-Down) cartesian coordinate system.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+<span class="sd">        	ind = np.floor(t/dwell_time % len(angles))</span>
+<span class="sd">        	angle = int(ind)</span>
+<span class="sd">        	e = np.cos(np.pi*angle/180.0)</span>
+<span class="sd">        	d = -np.sin(np.pi*angle/180.0)</span>
+<span class="sd">        	return 0.0, e, d</span>
+
+
+<span class="sd">    **Coordinate systems:**</span>
+
+<span class="sd">     :azel: Azimuth and Elevation in degrees east of north and above horizon.</span>
+<span class="sd">     :ned: Cartesian coordinates in North, East, Down in meters.</span>
+<span class="sd">     :enu: Cartesian coordinates in East, North, Up in meters.</span>
+
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">alt</span><span class="p">,</span> <span class="n">pointing_function</span><span class="p">,</span> <span class="n">min_dwell_time</span><span class="p">,</span> <span class="n">pointing_coord</span><span class="o">=</span><span class="s1">&#39;azel&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;generic scan&#39;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lat</span><span class="o">=</span><span class="n">lat</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lon</span><span class="o">=</span><span class="n">lon</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_alt</span><span class="o">=</span><span class="n">alt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pointing_function</span> <span class="o">=</span> <span class="n">pointing_function</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pointing_coord</span> <span class="o">=</span> <span class="n">pointing_coord</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_function_data</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_dwell_time</span> <span class="o">=</span> <span class="n">min_dwell_time</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_info_str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scan_time</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pulse_n</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_min_el</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">min_dwell_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;The dwell time of the scan. If there are dynamic dwell times, this is the minimum dwell time.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_function_data</span><span class="p">[</span><span class="s1">&#39;min_dwell_time&#39;</span><span class="p">]</span>
+
+
+    <span class="nd">@min_dwell_time</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">min_dwell_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dw</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_function_data</span><span class="p">[</span><span class="s1">&#39;min_dwell_time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dw</span>
+
+
+    <span class="nd">@min_dwell_time</span><span class="o">.</span><span class="n">deleter</span>
+    <span class="k">def</span> <span class="nf">min_dwell_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_function_data</span><span class="p">[</span><span class="s1">&#39;min_dwell_time&#39;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="RadarScan.info"><a class="viewcode-back" href="../modules/radar_scans.html#radar_scans.RadarScan.info">[docs]</a>    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Return a descriptive string.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_str</span></div>
+
+<div class="viewcode-block" id="RadarScan.keyword_arguments"><a class="viewcode-back" href="../modules/radar_scans.html#radar_scans.RadarScan.keyword_arguments">[docs]</a>    <span class="k">def</span> <span class="nf">keyword_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Adds or modifies all the input keyword arguments of this call to the function data used in calling the pointing function.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">kw</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_function_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span></div>
+
+<div class="viewcode-block" id="RadarScan.dwell_time"><a class="viewcode-back" href="../modules/radar_scans.html#radar_scans.RadarScan.dwell_time">[docs]</a>    <span class="k">def</span> <span class="nf">dwell_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;If dwell time is a applicable concept for this scan, return that time.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="s1">&#39;dwell_time&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_function_data</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_function_data</span><span class="p">[</span><span class="s1">&#39;dwell_time&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="RadarScan.copy"><a class="viewcode-back" href="../modules/radar_scans.html#radar_scans.RadarScan.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Return a copy of the current instance of :class:`radar_scans.RadarScan`.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">C</span> <span class="o">=</span> <span class="n">RadarScan</span><span class="p">(</span>
+            <span class="n">lat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lat</span><span class="p">,</span>
+            <span class="n">lon</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lon</span><span class="p">,</span>
+            <span class="n">alt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_alt</span><span class="p">,</span>
+            <span class="n">pointing_function</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pointing_function</span><span class="p">,</span>
+            <span class="n">min_dwell_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_dwell_time</span><span class="p">,</span>
+            <span class="n">pointing_coord</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pointing_coord</span><span class="p">,</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="p">)</span>
+        
+        <span class="n">C</span><span class="o">.</span><span class="n">_function_data</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_function_data</span><span class="p">)</span>
+
+        <span class="n">C</span><span class="o">.</span><span class="n">_scan_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scan_time</span>
+        <span class="n">C</span><span class="o">.</span><span class="n">_pulse_n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pulse_n</span>
+        <span class="n">C</span><span class="o">.</span><span class="n">_min_el</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_min_el</span>
+        <span class="n">C</span><span class="o">.</span><span class="n">_info_str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_str</span>
+
+        <span class="k">return</span> <span class="n">C</span></div>
+
+<div class="viewcode-block" id="RadarScan.set_tx_location"><a class="viewcode-back" href="../modules/radar_scans.html#radar_scans.RadarScan.set_tx_location">[docs]</a>    <span class="k">def</span> <span class="nf">set_tx_location</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tx</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Set the geographic location of this scan to coencide with the input :class:`antenna.AntennaTX`.</span>
+<span class="sd">        </span>
+<span class="sd">            :param AntennaTX tx: The antenna that should perform this scan.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lat</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">lat</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lon</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">lon</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_alt</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">alt</span></div>
+    
+<div class="viewcode-block" id="RadarScan.check_tx_compatibility"><a class="viewcode-back" href="../modules/radar_scans.html#radar_scans.RadarScan.check_tx_compatibility">[docs]</a>    <span class="k">def</span> <span class="nf">check_tx_compatibility</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tx</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Checks if the transmitting antenna pusle pattern and coherrent integration schema is compatible with the observation schema. Raises an Exception if not.</span>
+<span class="sd">        </span>
+<span class="sd">            :param AntennaTX tx: The antenna that should perform this scan.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">time_slice</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">n_ipp</span><span class="o">*</span><span class="n">tx</span><span class="o">.</span><span class="n">ipp</span>
+        <span class="n">dwell_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dwell_time</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">dwell_time</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="nb">iter</span><span class="p">(</span><span class="n">dwell_time</span><span class="p">)</span>
+                <span class="n">is_iter</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                <span class="n">is_iter</span> <span class="o">=</span> <span class="kc">False</span>
+            
+            <span class="k">if</span> <span class="n">is_iter</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">dw</span> <span class="ow">in</span> <span class="n">dwell_time</span><span class="p">:</span>
+                    <span class="n">RadarScan</span><span class="o">.</span><span class="n">_check_dw</span><span class="p">(</span><span class="n">time_slice</span><span class="p">,</span> <span class="n">dw</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">RadarScan</span><span class="o">.</span><span class="n">_check_dw</span><span class="p">(</span><span class="n">time_slice</span><span class="p">,</span> <span class="n">dwell_time</span><span class="p">)</span></div>
+                
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_check_dw</span><span class="p">(</span><span class="n">time_slice</span><span class="p">,</span> <span class="n">dwell_time</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">time_slice</span> <span class="o">&gt;</span> <span class="n">dwell_time</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;TX &quot;</span><span class="si">{}</span><span class="s1">&quot; cannot complete coherrent integration during scan &quot;</span><span class="si">{}</span><span class="s1">&quot;: dwell time = </span><span class="si">{}</span><span class="s1"> s, time slice = </span><span class="si">{}</span><span class="s1"> s&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tx</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">dwell_time</span><span class="p">,</span> <span class="n">time_slice</span><span class="p">))</span>
+
+
+    <span class="k">def</span> <span class="nf">_pointing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">t</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pointing_function</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_function_data</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="RadarScan.local_pointing"><a class="viewcode-back" href="../modules/radar_scans.html#radar_scans.RadarScan.local_pointing">[docs]</a>    <span class="k">def</span> <span class="nf">local_pointing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">t</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Returns the instantaneous pointing in local coordinates (ENU).</span>
+<span class="sd">        </span>
+<span class="sd">            :param float t: Seconds past a reference epoch to retrieve the pointing at.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">point</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pointing</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pointing_coord</span> <span class="o">==</span> <span class="s1">&#39;ned&#39;</span><span class="p">:</span>
+            <span class="n">k0</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="n">point</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pointing_coord</span> <span class="o">==</span> <span class="s1">&#39;enu&#39;</span><span class="p">:</span>
+            <span class="n">k0</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">point</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pointing_coord</span> <span class="o">==</span> <span class="s1">&#39;azel&#39;</span><span class="p">:</span>
+            <span class="n">k0</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">azel_to_cart</span><span class="p">(</span><span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">k0</span></div>
+    
+
+<div class="viewcode-block" id="RadarScan.antenna_pointing"><a class="viewcode-back" href="../modules/radar_scans.html#radar_scans.RadarScan.antenna_pointing">[docs]</a>    <span class="k">def</span> <span class="nf">antenna_pointing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">t</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Returns the instantaneous WGS84 ECEF pointing direction and the radar geographical location in WGS84 ECEF coordinates.</span>
+<span class="sd">        </span>
+<span class="sd">            :param float t: Seconds past a reference epoch to retrieve the pointing at.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">p0</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">geodetic2ecef</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_alt</span><span class="p">)</span>
+
+        <span class="n">point</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pointing</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pointing_coord</span> <span class="o">==</span> <span class="s1">&#39;ned&#39;</span><span class="p">:</span>
+            <span class="n">k0</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">ned2ecef</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_alt</span><span class="p">,</span> <span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">point</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pointing_coord</span> <span class="o">==</span> <span class="s1">&#39;enu&#39;</span><span class="p">:</span>
+            <span class="n">k0</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">enu2ecef</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_alt</span><span class="p">,</span> <span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">point</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pointing_coord</span> <span class="o">==</span> <span class="s1">&#39;azel&#39;</span><span class="p">:</span>
+            <span class="n">k0</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">azel_ecef</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_alt</span><span class="p">,</span> <span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        
+        <span class="k">return</span> <span class="n">p0</span><span class="p">,</span> <span class="n">k0</span></div></div>
+
+<div class="viewcode-block" id="plot_radar_scan"><a class="viewcode-back" href="../modules/radar_scans.html#radar_scans.plot_radar_scan">[docs]</a><span class="k">def</span> <span class="nf">plot_radar_scan</span><span class="p">(</span><span class="n">SC</span><span class="p">,</span> <span class="n">earth</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Plot a full cycle of the scan pattern based on the :code:`_scan_time` and the :code:`_function_data[&#39;dwell_time&#39;]` variable.</span>
+<span class="sd">    </span>
+<span class="sd">        :param RadarScan SC: Scan to plot.</span>
+<span class="sd">        :param bool earth: Plot the surface of the Earth.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="s1">&#39;dwell_time&#39;</span> <span class="ow">in</span> <span class="n">SC</span><span class="o">.</span><span class="n">_function_data</span><span class="p">:</span>
+        <span class="n">dwell_time</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">SC</span><span class="o">.</span><span class="n">_function_data</span><span class="p">[</span><span class="s1">&#39;dwell_time&#39;</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">dwell_time</span> <span class="o">=</span> <span class="mf">0.05</span>
+    
+    <span class="k">if</span> <span class="n">SC</span><span class="o">.</span><span class="n">_scan_time</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">scan_time</span> <span class="o">=</span> <span class="n">dwell_time</span><span class="o">*</span><span class="mf">100.0</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">scan_time</span> <span class="o">=</span> <span class="n">SC</span><span class="o">.</span><span class="n">_scan_time</span>
+    
+    <span class="n">t</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">scan_time</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">scan_time</span><span class="o">/</span><span class="n">dwell_time</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">))</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3d&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">view_init</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+            
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">SC</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+        <span class="n">_figs</span> <span class="o">=</span> <span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">_figs</span> <span class="o">=</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">ax</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">earth</span><span class="p">:</span>
+        <span class="n">plothelp</span><span class="o">.</span><span class="n">draw_earth_grid</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+    <span class="n">plothelp</span><span class="o">.</span><span class="n">draw_radar</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span><span class="n">SC</span><span class="o">.</span><span class="n">_lat</span><span class="p">,</span><span class="n">SC</span><span class="o">.</span><span class="n">_lon</span><span class="p">)</span>
+    
+    <span class="n">max_range</span><span class="o">=</span><span class="mf">4000e3</span>
+    
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)):</span>
+        <span class="n">p0</span><span class="p">,</span><span class="n">k0</span><span class="o">=</span><span class="n">SC</span><span class="o">.</span><span class="n">antenna_pointing</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        
+        <span class="n">p1</span><span class="o">=</span><span class="n">p0</span><span class="o">+</span><span class="n">k0</span><span class="o">*</span><span class="n">max_range</span><span class="o">*</span><span class="mf">0.8</span>
+        <span class="k">if</span> <span class="n">k0</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">p0</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">p1</span><span class="p">[</span><span class="mi">0</span><span class="p">]],[</span><span class="n">p0</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">p1</span><span class="p">[</span><span class="mi">1</span><span class="p">]],[</span><span class="n">p0</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">p1</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">p0</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">p1</span><span class="p">[</span><span class="mi">0</span><span class="p">]],[</span><span class="n">p0</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">p1</span><span class="p">[</span><span class="mi">1</span><span class="p">]],[</span><span class="n">p0</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">p1</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;green&quot;</span><span class="p">)</span>
+    
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">p0</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">max_range</span><span class="p">,</span> <span class="n">p0</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_range</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">p0</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">max_range</span><span class="p">,</span> <span class="n">p0</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_range</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_zlim</span><span class="p">(</span><span class="n">p0</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">max_range</span><span class="p">,</span> <span class="n">p0</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_range</span><span class="p">)</span>
+
+
+    <span class="k">return</span> <span class="n">_figs</span></div>
+
+<div class="viewcode-block" id="plot_radar_scan_movie"><a class="viewcode-back" href="../modules/radar_scans.html#radar_scans.plot_radar_scan_movie">[docs]</a><span class="k">def</span> <span class="nf">plot_radar_scan_movie</span><span class="p">(</span><span class="n">SC</span><span class="p">,</span> <span class="n">earth</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rotate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">save_str</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Create a animation of the scan pattern based on the :code:`_scan_time` and the :code:`_function_data[&#39;dwell_time&#39;]` variable.</span>
+<span class="sd">    </span>
+<span class="sd">        :param RadarScan SC: Scan to plot.</span>
+<span class="sd">        :param bool earth: Plot the surface of the Earth.</span>
+<span class="sd">        :param str save_str: String of path to output movie file. Requers an avalible ffmpeg encoder on the system. If string is empty no movie is saved.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="s1">&#39;dwell_time&#39;</span> <span class="ow">in</span> <span class="n">SC</span><span class="o">.</span><span class="n">_function_data</span><span class="p">:</span>
+        <span class="n">dwell_time</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">SC</span><span class="o">.</span><span class="n">_function_data</span><span class="p">[</span><span class="s1">&#39;dwell_time&#39;</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">dwell_time</span> <span class="o">=</span> <span class="mf">0.05</span>
+    
+    <span class="k">if</span> <span class="n">SC</span><span class="o">.</span><span class="n">_scan_time</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">scan_time</span> <span class="o">=</span> <span class="n">dwell_time</span><span class="o">*</span><span class="mf">100.0</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">scan_time</span> <span class="o">=</span> <span class="n">SC</span><span class="o">.</span><span class="n">_scan_time</span>
+    
+    <span class="n">t</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">scan_time</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">scan_time</span><span class="o">/</span><span class="n">dwell_time</span><span class="p">))</span>
+
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">))</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3d&#39;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">view_init</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">update_text</span><span class="p">(</span><span class="n">SC</span><span class="p">,</span><span class="n">t</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">SC</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;, t=</span><span class="si">%.4f</span><span class="s1"> s&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">t</span><span class="o">*</span><span class="mf">1e0</span><span class="p">,)</span>
+
+    <span class="n">titl</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span><span class="mf">0.94</span><span class="p">,</span><span class="n">update_text</span><span class="p">(</span><span class="n">SC</span><span class="p">,</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="n">size</span><span class="o">=</span><span class="mi">22</span><span class="p">,</span><span class="n">horizontalalignment</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">)</span>
+
+
+    <span class="n">max_range</span><span class="o">=</span><span class="mf">4000e3</span>
+
+    <span class="n">p0</span><span class="p">,</span><span class="n">k0</span><span class="o">=</span><span class="n">SC</span><span class="o">.</span><span class="n">antenna_pointing</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">p1</span><span class="o">=</span><span class="n">p0</span><span class="o">+</span><span class="n">k0</span><span class="o">*</span><span class="n">max_range</span><span class="o">*</span><span class="mf">0.8</span>
+
+    <span class="k">if</span> <span class="n">earth</span><span class="p">:</span>
+        <span class="n">plothelp</span><span class="o">.</span><span class="n">draw_earth_grid</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">plothelp</span><span class="o">.</span><span class="n">draw_earth</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+    <span class="n">plothelp</span><span class="o">.</span><span class="n">draw_radar</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span><span class="n">SC</span><span class="o">.</span><span class="n">_lat</span><span class="p">,</span><span class="n">SC</span><span class="o">.</span><span class="n">_lon</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">k0</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">beam</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">p0</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">p1</span><span class="p">[</span><span class="mi">0</span><span class="p">]],[</span><span class="n">p0</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">p1</span><span class="p">[</span><span class="mi">1</span><span class="p">]],[</span><span class="n">p0</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">p1</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">beam</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">p0</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">p1</span><span class="p">[</span><span class="mi">0</span><span class="p">]],[</span><span class="n">p0</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">p1</span><span class="p">[</span><span class="mi">1</span><span class="p">]],[</span><span class="n">p0</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">p1</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;green&quot;</span><span class="p">)</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">p0</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">max_range</span><span class="p">,</span> <span class="n">p0</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_range</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">p0</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">max_range</span><span class="p">,</span> <span class="n">p0</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_range</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_zlim</span><span class="p">(</span><span class="n">p0</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">max_range</span><span class="p">,</span> <span class="n">p0</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_range</span><span class="p">)</span>
+
+    <span class="n">interval</span> <span class="o">=</span> <span class="n">scan_time</span><span class="o">*</span><span class="mf">1e3</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">))</span>
+    <span class="n">rotations</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="mf">360.</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">))</span> <span class="o">%</span> <span class="mf">360.0</span>
+    
+    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="n">ti</span><span class="p">,</span><span class="n">beam</span><span class="p">):</span>
+        <span class="n">_t</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">ti</span><span class="p">]</span>
+        <span class="n">p0</span><span class="p">,</span><span class="n">k0</span><span class="o">=</span><span class="n">SC</span><span class="o">.</span><span class="n">antenna_pointing</span><span class="p">(</span><span class="n">_t</span><span class="p">)</span>
+        <span class="n">p1</span><span class="o">=</span><span class="n">p0</span><span class="o">+</span><span class="n">k0</span><span class="o">*</span><span class="n">max_range</span><span class="o">*</span><span class="mf">0.8</span>
+        <span class="n">titl</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span><span class="n">update_text</span><span class="p">(</span><span class="n">SC</span><span class="p">,</span><span class="n">_t</span><span class="p">))</span>
+        <span class="n">beam</span><span class="o">.</span><span class="n">set_data</span><span class="p">([</span><span class="n">p0</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">p1</span><span class="p">[</span><span class="mi">0</span><span class="p">]],[</span><span class="n">p0</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">p1</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+        <span class="n">beam</span><span class="o">.</span><span class="n">set_3d_properties</span><span class="p">([</span><span class="n">p0</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">p1</span><span class="p">[</span><span class="mi">2</span><span class="p">]])</span>
+        <span class="k">if</span> <span class="n">k0</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">beam</span><span class="o">.</span><span class="n">set_color</span><span class="p">(</span><span class="s2">&quot;red&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">beam</span><span class="o">.</span><span class="n">set_color</span><span class="p">(</span><span class="s2">&quot;green&quot;</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">rotate</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">view_init</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="n">rotations</span><span class="p">[</span><span class="n">ti</span><span class="p">])</span>
+        
+        <span class="k">return</span> <span class="n">beam</span><span class="p">,</span>
+    
+    <span class="n">ani</span> <span class="o">=</span> <span class="n">animation</span><span class="o">.</span><span class="n">FuncAnimation</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">update</span><span class="p">,</span> <span class="n">frames</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)),</span> <span class="n">fargs</span><span class="o">=</span><span class="p">(</span><span class="n">beam</span><span class="p">),</span> <span class="n">interval</span><span class="o">=</span><span class="n">interval</span><span class="p">,</span> <span class="n">blit</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">save_str</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+
+        <span class="c1"># Set up formatting for the movie files</span>
+        <span class="n">Writer</span> <span class="o">=</span> <span class="n">animation</span><span class="o">.</span><span class="n">writers</span><span class="p">[</span><span class="s1">&#39;ffmpeg&#39;</span><span class="p">]</span>
+        <span class="n">writer</span> <span class="o">=</span> <span class="n">Writer</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">artist</span><span class="o">=</span><span class="s1">&#39;Daniel Kastinen&#39;</span><span class="p">),</span> <span class="n">bitrate</span><span class="o">=</span><span class="mi">1800</span><span class="p">)</span>
+        <span class="n">ani</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">save_str</span><span class="p">,</span> <span class="n">writer</span><span class="o">=</span><span class="n">writer</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="k">pass</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/doc.html">Documentation</a></li>
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,196 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>orbit_accuracy &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="orbital_estimation" href="orbital_estimation.html" />
+    <link rel="prev" title="logging_setup" href="logging_setup.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="orbital_estimation.html" title="orbital_estimation"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="logging_setup.html" title="logging_setup"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" accesskey="U">Documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-orbit_accuracy">
+<span id="orbit-accuracy"></span><h1>orbit_accuracy<a class="headerlink" href="#module-orbit_accuracy" title="Permalink to this headline">¶</a></h1>
+<p>Linearized error determination for orbital elements.</p>
+<p>These error are calculated as a function of:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Mean track length (track_length) seconds</li>
+<li>Number of tracklets: (n_tracklets), int</li>
+<li>Measurement spacing: (m_spacing), seconds</li>
+</ul>
+</div></blockquote>
+<dl class="function">
+<dt id="orbit_accuracy.atmospheric_errors">
+<code class="descclassname">orbit_accuracy.</code><code class="descname">atmospheric_errors</code><span class="sig-paren">(</span><em>o</em>, <em>a_err_std=0.01</em>, <em>N_samps=200</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/orbit_accuracy.html#atmospheric_errors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#orbit_accuracy.atmospheric_errors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate position errors as a function of time, assuming
+a certain error in atmospheric drag.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="orbit_accuracy.create_measurements">
+<code class="descclassname">orbit_accuracy.</code><code class="descname">create_measurements</code><span class="sig-paren">(</span><em>o</em>, <em>radar</em>, <em>t0=0</em>, <em>track_length=1000.0</em>, <em>n_tracklets=2</em>, <em>n_meas=10</em>, <em>debug=False</em>, <em>max_time=259200.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/orbit_accuracy.html#create_measurements"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#orbit_accuracy.create_measurements" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="orbit_accuracy.error_sweep">
+<code class="descclassname">orbit_accuracy.</code><code class="descname">error_sweep</code><span class="sig-paren">(</span><em>o</em>, <em>r</em>, <em>n_meas=10</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/orbit_accuracy.html#error_sweep"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#orbit_accuracy.error_sweep" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="orbit_accuracy.error_sweep_n">
+<code class="descclassname">orbit_accuracy.</code><code class="descname">error_sweep_n</code><span class="sig-paren">(</span><em>o</em>, <em>r</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/orbit_accuracy.html#error_sweep_n"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#orbit_accuracy.error_sweep_n" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="orbit_accuracy.error_sweep_n_meas">
+<code class="descclassname">orbit_accuracy.</code><code class="descname">error_sweep_n_meas</code><span class="sig-paren">(</span><em>o</em>, <em>r</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/orbit_accuracy.html#error_sweep_n_meas"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#orbit_accuracy.error_sweep_n_meas" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="orbit_accuracy.error_sweep_n_meas_constn">
+<code class="descclassname">orbit_accuracy.</code><code class="descname">error_sweep_n_meas_constn</code><span class="sig-paren">(</span><em>o</em>, <em>r</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/orbit_accuracy.html#error_sweep_n_meas_constn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#orbit_accuracy.error_sweep_n_meas_constn" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="orbit_accuracy.error_sweep_time">
+<code class="descclassname">orbit_accuracy.</code><code class="descname">error_sweep_time</code><span class="sig-paren">(</span><em>o</em>, <em>r</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/orbit_accuracy.html#error_sweep_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#orbit_accuracy.error_sweep_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="orbit_accuracy.error_sweep_track_length">
+<code class="descclassname">orbit_accuracy.</code><code class="descname">error_sweep_track_length</code><span class="sig-paren">(</span><em>o</em>, <em>r</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/orbit_accuracy.html#error_sweep_track_length"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#orbit_accuracy.error_sweep_track_length" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="orbit_accuracy.get_inertial_basis">
+<code class="descclassname">orbit_accuracy.</code><code class="descname">get_inertial_basis</code><span class="sig-paren">(</span><em>ecef0</em>, <em>ecef0_dt</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/orbit_accuracy.html#get_inertial_basis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#orbit_accuracy.get_inertial_basis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given pos vector, and pos vector at a small positive time offset,
+calculate unit vectors for along track, normal (towards center of Earth), and cross-track directions</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="orbit_accuracy.kep_cov2cart_cov">
+<code class="descclassname">orbit_accuracy.</code><code class="descname">kep_cov2cart_cov</code><span class="sig-paren">(</span><em>o</em>, <em>Sigma_kep</em>, <em>t0s=array([   0.</em>, <em>146.93877551</em>, <em>293.87755102</em>, <em>440.81632653</em>, <em>587.75510204</em>, <em>734.69387755</em>, <em>881.63265306</em>, <em>1028.57142857</em>, <em>1175.51020408</em>, <em>1322.44897959</em>, <em>1469.3877551</em>, <em>1616.32653061</em>, <em>1763.26530612</em>, <em>1910.20408163</em>, <em>2057.14285714</em>, <em>2204.08163265</em>, <em>2351.02040816</em>, <em>2497.95918367</em>, <em>2644.89795918</em>, <em>2791.83673469</em>, <em>2938.7755102</em>, <em>3085.71428571</em>, <em>3232.65306122</em>, <em>3379.59183673</em>, <em>3526.53061224</em>, <em>3673.46938776</em>, <em>3820.40816327</em>, <em>3967.34693878</em>, <em>4114.28571429</em>, <em>4261.2244898</em>, <em>4408.16326531</em>, <em>4555.10204082</em>, <em>4702.04081633</em>, <em>4848.97959184</em>, <em>4995.91836735</em>, <em>5142.85714286</em>, <em>5289.79591837</em>, <em>5436.73469388</em>, <em>5583.67346939</em>, <em>5730.6122449</em>, <em>5877.55102041</em>, <em>6024.48979592</em>, <em>6171.42857143</em>, <em>6318.36734694</em>, <em>6465.30612245</em>, <em>6612.24489796</em>, <em>6759.18367347</em>, <em>6906.12244898</em>, <em>7053.06122449</em>, <em>7200.        ])</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/orbit_accuracy.html#kep_cov2cart_cov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#orbit_accuracy.kep_cov2cart_cov" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="orbit_accuracy.linearized_errors">
+<code class="descclassname">orbit_accuracy.</code><code class="descname">linearized_errors</code><span class="sig-paren">(</span><em>o</em>, <em>radar</em>, <em>tracklets</em>, <em>plot=True</em>, <em>debug=False</em>, <em>t0s=array([   0.</em>, <em>146.93877551</em>, <em>293.87755102</em>, <em>440.81632653</em>, <em>587.75510204</em>, <em>734.69387755</em>, <em>881.63265306</em>, <em>1028.57142857</em>, <em>1175.51020408</em>, <em>1322.44897959</em>, <em>1469.3877551</em>, <em>1616.32653061</em>, <em>1763.26530612</em>, <em>1910.20408163</em>, <em>2057.14285714</em>, <em>2204.08163265</em>, <em>2351.02040816</em>, <em>2497.95918367</em>, <em>2644.89795918</em>, <em>2791.83673469</em>, <em>2938.7755102</em>, <em>3085.71428571</em>, <em>3232.65306122</em>, <em>3379.59183673</em>, <em>3526.53061224</em>, <em>3673.46938776</em>, <em>3820.40816327</em>, <em>3967.34693878</em>, <em>4114.28571429</em>, <em>4261.2244898</em>, <em>4408.16326531</em>, <em>4555.10204082</em>, <em>4702.04081633</em>, <em>4848.97959184</em>, <em>4995.91836735</em>, <em>5142.85714286</em>, <em>5289.79591837</em>, <em>5436.73469388</em>, <em>5583.67346939</em>, <em>5730.6122449</em>, <em>5877.55102041</em>, <em>6024.48979592</em>, <em>6171.42857143</em>, <em>6318.36734694</em>, <em>6465.30612245</em>, <em>6612.24489796</em>, <em>6759.18367347</em>, <em>6906.12244898</em>, <em>7053.06122449</em>, <em>7200.        ])</em>, <em>time_vector=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/orbit_accuracy.html#linearized_errors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#orbit_accuracy.linearized_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="orbit_accuracy.plot_measurements">
+<code class="descclassname">orbit_accuracy.</code><code class="descname">plot_measurements</code><span class="sig-paren">(</span><em>o</em>, <em>r</em>, <em>tracklets</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/orbit_accuracy.html#plot_measurements"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#orbit_accuracy.plot_measurements" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../introduction/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="doc.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="doc.html#simulation-handler">Simulation handler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#class-modules">Class modules</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="doc.html#function-modules">Function modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#instance-libraries">Instance libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#integrator-interfaces">Integrator interfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#tests">Tests</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="logging_setup.html"
+                        title="previous chapter">logging_setup</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="orbital_estimation.html"
+                        title="next chapter">orbital_estimation</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="orbital_estimation.html" title="orbital_estimation"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="logging_setup.html" title="logging_setup"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" >Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

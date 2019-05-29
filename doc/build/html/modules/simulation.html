@@ -1,0 +1,424 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>simulation &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="radar_config" href="radar_config.html" />
+    <link rel="prev" title="Documentation" href="doc.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="radar_config.html" title="radar_config"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="doc.html" title="Documentation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" accesskey="U">Documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-simulation">
+<span id="simulation"></span><h1>simulation<a class="headerlink" href="#module-simulation" title="Permalink to this headline">¶</a></h1>
+<p>Main simulation handler in the form of a class using the capabilities of the entire toolbox.</p>
+<p>To construct a simulation instance you need:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Radar instance:</th><td class="field-body">Manually constructed from <code class="xref py py-class docutils literal notranslate"><span class="pre">radar_system</span></code> or a preset instance from <a class="reference internal" href="radar_library.html#module-radar_library" title="radar_library"><code class="xref py py-mod docutils literal notranslate"><span class="pre">radar_library</span></code></a>.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Population instance:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">Manually constructed from <code class="xref py py-class docutils literal notranslate"><span class="pre">population</span></code> or a preset instance from <a class="reference internal" href="population.html#module-population" title="population"><code class="xref py py-mod docutils literal notranslate"><span class="pre">population</span></code></a>.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">Simulation root:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">A designated root folder where simulation files will be stored.</td>
+</tr>
+</tbody>
+</table>
+<p>These are the bare minimum, it is also recommended to have:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Radar scan:</th><td class="field-body">Manually constructed from <code class="xref py py-class docutils literal notranslate"><span class="pre">radar_scan</span></code> or a preset instance from <a class="reference internal" href="radar_scan_library.html#module-radar_scan_library" title="radar_scan_library"><code class="xref py py-mod docutils literal notranslate"><span class="pre">radar_scan_library</span></code></a>.
+The radar_scan instance should be set in the radar_system instance using the <code class="xref py py-func docutils literal notranslate"><span class="pre">set_scan()</span></code> method.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Scheduler instance:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">A scheduler instance is a function declaration located in <a class="reference internal" href="scheduler_library.html#module-scheduler_library" title="scheduler_library"><code class="xref py py-mod docutils literal notranslate"><span class="pre">scheduler_library</span></code></a>. Different schedulers need
+different configurations and auxiliary functions and instances.</td>
+</tr>
+</tbody>
+</table>
+<dl class="class">
+<dt id="simulation.ObservationParameters">
+<em class="property">class </em><code class="descclassname">simulation.</code><code class="descname">ObservationParameters</code><span class="sig-paren">(</span><em>duty_cycle</em>, <em>SST_f</em>, <em>tracking_f</em>, <em>coher_int_t=0.1</em>, <em>IPP=0.01</em>, <em>interleaving_time_slice=0.4</em>, <em>scan_during_interleaved=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#ObservationParameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.ObservationParameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Container for observation parameters and the function to calculate them in a consistent manner.</p>
+<p># TODO: Write docstring</p>
+<dl class="method">
+<dt id="simulation.ObservationParameters.calculate_parameters">
+<code class="descname">calculate_parameters</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#ObservationParameters.calculate_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.ObservationParameters.calculate_parameters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="simulation.ObservationParameters.configure_radar_to_observation">
+<code class="descname">configure_radar_to_observation</code><span class="sig-paren">(</span><em>radar</em>, <em>mode=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#ObservationParameters.configure_radar_to_observation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.ObservationParameters.configure_radar_to_observation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Depending on the current observation mode, set coherent integration bandwidth.</p>
+<p><strong>Modes:</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li>‘scan’</li>
+<li>‘track’</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulation.ObservationParameters.load">
+<code class="descname">load</code><span class="sig-paren">(</span><em>fname</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#ObservationParameters.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.ObservationParameters.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load class data from file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulation.ObservationParameters.save">
+<code class="descname">save</code><span class="sig-paren">(</span><em>fname</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#ObservationParameters.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.ObservationParameters.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save data to file.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="simulation.Simulation">
+<em class="property">class </em><code class="descclassname">simulation.</code><code class="descname">Simulation</code><span class="sig-paren">(</span><em>radar</em>, <em>population</em>, <em>root</em>, <em>scheduler=&lt;function dynamic_scheduler&gt;</em>, <em>simulation_name='SORTS++ Simulation'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Main simulation handler class.</p>
+<p># TODO: Write docstring</p>
+<p>Always iters self.__my_objects[thread id] when doing paralell MPI stuff</p>
+<dl class="method">
+<dt id="simulation.Simulation.branch_simulation">
+<code class="descname">branch_simulation</code><span class="sig-paren">(</span><em>new_version</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.branch_simulation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.branch_simulation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Branch a copy of the current simulation to a new version.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.check_load">
+<code class="descname">check_load</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.check_load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.check_load" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.checkout_simulation">
+<code class="descname">checkout_simulation</code><span class="sig-paren">(</span><em>reference_version</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.checkout_simulation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.checkout_simulation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checkout a copy of the given simulation version and replace the current version with it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.clear_detections">
+<code class="descname">clear_detections</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.clear_detections"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.clear_detections" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete all files in “detections” folder. Branch specific.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.clear_logs">
+<code class="descname">clear_logs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.clear_logs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.clear_logs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete all files in “logs” folder. Affects entire Simulation.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.clear_orbits">
+<code class="descname">clear_orbits</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.clear_orbits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.clear_orbits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete all files in “orbits” folder. Branch specific.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.clear_plots">
+<code class="descname">clear_plots</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.clear_plots"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.clear_plots" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete all files in “plots” folder. Branch specific.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.clear_prior">
+<code class="descname">clear_prior</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.clear_prior"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.clear_prior" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete all files in “prior” folder. Branch specific.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.clear_simulation">
+<code class="descname">clear_simulation</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.clear_simulation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.clear_simulation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clear current version folder of all files.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.clear_tracklets">
+<code class="descname">clear_tracklets</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.clear_tracklets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.clear_tracklets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete all files in “tracklets” folder. Branch specific.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.generate_priors">
+<code class="descname">generate_priors</code><span class="sig-paren">(</span><em>frame_transformation</em>, <em>frame_options={}</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.generate_priors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.generate_priors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.generate_tracklets">
+<code class="descname">generate_tracklets</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.generate_tracklets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.generate_tracklets" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.list">
+<code class="descname">list</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.list" title="Permalink to this definition">¶</a></dt>
+<dd><p>List all available methods.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.load">
+<code class="descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.load" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.observation_parameters">
+<code class="descname">observation_parameters</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.observation_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.observation_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate and set the necessary observation parameters. If just a subset of parameter is supplied the others keep their old values.</p>
+<p>The observation default parameters can be found by looking at the source code to this function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>kwargs</strong> (<em>dict</em>) – Observation parameters to set before re-calculating and saving observation meta-data.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Keyword arguments:</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li>duty_cycle [float]: Description</li>
+<li>SST_fraction [float]: Description</li>
+<li>tracking_fraction [float]: Description</li>
+<li>interleaving_time_slice [float]: Description</li>
+<li>SST_time_slice [float]: Description</li>
+<li>IPP [float]: Description</li>
+<li>scan_during_interleaved [bool]: Description</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.plot_beams">
+<code class="descname">plot_beams</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.plot_beams"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.plot_beams" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot all beam-patterns of all transmitters and receivers.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.plot_radar">
+<code class="descname">plot_radar</code><span class="sig-paren">(</span><em>save_folder</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.plot_radar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.plot_radar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot radar configuration, includes beam pattern, geographical location and scan.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.plots">
+<code class="descname">plots</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.plots"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.plots" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.print_detections">
+<code class="descname">print_detections</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.print_detections"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.print_detections" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.print_maintenance">
+<code class="descname">print_maintenance</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.print_maintenance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.print_maintenance" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.print_tracklets">
+<code class="descname">print_tracklets</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.print_tracklets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.print_tracklets" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.print_tracks">
+<code class="descname">print_tracks</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.print_tracks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.print_tracks" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.run_observation">
+<code class="descname">run_observation</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#simulation.Simulation.run_observation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.run_orbit_determination">
+<code class="descname">run_orbit_determination</code><span class="sig-paren">(</span><em>frame_transformation</em>, <em>frame_options={}</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.run_orbit_determination"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.run_orbit_determination" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.run_scheduler">
+<code class="descname">run_scheduler</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#simulation.Simulation.run_scheduler" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.save">
+<code class="descname">save</code><span class="sig-paren">(</span><em>MPI_synch=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.save" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.schedule_movie">
+<code class="descname">schedule_movie</code><span class="sig-paren">(</span><em>time_len=0.0005555555555555556</em>, <em>dt=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.schedule_movie"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.schedule_movie" title="Permalink to this definition">¶</a></dt>
+<dd><p>NEEDS UPDATING</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.set_log_level">
+<code class="descname">set_log_level</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#simulation.Simulation.set_log_level" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.set_logfile_level">
+<code class="descname">set_logfile_level</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#simulation.Simulation.set_logfile_level" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.set_scheduler_args">
+<code class="descname">set_scheduler_args</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.set_scheduler_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.set_scheduler_args" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.set_terminal_level">
+<code class="descname">set_terminal_level</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#simulation.Simulation.set_terminal_level" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.set_version">
+<code class="descname">set_version</code><span class="sig-paren">(</span><em>version</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.set_version"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.set_version" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.simulation_parameters">
+<code class="descname">simulation_parameters</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.simulation_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.simulation_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate and set the necessary simulation parameters.</p>
+<p>The simulation default parameters can be found by looking at the source code to this function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>kwargs</strong> (<em>dict</em>) – Simulation parameters to set before re-calculating and saving simulation meta-data. Keyword arguments not in the list of supported parameters will be ignored.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Keyword arguments:</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li>max_dpos [float]: Description</li>
+<li>tracklet_noise [bool]: Description</li>
+<li>auto_synchronize [bool]: Determines if threads should be automatically synchronized after state changing commands (like run_observations)</li>
+<li>pass_dt [float]: Description</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulation.Simulation.status">
+<code class="descname">status</code><span class="sig-paren">(</span><em>fout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simulation.html#Simulation.status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulation.Simulation.status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print summary status of the simulation.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../introduction/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="doc.html">Documentation</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="doc.html#simulation-handler">Simulation handler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#class-modules">Class modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#function-modules">Function modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#instance-libraries">Instance libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#integrator-interfaces">Integrator interfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#tests">Tests</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="doc.html"
+                        title="previous chapter">Documentation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="radar_config.html"
+                        title="next chapter">radar_config</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="radar_config.html" title="radar_config"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="doc.html" title="Documentation"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" >Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

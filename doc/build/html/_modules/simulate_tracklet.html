@@ -1,0 +1,598 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>simulate_tracklet &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for simulate_tracklet</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="sd">&#39;&#39;&#39;Given scheduled observations of an object simulate the generated tracklet-data.</span>
+
+<span class="sd"># TODO: Rewrite with new functionality</span>
+<span class="sd"># TODO: Do not re-do the entire &quot;observation simulation&quot; as there is already modules that to this better. Instead just take a time-series in and create the tracklet, let other code worry about if it is physically correct or not.</span>
+
+<span class="sd">Simulate an EISCAT 3D tracking experiment using MASTER model objects</span>
+<span class="sd"> </span>
+<span class="sd"> - Follow object from horizon to horizon</span>
+<span class="sd"> - Output estimated range and range-rate errors</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">n</span>
+<span class="kn">import</span> <span class="nn">scipy.constants</span> <span class="k">as</span> <span class="nn">c</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">scipy.interpolate</span> <span class="k">as</span> <span class="nn">sint</span>
+
+<span class="c1"># SORTS imports</span>
+<span class="kn">import</span> <span class="nn">coord</span>
+<span class="kn">import</span> <span class="nn">debris</span>
+<span class="kn">import</span> <span class="nn">plothelp</span>
+<span class="kn">import</span> <span class="nn">ccsds_write</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">dpt_tools</span> <span class="k">as</span> <span class="nn">dpt</span>
+
+<span class="n">debug_low</span><span class="o">=</span><span class="kc">False</span>
+<span class="n">debug_high</span><span class="o">=</span><span class="kc">False</span>
+
+<span class="n">iono_errfun</span> <span class="o">=</span> <span class="n">debris</span><span class="o">.</span><span class="n">ionospheric_error_fun</span><span class="p">()</span>
+<span class="sd">&#39;&#39;&#39;func: Model of the ionospheric error function. See module :mod:`debris`.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="write_ccsds"><a class="viewcode-back" href="../modules/simulate_tracklet.html#simulate_tracklet.write_ccsds">[docs]</a><span class="k">def</span> <span class="nf">write_ccsds</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">meas</span><span class="p">,</span> <span class="n">tx</span><span class="p">,</span> <span class="n">rx</span><span class="p">,</span> <span class="n">fname</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Write tracklet in ccsds file format</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">m_time</span><span class="o">=</span><span class="n">meas</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">]</span>
+    <span class="n">m_range</span><span class="o">=</span><span class="n">meas</span><span class="p">[</span><span class="s2">&quot;m_range&quot;</span><span class="p">]</span>
+    <span class="n">m_range_rate</span><span class="o">=</span><span class="n">meas</span><span class="p">[</span><span class="s2">&quot;m_range_rate&quot;</span><span class="p">]</span>
+    <span class="n">m_range_std</span><span class="o">=</span><span class="n">meas</span><span class="p">[</span><span class="s2">&quot;m_range_std&quot;</span><span class="p">]</span>
+    <span class="n">m_range_rate_std</span><span class="o">=</span><span class="n">meas</span><span class="p">[</span><span class="s2">&quot;m_range_rate_std&quot;</span><span class="p">]</span>
+    
+    <span class="n">ccsds_write</span><span class="o">.</span><span class="n">write_ccsds</span><span class="p">(</span><span class="n">m_time</span><span class="p">,</span>
+                            <span class="n">m_range</span><span class="p">,</span>
+                            <span class="n">m_range_rate</span><span class="p">,</span>
+                            <span class="n">m_range_std</span><span class="p">,</span>
+                            <span class="n">m_range_rate_std</span><span class="p">,</span>                                    
+                            <span class="n">tx_ecef</span><span class="o">=</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">,</span>
+                            <span class="n">rx_ecef</span><span class="o">=</span><span class="n">rx</span><span class="o">.</span><span class="n">ecef</span><span class="p">,</span>           
+                            <span class="n">freq</span><span class="o">=</span><span class="n">tx</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
+                            <span class="n">tx</span><span class="o">=</span><span class="n">tx</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                            <span class="n">rx</span><span class="o">=</span><span class="n">rx</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>                
+                            <span class="n">oid</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">o</span><span class="o">.</span><span class="n">oid</span><span class="p">),</span>
+                            <span class="n">tdm_type</span><span class="o">=</span><span class="s2">&quot;track&quot;</span><span class="p">,</span>
+                            <span class="n">fname</span><span class="o">=</span><span class="n">fname</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="write_tracklets"><a class="viewcode-back" href="../modules/simulate_tracklet.html#simulate_tracklet.write_tracklets">[docs]</a><span class="k">def</span> <span class="nf">write_tracklets</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">meas</span><span class="p">,</span> <span class="n">radar</span><span class="p">,</span> <span class="n">dname</span><span class="p">,</span> <span class="n">hdf5_out</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ccsds_out</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mi">3600</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Write a tracklet files.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">fnames</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># for each transmitter</span>
+    <span class="k">for</span> <span class="n">txi</span><span class="p">,</span><span class="n">tx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">):</span>
+        <span class="c1"># for each receiver</span>
+        <span class="k">for</span> <span class="n">rxi</span><span class="p">,</span><span class="n">tx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">):</span>
+            <span class="c1"># get measurement</span>
+            <span class="n">omeas</span><span class="o">=</span><span class="n">meas</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="n">rxi</span><span class="p">]</span>
+            <span class="n">tidxs</span><span class="o">=</span><span class="p">[]</span>
+
+            <span class="c1"># if length of measurements is not zero</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">omeas</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">])</span> <span class="o">!=</span><span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">hdf5_out</span><span class="p">:</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s2">&quot;mkdir -p </span><span class="si">%s</span><span class="s2">/</span><span class="si">%d</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">dname</span><span class="p">,</span><span class="n">o</span><span class="o">.</span><span class="n">oid</span><span class="p">))</span>
+                    <span class="n">fname</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/</span><span class="si">%d</span><span class="s2">/track-</span><span class="si">%06d</span><span class="s2">-</span><span class="si">%d</span><span class="s2">-</span><span class="si">%d</span><span class="s2">_</span><span class="si">%d</span><span class="s2">.h5&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">dname</span><span class="p">,</span><span class="n">o</span><span class="o">.</span><span class="n">oid</span><span class="p">,</span><span class="n">n</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">omeas</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">]),</span><span class="n">o</span><span class="o">.</span><span class="n">oid</span><span class="p">,</span><span class="n">txi</span><span class="p">,</span><span class="n">rxi</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">debug_high</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Writing </span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">fname</span><span class="p">))</span>
+                            
+                    <span class="n">ho</span><span class="o">=</span><span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span><span class="s2">&quot;w&quot;</span><span class="p">)</span>
+                    <span class="n">ho</span><span class="p">[</span><span class="s2">&quot;oid&quot;</span><span class="p">]</span><span class="o">=</span><span class="n">o</span><span class="o">.</span><span class="n">oid</span>
+                    
+                    <span class="n">ho</span><span class="p">[</span><span class="s2">&quot;txi&quot;</span><span class="p">]</span><span class="o">=</span><span class="n">txi</span>
+                    <span class="n">ho</span><span class="p">[</span><span class="s2">&quot;rxi&quot;</span><span class="p">]</span><span class="o">=</span><span class="n">rxi</span>                
+                    
+                    <span class="n">ho</span><span class="p">[</span><span class="s2">&quot;tx_loc&quot;</span><span class="p">]</span><span class="o">=</span><span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span><span class="o">.</span><span class="n">ecef</span>
+                    <span class="n">ho</span><span class="p">[</span><span class="s2">&quot;rx_loc&quot;</span><span class="p">]</span><span class="o">=</span><span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">[</span><span class="n">rxi</span><span class="p">]</span><span class="o">.</span><span class="n">ecef</span>
+                    
+                    
+                    <span class="n">ho</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">]</span><span class="o">=</span><span class="n">omeas</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">]</span>
+                    <span class="n">ho</span><span class="p">[</span><span class="s2">&quot;m_range&quot;</span><span class="p">]</span><span class="o">=</span><span class="n">omeas</span><span class="p">[</span><span class="s2">&quot;m_range&quot;</span><span class="p">]</span>
+                    <span class="n">ho</span><span class="p">[</span><span class="s2">&quot;m_range_std&quot;</span><span class="p">]</span><span class="o">=</span><span class="n">omeas</span><span class="p">[</span><span class="s2">&quot;m_range_std&quot;</span><span class="p">]</span>
+                    
+                    <span class="n">ho</span><span class="p">[</span><span class="s2">&quot;m_range_rate&quot;</span><span class="p">]</span><span class="o">=</span><span class="n">omeas</span><span class="p">[</span><span class="s2">&quot;m_range_rate&quot;</span><span class="p">]</span>
+                    <span class="n">ho</span><span class="p">[</span><span class="s2">&quot;m_range_rate_std&quot;</span><span class="p">]</span><span class="o">=</span><span class="n">omeas</span><span class="p">[</span><span class="s2">&quot;m_range_rate_std&quot;</span><span class="p">]</span>
+                    
+                    <span class="n">ho</span><span class="p">[</span><span class="s2">&quot;g_lat&quot;</span><span class="p">]</span><span class="o">=</span><span class="n">omeas</span><span class="p">[</span><span class="s2">&quot;g_lat&quot;</span><span class="p">]</span>
+                    <span class="n">ho</span><span class="p">[</span><span class="s2">&quot;g_lon&quot;</span><span class="p">]</span><span class="o">=</span><span class="n">omeas</span><span class="p">[</span><span class="s2">&quot;g_lon&quot;</span><span class="p">]</span>
+                        
+                    <span class="n">ho</span><span class="p">[</span><span class="s2">&quot;true_state&quot;</span><span class="p">]</span><span class="o">=</span><span class="n">omeas</span><span class="p">[</span><span class="s2">&quot;true_state&quot;</span><span class="p">]</span>
+                    <span class="n">ho</span><span class="p">[</span><span class="s2">&quot;true_time&quot;</span><span class="p">]</span><span class="o">=</span><span class="n">omeas</span><span class="p">[</span><span class="s2">&quot;true_time&quot;</span><span class="p">]</span>
+                    <span class="n">ho</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                    
+                <span class="k">if</span> <span class="n">ccsds_out</span><span class="p">:</span>
+                    <span class="n">fname</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/</span><span class="si">%d</span><span class="s2">/track-</span><span class="si">%06d</span><span class="s2">-</span><span class="si">%d</span><span class="s2">-</span><span class="si">%d</span><span class="s2">_</span><span class="si">%d</span><span class="s2">.tdm&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">dname</span><span class="p">,</span><span class="n">o</span><span class="o">.</span><span class="n">oid</span><span class="p">,</span><span class="n">n</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">omeas</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">]),</span><span class="n">o</span><span class="o">.</span><span class="n">oid</span><span class="p">,</span><span class="n">txi</span><span class="p">,</span><span class="n">rxi</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">debug_high</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Writing </span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">fname</span><span class="p">))</span>                
+                    <span class="n">write_ccsds</span><span class="p">(</span><span class="n">o</span><span class="p">,</span><span class="n">omeas</span><span class="p">,</span><span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">[</span><span class="n">txi</span><span class="p">],</span><span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">[</span><span class="n">rxi</span><span class="p">],</span><span class="n">fname</span><span class="p">)</span>
+                    <span class="n">fnames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/</span><span class="si">%d</span><span class="s2">/track-</span><span class="si">%06d</span><span class="s2">-</span><span class="si">%d</span><span class="s2">-</span><span class="si">%d</span><span class="s2">_</span><span class="si">%d</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">dname</span><span class="p">,</span><span class="n">o</span><span class="o">.</span><span class="n">oid</span><span class="p">,</span><span class="n">n</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">omeas</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">]),</span><span class="n">o</span><span class="o">.</span><span class="n">oid</span><span class="p">,</span><span class="n">txi</span><span class="p">,</span><span class="n">rxi</span><span class="p">)</span> <span class="p">)</span>
+    <span class="k">return</span> <span class="n">fnames</span></div>
+    
+
+<div class="viewcode-block" id="create_tracklet"><a class="viewcode-back" href="../modules/simulate_tracklet.html#simulate_tracklet.create_tracklet">[docs]</a><span class="k">def</span> <span class="nf">create_tracklet</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">radar</span><span class="p">,</span> <span class="n">t_obs</span><span class="p">,</span> <span class="n">hdf5_out</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ccsds_out</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dname</span><span class="o">=</span><span class="s2">&quot;./tracklets&quot;</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">dx</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">dv</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">dt</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span> <span class="n">ignore_elevation_thresh</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Simulate tracks of objects.</span>
+
+<span class="sd">    ionospheric limit is a lower limit on precision after ionospheric corrections</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">if</span> <span class="n">noise</span><span class="p">:</span>
+        <span class="n">noise</span><span class="o">=</span><span class="mf">1.0</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">noise</span><span class="o">=</span><span class="mf">0.0</span>
+
+    <span class="c1"># TDB, kludge, this should be allowed to change as a function of time</span>
+    <span class="n">bw</span><span class="o">=</span><span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">tx_bandwidth</span>
+    <span class="n">txlen</span><span class="o">=</span><span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">pulse_length</span><span class="o">*</span><span class="mf">1e6</span> <span class="c1"># pulse length in microseconds</span>
+    <span class="n">ipp</span><span class="o">=</span><span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">ipp</span> <span class="c1"># pulse length in microseconds</span>
+    <span class="n">n_ipp</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">n_ipp</span><span class="p">)</span> <span class="c1"># pulse length in microseconds</span>
+    <span class="n">rfun</span><span class="p">,</span><span class="n">dopfun</span><span class="o">=</span><span class="n">debris</span><span class="o">.</span><span class="n">precalculate_dr</span><span class="p">(</span><span class="n">txlen</span><span class="p">,</span><span class="n">bw</span><span class="p">,</span><span class="n">ipp</span><span class="o">=</span><span class="n">ipp</span><span class="p">,</span><span class="n">n_ipp</span><span class="o">=</span><span class="n">n_ipp</span><span class="p">)</span>
+    
+    <span class="n">t0_unix</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">jd_to_unix</span><span class="p">(</span><span class="n">dpt</span><span class="o">.</span><span class="n">mjd_to_jd</span><span class="p">(</span><span class="n">o</span><span class="o">.</span><span class="n">mjd0</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">debug_low</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">tx</span> <span class="ow">in</span> <span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;TX </span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">tx</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">rx</span> <span class="ow">in</span> <span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;RX </span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">rx</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+    <span class="n">rx_p</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">tx_p</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">tx</span> <span class="ow">in</span> <span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">:</span>    
+        <span class="n">tx_p</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">coord</span><span class="o">.</span><span class="n">geodetic2ecef</span><span class="p">(</span><span class="n">tx</span><span class="o">.</span><span class="n">lat</span><span class="p">,</span> <span class="n">tx</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span> <span class="n">tx</span><span class="o">.</span><span class="n">alt</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">rxi</span><span class="p">,</span><span class="n">rx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">):</span>
+        <span class="n">rx_p</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">coord</span><span class="o">.</span><span class="n">geodetic2ecef</span><span class="p">(</span><span class="n">rx</span><span class="o">.</span><span class="n">lat</span><span class="p">,</span> <span class="n">rx</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span> <span class="n">rx</span><span class="o">.</span><span class="n">alt</span><span class="p">))</span>
+
+    <span class="n">ecefs</span><span class="o">=</span><span class="n">o</span><span class="o">.</span><span class="n">get_orbit</span><span class="p">(</span><span class="n">t_obs</span><span class="p">)</span>
+    <span class="n">state</span><span class="o">=</span><span class="n">o</span><span class="o">.</span><span class="n">get_state</span><span class="p">(</span><span class="n">t_obs</span><span class="p">)</span>    
+    <span class="n">ecefs_p_dt</span><span class="o">=</span><span class="n">o</span><span class="o">.</span><span class="n">get_orbit</span><span class="p">(</span><span class="n">t_obs</span><span class="o">+</span><span class="n">dt</span><span class="p">)</span>
+    <span class="n">ecefs_m_dt</span><span class="o">=</span><span class="n">o</span><span class="o">.</span><span class="n">get_orbit</span><span class="p">(</span><span class="n">t_obs</span><span class="o">-</span><span class="n">dt</span><span class="p">)</span>
+    
+    <span class="c1"># velocity in ecef</span>
+    <span class="n">ecef_vel</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="p">((</span><span class="n">ecefs_p_dt</span><span class="o">-</span><span class="n">ecefs</span><span class="p">)</span><span class="o">+</span><span class="p">(</span><span class="n">ecefs</span><span class="o">-</span><span class="n">ecefs_m_dt</span><span class="p">))</span><span class="o">/</span><span class="n">dt</span><span class="p">)</span>
+
+    <span class="c1"># linearized error estimates for ecef state vector error std_dev, when three or more</span>
+    <span class="c1"># delays and doppl er shifts are measured</span>
+    <span class="n">ecef_stdevs</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">meas</span><span class="o">=</span><span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">tx</span> <span class="ow">in</span> <span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">:</span>
+        <span class="n">ecef_stdevs</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;time_idx&quot;</span><span class="p">:[],</span>
+                            <span class="s2">&quot;m_time&quot;</span><span class="p">:[],</span>
+                            <span class="s2">&quot;ecef_stdev&quot;</span><span class="p">:[]})</span>
+        
+    <span class="k">for</span> <span class="n">tx</span> <span class="ow">in</span> <span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">:</span>
+        <span class="n">m_rx</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">rx</span> <span class="ow">in</span> <span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">:</span>
+            <span class="n">m_rx</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;time_idx&quot;</span><span class="p">:[],</span>
+                         <span class="s2">&quot;m_time&quot;</span><span class="p">:[],</span>
+                         
+                         <span class="s2">&quot;m_delay&quot;</span><span class="p">:[],</span>
+                         <span class="s2">&quot;m_delay_std&quot;</span><span class="p">:[],</span>
+                         
+                         <span class="s2">&quot;m_range&quot;</span><span class="p">:[],</span>                                                  
+                         <span class="s2">&quot;m_range_std&quot;</span><span class="p">:[],</span>
+
+                         <span class="s2">&quot;m_range_rate&quot;</span><span class="p">:[],</span>
+                         <span class="s2">&quot;m_range_rate_std&quot;</span><span class="p">:[],</span>
+
+                         <span class="s2">&quot;m_doppler&quot;</span><span class="p">:[],</span>
+                         <span class="s2">&quot;m_doppler_std&quot;</span><span class="p">:[],</span>
+                         
+                         <span class="s2">&quot;gain_tx&quot;</span><span class="p">:[],</span>
+                         <span class="s2">&quot;gain_rx&quot;</span><span class="p">:[],</span>
+
+                         <span class="s2">&quot;enr&quot;</span><span class="p">:[],</span>
+                         
+                         <span class="s2">&quot;true_state&quot;</span><span class="p">:[],</span>
+                         <span class="s2">&quot;true_time&quot;</span><span class="p">:[],</span>
+                         
+                         <span class="s2">&quot;g_lat&quot;</span><span class="p">:[],</span>
+                         <span class="s2">&quot;g_lon&quot;</span><span class="p">:[]})</span>
+        <span class="n">meas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">m_rx</span><span class="p">)</span>
+        
+    <span class="c1"># largest possible number of state vector measurements</span>
+    <span class="n">n_state_meas</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">)</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">)</span>
+    <span class="c1"># jacobian for error covariance calc</span>
+    <span class="n">J</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">2</span><span class="o">*</span><span class="n">n_state_meas</span><span class="p">,</span><span class="mi">6</span><span class="p">])</span>
+    <span class="n">Sigma_Lin</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">2</span><span class="o">*</span><span class="n">n_state_meas</span><span class="p">,</span><span class="mi">2</span><span class="o">*</span><span class="n">n_state_meas</span><span class="p">])</span>
+    
+    <span class="c1"># error standard deviation for state vector estimates at each position</span>
+    <span class="n">state_vector_errors</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">6</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">t_obs</span><span class="p">)])</span>
+    
+    <span class="c1"># go through all times</span>
+    <span class="k">for</span> <span class="n">ti</span><span class="p">,</span><span class="n">t</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">t_obs</span><span class="p">):</span>
+        <span class="n">p</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">ecefs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">ti</span><span class="p">],</span><span class="n">ecefs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">ti</span><span class="p">],</span><span class="n">ecefs</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="n">ti</span><span class="p">]])</span>
+        <span class="n">p_p</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">ecefs_p_dt</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">ti</span><span class="p">],</span><span class="n">ecefs_p_dt</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">ti</span><span class="p">],</span><span class="n">ecefs_p_dt</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="n">ti</span><span class="p">]])</span>
+        <span class="n">p_m</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">ecefs_m_dt</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">ti</span><span class="p">],</span><span class="n">ecefs_m_dt</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">ti</span><span class="p">],</span><span class="n">ecefs_m_dt</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="n">ti</span><span class="p">]])</span>
+
+        <span class="c1"># for linearized state vector error determination</span>
+        <span class="n">p_dx0</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">ecefs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">ti</span><span class="p">]</span><span class="o">+</span><span class="n">dx</span><span class="p">,</span><span class="n">ecefs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">ti</span><span class="p">],</span><span class="n">ecefs</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="n">ti</span><span class="p">]])</span>
+        <span class="n">p_dx1</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">ecefs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">ti</span><span class="p">],</span><span class="n">ecefs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">ti</span><span class="p">]</span><span class="o">+</span><span class="n">dx</span><span class="p">,</span><span class="n">ecefs</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="n">ti</span><span class="p">]])</span>
+        <span class="n">p_dx2</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">ecefs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">ti</span><span class="p">],</span><span class="n">ecefs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">ti</span><span class="p">],</span><span class="n">ecefs</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="n">ti</span><span class="p">]</span><span class="o">+</span><span class="n">dx</span><span class="p">])</span>
+        <span class="c1"># doppler error comes from linear least squares</span>
+        
+        <span class="c1"># initialize jacobian</span>
+        <span class="n">J</span><span class="p">[:,:]</span><span class="o">=</span><span class="mf">0.0</span>
+        <span class="n">Sigma_Lin</span><span class="p">[:,:]</span><span class="o">=</span><span class="mf">0.0</span>
+        <span class="n">state_meas_idx</span><span class="o">=</span><span class="mi">0</span>
+        
+        <span class="c1"># go through all transmitters</span>
+        <span class="k">for</span> <span class="n">txi</span><span class="p">,</span><span class="n">tx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">):</span>        
+            <span class="n">pos_vec_tx</span><span class="o">=-</span><span class="n">tx_p</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span><span class="o">+</span><span class="n">p</span>
+            <span class="n">pos_vec_tx_p</span><span class="o">=-</span><span class="n">tx_p</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span><span class="o">+</span><span class="n">p_p</span>
+            <span class="n">pos_vec_tx_m</span><span class="o">=-</span><span class="n">tx_p</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span><span class="o">+</span><span class="n">p_m</span>
+
+            <span class="c1"># for linearized errors</span>
+            <span class="n">pos_vec_tx_dx0</span><span class="o">=-</span><span class="n">tx_p</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span><span class="o">+</span><span class="n">p_dx0</span>
+            <span class="n">pos_vec_tx_dx1</span><span class="o">=-</span><span class="n">tx_p</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span><span class="o">+</span><span class="n">p_dx1</span>
+            <span class="n">pos_vec_tx_dx2</span><span class="o">=-</span><span class="n">tx_p</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span><span class="o">+</span><span class="n">p_dx2</span>
+        
+            <span class="c1"># incident k-vector</span>
+            <span class="n">k_inc</span> <span class="o">=</span> <span class="o">-</span><span class="mf">2.0</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">pos_vec_tx</span><span class="o">/</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">pos_vec_tx</span><span class="p">)</span><span class="o">/</span><span class="n">tx</span><span class="o">.</span><span class="n">wavelength</span>
+            
+            <span class="n">elevation_tx</span><span class="o">=</span><span class="mf">90.0</span><span class="o">-</span><span class="n">coord</span><span class="o">.</span><span class="n">angle_deg</span><span class="p">(</span><span class="n">tx_p</span><span class="p">[</span><span class="n">txi</span><span class="p">],</span><span class="n">pos_vec_tx</span><span class="p">)</span>
+            
+            <span class="k">if</span> <span class="n">elevation_tx</span> <span class="o">&gt;</span> <span class="n">tx</span><span class="o">.</span><span class="n">el_thresh</span> <span class="ow">or</span> <span class="n">ignore_elevation_thresh</span><span class="p">:</span>
+                <span class="n">k0</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">point_ecef</span><span class="p">(</span><span class="n">pos_vec_tx</span><span class="p">)</span>         <span class="c1"># we are pointing at the object when tracking</span>
+                <span class="n">gain_tx</span><span class="o">=</span><span class="n">tx</span><span class="o">.</span><span class="n">beam</span><span class="o">.</span><span class="n">gain</span><span class="p">(</span><span class="n">k0</span><span class="p">)</span>     <span class="c1"># get antenna gain</span>
+                <span class="n">range_tx</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">pos_vec_tx</span><span class="p">)</span>
+                <span class="n">range_tx_p</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">pos_vec_tx_p</span><span class="p">)</span>
+                <span class="n">range_tx_m</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">pos_vec_tx_m</span><span class="p">)</span>
+                
+                <span class="n">range_tx_dx0</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">pos_vec_tx_dx0</span><span class="p">)</span>
+                <span class="n">range_tx_dx1</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">pos_vec_tx_dx1</span><span class="p">)</span>
+                <span class="n">range_tx_dx2</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">pos_vec_tx_dx2</span><span class="p">)</span>                
+
+                <span class="n">tx_to_target_time</span> <span class="o">=</span> <span class="n">range_tx</span><span class="o">/</span><span class="n">c</span><span class="o">.</span><span class="n">c</span>
+                
+                <span class="c1"># go through all receivers</span>
+                <span class="k">for</span> <span class="n">rxi</span><span class="p">,</span><span class="n">rx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">):</span>
+                    <span class="n">pos_vec_rx</span><span class="o">=-</span><span class="n">rx_p</span><span class="p">[</span><span class="n">rxi</span><span class="p">]</span><span class="o">+</span><span class="n">p</span>
+                    <span class="n">pos_vec_rx_p</span><span class="o">=-</span><span class="n">rx_p</span><span class="p">[</span><span class="n">rxi</span><span class="p">]</span><span class="o">+</span><span class="n">p_p</span>
+                    <span class="n">pos_vec_rx_m</span><span class="o">=-</span><span class="n">rx_p</span><span class="p">[</span><span class="n">rxi</span><span class="p">]</span><span class="o">+</span><span class="n">p_m</span>
+
+                    <span class="c1"># rx k-vector</span>
+                    <span class="n">k_rec</span> <span class="o">=</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">pos_vec_rx</span><span class="o">/</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">pos_vec_rx</span><span class="p">)</span><span class="o">/</span><span class="n">tx</span><span class="o">.</span><span class="n">wavelength</span>
+                    <span class="c1"># scattered k-vector</span>
+                    <span class="n">k_scat</span><span class="o">=</span><span class="n">k_rec</span><span class="o">-</span><span class="n">k_inc</span>
+
+                    <span class="c1"># for linearized pos error</span>
+                    <span class="n">pos_vec_rx_dx0</span><span class="o">=-</span><span class="n">rx_p</span><span class="p">[</span><span class="n">rxi</span><span class="p">]</span><span class="o">+</span><span class="n">p_dx0</span>
+                    <span class="n">pos_vec_rx_dx1</span><span class="o">=-</span><span class="n">rx_p</span><span class="p">[</span><span class="n">rxi</span><span class="p">]</span><span class="o">+</span><span class="n">p_dx1</span>
+                    <span class="n">pos_vec_rx_dx2</span><span class="o">=-</span><span class="n">rx_p</span><span class="p">[</span><span class="n">rxi</span><span class="p">]</span><span class="o">+</span><span class="n">p_dx2</span>                    
+                    
+                    <span class="n">elevation_rx</span><span class="o">=</span><span class="mf">90.0</span><span class="o">-</span><span class="n">coord</span><span class="o">.</span><span class="n">angle_deg</span><span class="p">(</span><span class="n">rx_p</span><span class="p">[</span><span class="n">rxi</span><span class="p">],</span><span class="n">pos_vec_rx</span><span class="p">)</span>
+                    
+                    <span class="k">if</span> <span class="n">elevation_rx</span> <span class="o">&gt;</span> <span class="n">rx</span><span class="o">.</span><span class="n">el_thresh</span> <span class="ow">or</span> <span class="n">ignore_elevation_thresh</span><span class="p">:</span>
+                        
+                        <span class="n">k0</span> <span class="o">=</span> <span class="n">rx</span><span class="o">.</span><span class="n">point_ecef</span><span class="p">(</span><span class="n">pos_vec_rx</span><span class="p">)</span>      <span class="c1"># we are pointing at the object when tracking</span>
+
+                        <span class="n">gain_rx</span><span class="o">=</span><span class="n">rx</span><span class="o">.</span><span class="n">beam</span><span class="o">.</span><span class="n">gain</span><span class="p">(</span><span class="n">k0</span><span class="p">)</span>  <span class="c1"># get antenna gain</span>
+                        
+                        <span class="n">range_rx</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">pos_vec_rx</span><span class="p">)</span>
+                        <span class="n">range_rx_p</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">pos_vec_rx_p</span><span class="p">)</span>
+                        <span class="n">range_rx_m</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">pos_vec_rx_m</span><span class="p">)</span>
+
+                        <span class="n">range_rx_dx0</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">pos_vec_rx_dx0</span><span class="p">)</span>
+                        <span class="n">range_rx_dx1</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">pos_vec_rx_dx1</span><span class="p">)</span>
+                        <span class="n">range_rx_dx2</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">pos_vec_rx_dx2</span><span class="p">)</span>                        
+                        
+                        <span class="n">target_to_rx_time</span> <span class="o">=</span> <span class="n">range_rx</span><span class="o">/</span><span class="n">c</span><span class="o">.</span><span class="n">c</span>
+                        <span class="c1"># SNR of object at measured location</span>
+                        <span class="n">enr_rx</span><span class="o">=</span><span class="n">debris</span><span class="o">.</span><span class="n">hard_target_enr</span><span class="p">(</span><span class="n">gain_tx</span><span class="p">,</span>
+                                                      <span class="n">gain_rx</span><span class="p">,</span>
+                                                      <span class="n">tx</span><span class="o">.</span><span class="n">wavelength</span><span class="p">,</span>
+                                                      <span class="n">tx</span><span class="o">.</span><span class="n">tx_power</span><span class="p">,</span>
+                                                      <span class="n">range_tx</span><span class="p">,</span>
+                                                      <span class="n">range_rx</span><span class="p">,</span>
+                                                      <span class="n">o</span><span class="o">.</span><span class="n">diam</span><span class="p">,</span>
+                                                      <span class="n">bandwidth</span><span class="o">=</span><span class="n">tx</span><span class="o">.</span><span class="n">coh_int_bandwidth</span><span class="p">,</span>   <span class="c1"># coherent integration bw</span>
+                                                      <span class="n">rx_noise_temp</span><span class="o">=</span><span class="n">rx</span><span class="o">.</span><span class="n">rx_noise</span><span class="p">)</span>
+
+                        <span class="k">if</span> <span class="n">enr_rx</span> <span class="o">&gt;</span> <span class="mf">1e8</span><span class="p">:</span>
+                            <span class="n">enr_rx</span><span class="o">=</span><span class="mf">1e8</span>
+
+                        <span class="k">if</span> <span class="n">enr_rx</span> <span class="o">&lt;</span> <span class="mf">0.1</span><span class="p">:</span>
+                            <span class="n">enr_rx</span><span class="o">=</span><span class="mf">0.1</span>
+
+                        <span class="c1">#print(&quot;snr %1.2f&quot;%(enr_rx))                            </span>
+                        
+                        <span class="n">dr</span><span class="o">=</span><span class="mf">10.0</span><span class="o">**</span><span class="p">(</span><span class="n">rfun</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">enr_rx</span><span class="p">)))</span>
+                        <span class="n">ddop</span><span class="o">=</span><span class="mf">10.0</span><span class="o">**</span><span class="p">(</span><span class="n">dopfun</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">enr_rx</span><span class="p">)))</span>
+
+                        <span class="c1"># Unknown doppler shift due to ionosphere can be up to 0.1 Hz,</span>
+                        <span class="c1"># estimate based on typical GNU Ionospheric tomography receiver phase curves.</span>
+                        <span class="k">if</span> <span class="n">ddop</span> <span class="o">&lt;</span> <span class="mf">0.1</span><span class="p">:</span>
+                           <span class="n">ddop</span> <span class="o">=</span> <span class="mf">0.1</span>
+                        
+                        <span class="n">dr</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dr</span><span class="o">**</span><span class="mf">2.0</span> <span class="o">+</span> <span class="n">iono_errfun</span><span class="p">(</span><span class="n">range_tx</span><span class="o">/</span><span class="mf">1e3</span><span class="p">)</span><span class="o">**</span><span class="mf">2.0</span><span class="p">)</span> <span class="c1"># add ionospheric error</span>
+
+                        <span class="k">if</span> <span class="n">dr</span> <span class="o">&lt;</span> <span class="n">o</span><span class="o">.</span><span class="n">diam</span><span class="p">:</span> <span class="c1"># if object diameter is larger than range error, make it at least as big as target</span>
+                            <span class="n">dr</span> <span class="o">=</span> <span class="n">o</span><span class="o">.</span><span class="n">diam</span>
+
+                        <span class="n">r0</span><span class="o">=</span><span class="n">range_tx</span><span class="o">+</span><span class="n">range_rx</span>
+                        <span class="n">rp</span><span class="o">=</span><span class="n">range_tx_p</span><span class="o">+</span><span class="n">range_rx_p</span>
+                        <span class="n">rm</span><span class="o">=</span><span class="n">range_tx_m</span><span class="o">+</span><span class="n">range_rx_m</span>
+                        <span class="n">range_rate_d</span><span class="o">=</span><span class="mf">0.5</span><span class="o">*</span><span class="p">((</span><span class="n">rp</span><span class="o">-</span><span class="n">r0</span><span class="p">)</span><span class="o">+</span><span class="p">(</span><span class="n">r0</span><span class="o">-</span><span class="n">rm</span><span class="p">))</span><span class="o">/</span><span class="n">dt</span> <span class="c1"># symmetric numerical derivative</span>
+
+
+                        
+                        <span class="c1"># doppler (m/s) using scattering k-vector</span>
+                        <span class="n">range_rate</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pos_vec_rx</span><span class="o">/</span><span class="n">range_rx</span><span class="p">,</span><span class="n">state</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">,</span><span class="n">ti</span><span class="p">])</span> <span class="o">+</span> <span class="n">n</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pos_vec_tx</span><span class="o">/</span><span class="n">range_tx</span><span class="p">,</span><span class="n">state</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">,</span><span class="n">ti</span><span class="p">])</span>
+
+                        
+                        <span class="n">doppler</span> <span class="o">=</span> <span class="n">range_rate</span><span class="o">/</span><span class="n">tx</span><span class="o">.</span><span class="n">wavelength</span>                        
+                        
+<span class="c1">#                        print(&quot;rr1 %1.1f rr2 %1.1f&quot;%(range_rate_d,range_rate))</span>
+                        <span class="n">doppler_k</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">k_scat</span><span class="p">,</span><span class="n">ecef_vel</span><span class="p">[:,</span><span class="n">ti</span><span class="p">])</span><span class="o">/</span><span class="mf">2.0</span><span class="o">/</span><span class="n">n</span><span class="o">.</span><span class="n">pi</span>
+                        <span class="n">range_rate_k</span> <span class="o">=</span> <span class="n">doppler_k</span><span class="o">*</span><span class="n">tx</span><span class="o">.</span><span class="n">wavelength</span>
+
+                        <span class="c1"># for linearized errors, range rate at small perturbations to state vector velocity parameters</span>
+                        <span class="n">range_rate_k_dv0</span><span class="o">=</span><span class="n">tx</span><span class="o">.</span><span class="n">wavelength</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">k_scat</span><span class="p">,</span><span class="n">ecef_vel</span><span class="p">[:,</span><span class="n">ti</span><span class="p">]</span><span class="o">+</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">dv</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]))</span><span class="o">/</span><span class="mf">2.0</span><span class="o">/</span><span class="n">n</span><span class="o">.</span><span class="n">pi</span>
+                        <span class="n">range_rate_k_dv1</span><span class="o">=</span><span class="n">tx</span><span class="o">.</span><span class="n">wavelength</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">k_scat</span><span class="p">,</span><span class="n">ecef_vel</span><span class="p">[:,</span><span class="n">ti</span><span class="p">]</span><span class="o">+</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="n">dv</span><span class="p">,</span><span class="mi">0</span><span class="p">]))</span><span class="o">/</span><span class="mf">2.0</span><span class="o">/</span><span class="n">n</span><span class="o">.</span><span class="n">pi</span>
+                        <span class="n">range_rate_k_dv2</span><span class="o">=</span><span class="n">tx</span><span class="o">.</span><span class="n">wavelength</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">k_scat</span><span class="p">,</span><span class="n">ecef_vel</span><span class="p">[:,</span><span class="n">ti</span><span class="p">]</span><span class="o">+</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="n">dv</span><span class="p">]))</span><span class="o">/</span><span class="mf">2.0</span><span class="o">/</span><span class="n">n</span><span class="o">.</span><span class="n">pi</span>
+                        
+                        <span class="c1"># full range for error calculation, with small perturbations to position state</span>
+                        <span class="n">full_range_dx0</span><span class="o">=</span><span class="n">range_rx_dx0</span><span class="o">+</span><span class="n">range_tx_dx0</span>
+                        <span class="n">full_range_dx1</span><span class="o">=</span><span class="n">range_rx_dx1</span><span class="o">+</span><span class="n">range_tx_dx1</span>
+                        <span class="n">full_range_dx2</span><span class="o">=</span><span class="n">range_rx_dx2</span><span class="o">+</span><span class="n">range_tx_dx2</span>
+                        
+                        <span class="k">if</span> <span class="n">enr_rx</span> <span class="o">&gt;</span> <span class="n">tx</span><span class="o">.</span><span class="n">enr_thresh</span><span class="p">:</span>
+                            <span class="c1"># calculate jacobian row for state vector errors</span>
+                            <span class="c1"># range</span>
+                            <span class="n">J</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">state_meas_idx</span><span class="p">,</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="n">full_range_dx0</span><span class="o">-</span><span class="n">r0</span><span class="p">)</span><span class="o">/</span><span class="n">dx</span><span class="p">,(</span><span class="n">full_range_dx1</span><span class="o">-</span><span class="n">r0</span><span class="p">)</span><span class="o">/</span><span class="n">dx</span><span class="p">,(</span><span class="n">full_range_dx2</span><span class="o">-</span><span class="n">r0</span><span class="p">)</span><span class="o">/</span><span class="n">dx</span><span class="p">])</span>
+                            <span class="c1"># range inverse variance</span>
+                            <span class="n">Sigma_Lin</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">state_meas_idx</span><span class="p">,</span><span class="mi">2</span><span class="o">*</span><span class="n">state_meas_idx</span><span class="p">]</span><span class="o">=</span><span class="mf">1.0</span><span class="o">/</span><span class="n">dr</span><span class="o">**</span><span class="mf">2.0</span>
+                            <span class="c1"># range-rate </span>
+                            <span class="n">J</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">state_meas_idx</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="n">range_rate_k_dv0</span><span class="o">-</span><span class="n">range_rate_k</span><span class="p">)</span><span class="o">/</span><span class="n">dv</span><span class="p">,(</span><span class="n">range_rate_k_dv1</span><span class="o">-</span><span class="n">range_rate_k</span><span class="p">)</span><span class="o">/</span><span class="n">dv</span><span class="p">,(</span><span class="n">range_rate_k_dv2</span><span class="o">-</span><span class="n">range_rate_k</span><span class="p">)</span><span class="o">/</span><span class="n">dv</span><span class="p">])</span>
+                            <span class="c1"># range-rate inverse variance</span>
+                            <span class="n">Sigma_Lin</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">state_meas_idx</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="o">*</span><span class="n">state_meas_idx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="n">tx</span><span class="o">.</span><span class="n">wavelength</span><span class="o">*</span><span class="n">ddop</span><span class="p">)</span><span class="o">**</span><span class="mf">2.0</span>                            
+                            
+                            <span class="n">state_meas_idx</span><span class="o">+=</span><span class="mi">1</span>
+
+                            <span class="c1"># detection!</span>
+                            <span class="k">if</span> <span class="n">debug_low</span><span class="p">:</span>
+                                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;rx </span><span class="si">%d</span><span class="s2"> tx el </span><span class="si">%1.2f</span><span class="s2"> rx el </span><span class="si">%1.2f</span><span class="s2"> gain_tx </span><span class="si">%1.2f</span><span class="s2"> gain_rx </span><span class="si">%1.2f</span><span class="s2"> enr </span><span class="si">%1.2f</span><span class="s2"> rr </span><span class="si">%1.2f</span><span class="s2"> prop time </span><span class="si">%1.6f</span><span class="s2"> dr </span><span class="si">%1.2f</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">rxi</span><span class="p">,</span><span class="n">elevation_tx</span><span class="p">,</span><span class="n">elevation_rx</span><span class="p">,</span><span class="n">gain_tx</span><span class="p">,</span><span class="n">gain_rx</span><span class="p">,</span><span class="n">enr_rx</span><span class="p">,</span><span class="n">range_rate</span><span class="p">,</span><span class="n">tx_to_target_time</span><span class="p">,</span><span class="n">dr</span><span class="p">))</span>
+
+                            <span class="c1"># ground foot point in geodetic</span>
+                            <span class="n">llh</span><span class="o">=</span><span class="n">coord</span><span class="o">.</span><span class="n">ecef2geodetic</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">p</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+                            
+                            <span class="c1"># time is time of transmit pulse</span>
+                            <span class="n">meas</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="n">rxi</span><span class="p">][</span><span class="s2">&quot;time_idx&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ti</span><span class="p">)</span>
+                            <span class="n">meas</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="n">rxi</span><span class="p">][</span><span class="s2">&quot;m_time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="o">+</span><span class="n">t0_unix</span><span class="p">)</span>
+                            <span class="n">meas</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="n">rxi</span><span class="p">][</span><span class="s2">&quot;m_range&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="p">(</span><span class="n">range_tx</span><span class="o">+</span><span class="n">range_rx</span><span class="p">)</span><span class="o">/</span><span class="mf">1e3</span> <span class="o">+</span> <span class="n">noise</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">()</span><span class="o">*</span><span class="n">dr</span><span class="o">/</span><span class="mf">1e3</span> <span class="p">)</span>
+                            <span class="n">meas</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="n">rxi</span><span class="p">][</span><span class="s2">&quot;m_range_std&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">dr</span><span class="o">/</span><span class="mf">1e3</span> <span class="p">)</span>
+
+                            <span class="n">rr_std</span><span class="o">=</span><span class="n">c</span><span class="o">.</span><span class="n">c</span><span class="o">*</span><span class="n">ddop</span><span class="o">/</span><span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span><span class="o">.</span><span class="n">freq</span><span class="o">/</span><span class="mf">2.0</span><span class="o">/</span><span class="mf">1e3</span> 
+                            <span class="n">meas</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="n">rxi</span><span class="p">][</span><span class="s2">&quot;m_range_rate&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">range_rate</span><span class="o">/</span><span class="mf">1e3</span> <span class="o">+</span> <span class="n">noise</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">()</span><span class="o">*</span><span class="n">rr_std</span><span class="p">)</span>
+                            <span class="c1"># 0.1 m/s error due to ionosphere</span>
+                            <span class="n">meas</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="n">rxi</span><span class="p">][</span><span class="s2">&quot;m_range_rate_std&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rr_std</span><span class="p">)</span>
+                            <span class="n">meas</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="n">rxi</span><span class="p">][</span><span class="s2">&quot;m_doppler&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">doppler</span> <span class="o">+</span> <span class="n">noise</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">()</span><span class="o">*</span><span class="n">ddop</span><span class="o">/</span><span class="mf">1e3</span><span class="p">)</span>
+                            <span class="n">meas</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="n">rxi</span><span class="p">][</span><span class="s2">&quot;m_doppler_std&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ddop</span><span class="p">)</span>
+                            <span class="n">meas</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="n">rxi</span><span class="p">][</span><span class="s2">&quot;m_delay&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tx_to_target_time</span> <span class="o">+</span> <span class="n">target_to_rx_time</span><span class="p">)</span>
+                            <span class="n">meas</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="n">rxi</span><span class="p">][</span><span class="s2">&quot;g_lat&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">llh</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                            <span class="n">meas</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="n">rxi</span><span class="p">][</span><span class="s2">&quot;g_lon&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">llh</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                            <span class="n">meas</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="n">rxi</span><span class="p">][</span><span class="s2">&quot;enr&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">enr_rx</span><span class="p">)</span>
+                            
+                            <span class="n">meas</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="n">rxi</span><span class="p">][</span><span class="s2">&quot;gain_tx&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gain_tx</span><span class="p">)</span>
+                            <span class="n">meas</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="n">rxi</span><span class="p">][</span><span class="s2">&quot;gain_rx&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gain_rx</span><span class="p">)</span>
+                            
+                            <span class="n">true_state</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>
+                            <span class="n">true_state</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="p">((</span><span class="n">p_p</span><span class="o">-</span><span class="n">p</span><span class="p">)</span><span class="o">+</span><span class="p">(</span><span class="n">p</span><span class="o">-</span><span class="n">p_m</span><span class="p">))</span><span class="o">/</span><span class="n">dt</span><span class="p">)</span><span class="o">/</span><span class="mf">1e3</span>
+                            <span class="n">true_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span><span class="o">=</span><span class="n">p</span><span class="o">/</span><span class="mf">1e3</span>
+
+                            <span class="n">meas</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="n">rxi</span><span class="p">][</span><span class="s2">&quot;true_state&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">true_state</span><span class="p">)</span>                            
+                            <span class="n">meas</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="n">rxi</span><span class="p">][</span><span class="s2">&quot;true_time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t_obs</span><span class="p">[</span><span class="n">ti</span><span class="p">]</span><span class="o">+</span><span class="n">t0_unix</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">debug_high</span><span class="p">:</span>
+                                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;not detected: enr_rx </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">enr_rx</span><span class="p">))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">debug_high</span><span class="p">:</span>
+                            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;not detected: elevation_rx </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">elevation_rx</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">debug_high</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;not detected: elevation_tx </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">elevation_tx</span><span class="p">))</span>
+                
+
+        <span class="c1"># if more than three measurements of range and range-rate, then we maybe able to</span>
+        <span class="c1"># observe true state. if so, calculate the linearized covariance matrix</span>
+        <span class="k">if</span> <span class="n">state_meas_idx</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="c1"># use only the number of measurements that were good</span>
+            <span class="n">JJ</span> <span class="o">=</span> <span class="n">J</span><span class="p">[</span><span class="mi">0</span><span class="p">:(</span><span class="mi">2</span><span class="o">*</span><span class="n">state_meas_idx</span><span class="p">),:]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">Sigma_post</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">JJ</span><span class="p">),</span><span class="n">Sigma_Lin</span><span class="p">),</span><span class="n">JJ</span><span class="p">))</span>
+                <span class="n">ecef_stdevs</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="s2">&quot;time_idx&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ti</span><span class="p">)</span>
+                <span class="n">ecef_stdevs</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="s2">&quot;m_time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+                <span class="n">ecef_stdevs</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="s2">&quot;ecef_stdev&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Sigma_post</span><span class="p">)</span>
+
+            <span class="k">except</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Singular posterior covariance...&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">debug_low</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">meas</span><span class="p">)</span>
+    <span class="n">fnames</span> <span class="o">=</span> <span class="n">write_tracklets</span><span class="p">(</span><span class="n">o</span><span class="p">,</span><span class="n">meas</span><span class="p">,</span><span class="n">radar</span><span class="p">,</span><span class="n">dname</span><span class="p">,</span><span class="n">hdf5_out</span><span class="o">=</span><span class="n">hdf5_out</span><span class="p">,</span><span class="n">ccsds_out</span><span class="o">=</span><span class="n">ccsds_out</span><span class="p">)</span>
+                    
+    <span class="k">return</span><span class="p">(</span><span class="n">meas</span><span class="p">,</span><span class="n">fnames</span><span class="p">,</span><span class="n">ecef_stdevs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="test_envisat"><a class="viewcode-back" href="../modules/simulate_tracklet.html#simulate_tracklet.test_envisat">[docs]</a><span class="k">def</span> <span class="nf">test_envisat</span><span class="p">():</span>
+    <span class="kn">import</span> <span class="nn">dpt_tools</span> <span class="k">as</span> <span class="nn">dpt</span>
+    <span class="kn">import</span> <span class="nn">space_object</span> <span class="k">as</span> <span class="nn">so</span>
+    <span class="kn">import</span> <span class="nn">radar_library</span> <span class="k">as</span> <span class="nn">rl</span>
+    <span class="kn">import</span> <span class="nn">stuffr</span>
+    <span class="n">mass</span><span class="o">=</span><span class="mf">0.8111E+04</span>
+    <span class="n">diam</span><span class="o">=</span><span class="mf">0.8960E+01</span>
+    <span class="n">m_to_A</span><span class="o">=</span><span class="mf">128.651</span>
+    <span class="n">a</span><span class="o">=</span><span class="mf">7159.5</span>
+    <span class="n">e</span><span class="o">=</span><span class="mf">0.0001</span>
+    <span class="n">i</span><span class="o">=</span><span class="mf">98.55</span>
+    <span class="n">raan</span><span class="o">=</span><span class="mf">248.99</span>
+    <span class="n">aop</span><span class="o">=</span><span class="mf">90.72</span>
+    <span class="n">M</span><span class="o">=</span><span class="mf">47.37</span>
+    <span class="n">A</span><span class="o">=</span><span class="n">mass</span><span class="o">/</span><span class="n">m_to_A</span>
+    <span class="c1"># epoch in unix seconds</span>
+    <span class="n">ut0</span><span class="o">=</span><span class="mf">1241136000.0</span>
+    <span class="c1"># modified julian day epoch</span>
+    
+    <span class="n">mjd0</span><span class="o">=</span><span class="n">dpt</span><span class="o">.</span><span class="n">unix_to_jd</span><span class="p">(</span><span class="n">ut0</span><span class="p">)</span> <span class="o">-</span> <span class="mf">2400000.5</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">mjd0</span><span class="p">)</span>
+    <span class="n">o</span><span class="o">=</span><span class="n">so</span><span class="o">.</span><span class="n">SpaceObject</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="n">a</span><span class="p">,</span><span class="n">e</span><span class="o">=</span><span class="n">e</span><span class="p">,</span><span class="n">i</span><span class="o">=</span><span class="n">i</span><span class="p">,</span><span class="n">raan</span><span class="o">=</span><span class="n">raan</span><span class="p">,</span><span class="n">aop</span><span class="o">=</span><span class="n">aop</span><span class="p">,</span><span class="n">mu0</span><span class="o">=</span><span class="n">M</span><span class="p">,</span><span class="n">C_D</span><span class="o">=</span><span class="mf">2.3</span><span class="p">,</span><span class="n">A</span><span class="o">=</span><span class="n">A</span><span class="p">,</span><span class="n">m</span><span class="o">=</span><span class="n">mass</span><span class="p">,</span><span class="n">diam</span><span class="o">=</span><span class="n">diam</span><span class="p">,</span><span class="n">mjd0</span><span class="o">=</span><span class="n">mjd0</span><span class="p">)</span>
+
+    <span class="n">e3d</span> <span class="o">=</span> <span class="n">rl</span><span class="o">.</span><span class="n">eiscat_3d</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;EISCAT Skibotn location x,y,z ECEF (meters)&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">e3d</span><span class="o">.</span><span class="n">_tx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">ecef</span><span class="p">)</span>
+    <span class="n">ski_ecef</span><span class="o">=</span><span class="n">e3d</span><span class="o">.</span><span class="n">_tx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">ecef</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;EISCAT Skibotn location </span><span class="si">%1.3f</span><span class="s2"> </span><span class="si">%1.3f</span><span class="s2"> </span><span class="si">%1.3f</span><span class="s2"> (lat,lon,alt)&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">e3d</span><span class="o">.</span><span class="n">_tx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">lat</span><span class="p">,</span><span class="n">e3d</span><span class="o">.</span><span class="n">_tx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span><span class="mf">0.0</span><span class="p">))</span>
+
+    <span class="n">t_obs</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">4440</span><span class="p">,</span><span class="mi">5280</span><span class="p">,</span><span class="n">num</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span><span class="o">+</span><span class="mf">31.974890</span>
+    <span class="n">t_obs2</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">4440</span><span class="p">,</span><span class="mi">5280</span><span class="p">,</span><span class="n">num</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span><span class="o">+</span><span class="mf">31.974890</span> <span class="o">+</span> <span class="mf">1.0</span>
+<span class="c1">#    t_obs=n.linspace(0,5280,num=100)</span>
+ <span class="c1">#   t_obs2=n.linspace(0,5280,num=100)+1</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MJD </span><span class="si">%1.10f</span><span class="s2"> </span><span class="si">%s</span><span class="s2">Z&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">mjd0</span><span class="o">+</span><span class="n">t_obs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mf">3600.0</span><span class="o">/</span><span class="mf">24.0</span><span class="p">,</span><span class="n">stuffr</span><span class="o">.</span><span class="n">unix2datestr</span><span class="p">(</span><span class="n">ut0</span><span class="o">+</span><span class="n">t_obs</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span>
+    <span class="n">ecef</span><span class="o">=</span><span class="n">o</span><span class="o">.</span><span class="n">get_state</span><span class="p">(</span><span class="n">t_obs</span><span class="p">)</span>
+    <span class="n">ecef2</span><span class="o">=</span><span class="n">o</span><span class="o">.</span><span class="n">get_state</span><span class="p">(</span><span class="n">t_obs2</span><span class="p">)</span>    
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ECEF state x,y,z,vx,vy,vz  (km and km/s)&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">ecef</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mf">1e3</span><span class="p">)</span>    
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Time (UTC)          Range (km)  Vel (km/s)  ECEF X (km) ECEF Y (km) ECEF Z (km)&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t_obs</span><span class="p">)):</span>
+        <span class="n">dist</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">ecef</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="n">ski_ecef</span><span class="p">)</span>
+        <span class="n">dist2</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">ecef2</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="n">ski_ecef</span><span class="p">)</span>
+
+        <span class="n">vel</span><span class="o">=</span><span class="p">(</span><span class="n">dist2</span><span class="o">-</span><span class="n">dist</span><span class="p">)</span><span class="o">/</span><span class="mf">1.0</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">   </span><span class="si">%1.3f</span><span class="s2"> </span><span class="si">%1.3f</span><span class="s2"> </span><span class="si">%1.3f</span><span class="s2"> </span><span class="si">%1.3f</span><span class="s2"> </span><span class="si">%1.3f</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">stuffr</span><span class="o">.</span><span class="n">unix2datestr</span><span class="p">(</span><span class="n">ut0</span><span class="o">+</span><span class="n">t_obs</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span><span class="n">dist</span><span class="o">/</span><span class="mf">1e3</span><span class="p">,</span><span class="n">vel</span><span class="o">/</span><span class="mf">1e3</span><span class="p">,</span><span class="n">ecef</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="mf">1e3</span><span class="p">,</span><span class="n">ecef</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="mf">1e3</span><span class="p">,</span><span class="n">ecef</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="mf">1e3</span><span class="p">))</span></div>
+
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+
+    <span class="n">test_envisat</span><span class="p">()</span>
+    <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    
+    <span class="kn">import</span> <span class="nn">population_library</span> <span class="k">as</span> <span class="nn">plib</span>
+    <span class="kn">import</span> <span class="nn">radar_library</span> <span class="k">as</span> <span class="nn">rlib</span>
+    <span class="kn">import</span> <span class="nn">simulate_tracking</span>
+
+    <span class="n">m</span> <span class="o">=</span> <span class="n">plib</span><span class="o">.</span><span class="n">master_catalog</span><span class="p">()</span>
+    
+    <span class="n">o</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">get_object</span><span class="p">(</span><span class="mi">13</span><span class="p">)</span>
+    <span class="n">o</span><span class="o">.</span><span class="n">diam</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+    <span class="n">e3d</span> <span class="o">=</span> <span class="n">rlib</span><span class="o">.</span><span class="n">eiscat_3d</span><span class="p">(</span><span class="n">beam</span><span class="o">=</span><span class="s1">&#39;gauss&#39;</span><span class="p">)</span>
+
+    <span class="c1"># time in seconds after mjd0</span>
+    <span class="n">t_all</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">24</span><span class="o">*</span><span class="mi">3600</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+    
+    <span class="n">passes</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">simulate_tracking</span><span class="o">.</span><span class="n">find_pass_interval</span><span class="p">(</span><span class="n">t_all</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">e3d</span><span class="p">)</span>
+
+    <span class="n">t_mid</span> <span class="o">=</span> <span class="p">(</span><span class="n">passes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">passes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span><span class="o">*</span><span class="mf">0.5</span>
+
+    <span class="n">t_obs</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">t_mid</span><span class="p">,</span> <span class="n">t_mid</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">)</span>
+
+    <span class="n">meas</span><span class="p">,</span> <span class="n">fnames</span><span class="p">,</span> <span class="n">ecef_stdevs</span> <span class="o">=</span> <span class="n">create_tracklet</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">e3d</span><span class="p">,</span> <span class="n">t_obs</span><span class="p">,</span> <span class="n">hdf5_out</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ccsds_out</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dname</span><span class="o">=</span><span class="s2">&quot;/home/danielk/IRF/E3D_PA/tmp/test&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">ecef_stdevs</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">fnames</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">meas</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/doc.html">Documentation</a></li>
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

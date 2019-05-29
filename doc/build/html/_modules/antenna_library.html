@@ -1,0 +1,719 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>antenna_library &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for antenna_library</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="sd">&#39;&#39;&#39;A collection of functions that return common instances of the :class:`~antenna.BeamPattern` class.</span>
+
+<span class="sd">Contains for example:</span>
+<span class="sd"> * Uniformly filled circular aperture of radius a</span>
+<span class="sd"> * Cassegrain antenna with radius a0 and subreflector radius a1</span>
+<span class="sd"> * Planar gaussian illuminated aperture (approximates a phased array)</span>
+
+<span class="sd">Reference:</span>
+<span class="sd">https://www.cv.nrao.edu/course/astr534/2DApertures.html</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="c1">#import pdb</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.constants</span> <span class="k">as</span> <span class="nn">c</span>
+<span class="kn">import</span> <span class="nn">scipy.special</span> <span class="k">as</span> <span class="nn">s</span>
+<span class="kn">import</span> <span class="nn">scipy.interpolate</span> <span class="k">as</span> <span class="nn">sio</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+
+<span class="kn">import</span> <span class="nn">coord</span>
+<span class="kn">import</span> <span class="nn">antenna</span>
+<span class="kn">import</span> <span class="nn">dpt_tools</span> <span class="k">as</span> <span class="nn">dpt</span>
+
+
+
+<div class="viewcode-block" id="elliptic_airy"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.elliptic_airy">[docs]</a><span class="k">def</span> <span class="nf">elliptic_airy</span><span class="p">(</span><span class="n">k_in</span><span class="p">,</span> <span class="n">beam</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;# TODO: Descriptive doc string.</span>
+
+<span class="sd">     a = radius</span>
+<span class="sd">     f = frequency</span>
+<span class="sd">     I_0 = gain at center</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">phi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">coord</span><span class="o">.</span><span class="n">angle_deg</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">,</span> <span class="n">beam</span><span class="o">.</span><span class="n">plane_normal</span><span class="p">)</span><span class="o">/</span><span class="mf">180.0</span>
+    <span class="c1">#F[ g(ct) ] = G(f/c)/|c|</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">coord</span><span class="o">.</span><span class="n">angle_deg</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">,</span><span class="n">k_in</span><span class="p">)</span><span class="o">/</span><span class="mf">180.0</span>
+    <span class="n">lam</span><span class="o">=</span><span class="n">c</span><span class="o">.</span><span class="n">c</span><span class="o">/</span><span class="n">beam</span><span class="o">.</span><span class="n">f</span>
+    
+    <span class="n">k</span><span class="o">=</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="n">lam</span>
+    
+    <span class="n">f_circ</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">r</span><span class="p">,</span><span class="n">phi</span><span class="p">:</span> <span class="n">beam</span><span class="o">.</span><span class="n">I_0</span><span class="o">*</span><span class="p">((</span><span class="mf">2.0</span><span class="o">*</span><span class="n">s</span><span class="o">.</span><span class="n">jn</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">k</span><span class="o">*</span> <span class="n">beam</span><span class="o">.</span><span class="n">a</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">))</span><span class="o">/</span><span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">a</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">))))</span><span class="o">**</span><span class="mf">2.0</span>
+
+    <span class="k">return</span><span class="p">(</span> <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="airy"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.airy">[docs]</a><span class="k">def</span> <span class="nf">airy</span><span class="p">(</span><span class="n">k_in</span><span class="p">,</span> <span class="n">beam</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;# TODO: Descriptive doc string.</span>
+
+<span class="sd">     a = radius</span>
+<span class="sd">     f = frequency</span>
+<span class="sd">     I_0 = gain at center</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">coord</span><span class="o">.</span><span class="n">angle_deg</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">,</span><span class="n">k_in</span><span class="p">)</span><span class="o">/</span><span class="mf">180.0</span>
+    <span class="n">lam</span><span class="o">=</span><span class="n">c</span><span class="o">.</span><span class="n">c</span><span class="o">/</span><span class="n">beam</span><span class="o">.</span><span class="n">f</span>
+    
+    <span class="n">k</span><span class="o">=</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="n">lam</span>
+    
+    <span class="k">return</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">I_0</span><span class="o">*</span><span class="p">((</span><span class="mf">2.0</span><span class="o">*</span><span class="n">s</span><span class="o">.</span><span class="n">jn</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">k</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">a</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">))</span><span class="o">/</span><span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">a</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">))))</span><span class="o">**</span><span class="mf">2.0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="cassegrain"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.cassegrain">[docs]</a><span class="k">def</span> <span class="nf">cassegrain</span><span class="p">(</span><span class="n">k_in</span><span class="p">,</span> <span class="n">beam</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;# TODO: Descriptive doc string.</span>
+
+<span class="sd">    A better model of the EISCAT UHF antenna</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">coord</span><span class="o">.</span><span class="n">angle_deg</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">,</span><span class="n">k_in</span><span class="p">)</span><span class="o">/</span><span class="mf">180.0</span>
+
+    <span class="n">lam</span><span class="o">=</span><span class="n">c</span><span class="o">.</span><span class="n">c</span><span class="o">/</span><span class="n">beam</span><span class="o">.</span><span class="n">f</span>
+    <span class="n">k</span><span class="o">=</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="n">lam</span>
+    
+    <span class="n">A</span><span class="o">=</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">I_0</span><span class="o">*</span><span class="p">((</span><span class="n">lam</span><span class="o">/</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)))</span><span class="o">**</span><span class="mf">2.0</span><span class="p">))</span><span class="o">/</span><span class="p">((</span><span class="n">beam</span><span class="o">.</span><span class="n">a0</span><span class="o">**</span><span class="mf">2.0</span><span class="o">-</span><span class="n">beam</span><span class="o">.</span><span class="n">a1</span><span class="o">**</span><span class="mf">2.0</span><span class="p">)</span><span class="o">**</span><span class="mf">2.0</span><span class="p">)</span>
+    <span class="n">B</span><span class="o">=</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">a0</span><span class="o">*</span><span class="n">s</span><span class="o">.</span><span class="n">jn</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">beam</span><span class="o">.</span><span class="n">a0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span><span class="o">/</span><span class="n">lam</span><span class="p">)</span><span class="o">-</span><span class="n">beam</span><span class="o">.</span><span class="n">a1</span><span class="o">*</span><span class="n">s</span><span class="o">.</span><span class="n">jn</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">beam</span><span class="o">.</span><span class="n">a1</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span><span class="o">/</span><span class="n">lam</span><span class="p">))</span><span class="o">**</span><span class="mf">2.0</span>
+    <span class="n">A0</span><span class="o">=</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">I_0</span><span class="o">*</span><span class="p">((</span><span class="n">lam</span><span class="o">/</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mf">1e-6</span><span class="p">)))</span><span class="o">**</span><span class="mf">2.0</span><span class="p">))</span><span class="o">/</span><span class="p">((</span><span class="n">beam</span><span class="o">.</span><span class="n">a0</span><span class="o">**</span><span class="mf">2.0</span><span class="o">-</span><span class="n">beam</span><span class="o">.</span><span class="n">a1</span><span class="o">**</span><span class="mf">2.0</span><span class="p">)</span><span class="o">**</span><span class="mf">2.0</span><span class="p">)</span>
+    <span class="n">B0</span><span class="o">=</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">a0</span><span class="o">*</span><span class="n">s</span><span class="o">.</span><span class="n">jn</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">beam</span><span class="o">.</span><span class="n">a0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mf">1e-6</span><span class="p">)</span><span class="o">/</span><span class="n">lam</span><span class="p">)</span><span class="o">-</span><span class="n">beam</span><span class="o">.</span><span class="n">a1</span><span class="o">*</span><span class="n">s</span><span class="o">.</span><span class="n">jn</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">beam</span><span class="o">.</span><span class="n">a1</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mf">1e-6</span><span class="p">)</span><span class="o">/</span><span class="n">lam</span><span class="p">))</span><span class="o">**</span><span class="mf">2.0</span>
+    <span class="n">const</span><span class="o">=</span><span class="n">beam</span><span class="o">.</span><span class="n">I_0</span><span class="o">/</span><span class="p">(</span><span class="n">A0</span><span class="o">*</span><span class="n">B0</span><span class="p">)</span>
+    <span class="k">return</span><span class="p">(</span><span class="n">A</span><span class="o">*</span><span class="n">B</span><span class="o">*</span><span class="n">const</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="uhf_meas"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.uhf_meas">[docs]</a><span class="k">def</span> <span class="nf">uhf_meas</span><span class="p">(</span><span class="n">k_in</span><span class="p">,</span><span class="n">beam</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Measured UHF beam pattern</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">angle_deg</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">,</span><span class="n">k_in</span><span class="p">)</span>
+    <span class="c1"># scale beam width by frequency</span>
+    <span class="n">sf</span><span class="o">=</span><span class="n">beam</span><span class="o">.</span><span class="n">f</span><span class="o">/</span><span class="mf">930e6</span>
+    
+    <span class="k">return</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">I_0</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">gf</span><span class="p">(</span><span class="n">sf</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">theta</span><span class="p">)))</span></div>
+
+
+<div class="viewcode-block" id="planar"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.planar">[docs]</a><span class="k">def</span> <span class="nf">planar</span><span class="p">(</span><span class="n">k_in</span><span class="p">,</span><span class="n">beam</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Gaussian tapered planar array</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">,</span><span class="n">beam</span><span class="o">.</span><span class="n">plane_normal</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mf">1e-6</span><span class="p">:</span>
+        <span class="n">rd</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+        <span class="n">rd</span><span class="o">=</span><span class="n">rd</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">rd</span><span class="p">,</span><span class="n">rd</span><span class="p">))</span>
+        <span class="n">ct</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">,</span><span class="n">rd</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ct</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">,</span><span class="n">beam</span><span class="o">.</span><span class="n">plane_normal</span><span class="p">)</span>
+        
+    <span class="n">ct</span><span class="o">=</span><span class="n">ct</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">ct</span><span class="p">,</span><span class="n">ct</span><span class="p">))</span>
+    <span class="n">ht</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">plane_normal</span><span class="p">,</span><span class="n">ct</span><span class="p">)</span>
+    <span class="n">ht</span><span class="o">=</span><span class="n">ht</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">ht</span><span class="p">,</span><span class="n">ht</span><span class="p">))</span>
+    <span class="n">angle</span><span class="o">=</span><span class="n">coord</span><span class="o">.</span><span class="n">angle_deg</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">,</span><span class="n">ht</span><span class="p">)</span>
+
+    <span class="n">ot</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">,</span><span class="n">ct</span><span class="p">)</span>
+    <span class="n">ot</span><span class="o">=</span><span class="n">ot</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">ot</span><span class="p">,</span><span class="n">ot</span><span class="p">))</span>
+
+    <span class="n">beam</span><span class="o">.</span><span class="n">I_1</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">angle</span><span class="o">/</span><span class="mf">180.0</span><span class="p">)</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">I_0</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">a0p</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">angle</span><span class="o">/</span><span class="mf">180.0</span><span class="p">)</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">a0</span>
+
+    <span class="n">beam</span><span class="o">.</span><span class="n">ct</span><span class="o">=</span><span class="n">ct</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">ht</span><span class="o">=</span><span class="n">ht</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">ot</span><span class="o">=</span><span class="n">ot</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">angle</span><span class="o">=</span><span class="n">angle</span>
+
+    <span class="n">beam</span><span class="o">.</span><span class="n">sigma1</span><span class="o">=</span><span class="mf">0.7</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">a0p</span><span class="o">/</span><span class="n">beam</span><span class="o">.</span><span class="n">lam</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">sigma2</span><span class="o">=</span><span class="mf">0.7</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">a0</span><span class="o">/</span><span class="n">beam</span><span class="o">.</span><span class="n">lam</span>
+
+    <span class="n">k0</span><span class="o">=</span><span class="n">k_in</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">k_in</span><span class="p">,</span><span class="n">k_in</span><span class="p">))</span>
+    
+    <span class="n">A</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">k0</span><span class="p">,</span><span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">)</span>
+    <span class="n">kda</span><span class="o">=</span><span class="n">A</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span>
+    <span class="n">l1</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">k0</span><span class="p">,</span><span class="n">beam</span><span class="o">.</span><span class="n">ct</span><span class="p">)</span>
+    <span class="n">kdc</span><span class="o">=</span><span class="n">l1</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">ct</span>
+    <span class="n">m1</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">k0</span><span class="p">,</span><span class="n">beam</span><span class="o">.</span><span class="n">ot</span><span class="p">)</span>
+    <span class="n">kdo</span><span class="o">=</span><span class="n">m1</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">ot</span>
+    
+    <span class="n">l2</span><span class="o">=</span><span class="n">l1</span><span class="o">*</span><span class="n">l1</span>
+    <span class="n">m2</span><span class="o">=</span><span class="n">m1</span><span class="o">*</span><span class="n">m1</span>
+    <span class="k">return</span> <span class="n">beam</span><span class="o">.</span><span class="n">I_1</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">m2</span><span class="o">*</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">sigma1</span><span class="o">**</span><span class="mf">2.0</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">l2</span><span class="o">*</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">sigma2</span><span class="o">**</span><span class="mf">2.0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="elliptic"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.elliptic">[docs]</a><span class="k">def</span> <span class="nf">elliptic</span><span class="p">(</span><span class="n">k_in</span><span class="p">,</span><span class="n">beam</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;# TODO: Description.</span>
+
+
+<span class="sd">     TDB: sqrt(u**2 + c**2 v**2)</span>
+
+
+<span class="sd">     http://www.iue.tuwien.ac.at/phd/minixhofer/node59.html</span>
+<span class="sd">     https://en.wikipedia.org/wiki/Fraunhofer_diffraction_equation</span>
+
+
+<span class="sd">     x=n.linspace(-2,2,num=1024)</span>
+<span class="sd">     xx,yy=n.meshgrid(x,x)</span>
+
+<span class="sd">     A=n.zeros([1024,1024])</span>
+<span class="sd">     A[xx**2.0/0.25**2 + yy**2.0/0.0625**2.0 &lt; 1.0]=1.0</span>
+
+<span class="sd">     plt.pcolormesh(10.0*n.log10(n.fft.fftshift(n.abs(B))))</span>
+<span class="sd">     plt.colorbar()</span>
+<span class="sd">     plt.axis(&quot;equal&quot;)</span>
+<span class="sd">     plt.show()</span>
+
+
+<span class="sd">    Variable substitution</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">,</span><span class="n">beam</span><span class="o">.</span><span class="n">plane_normal</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mf">1e-6</span><span class="p">:</span>
+        <span class="n">rd</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+        <span class="n">rd</span><span class="o">=</span><span class="n">rd</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">rd</span><span class="p">,</span><span class="n">rd</span><span class="p">))</span>
+        <span class="n">ct</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">,</span><span class="n">rd</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ct</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">,</span><span class="n">beam</span><span class="o">.</span><span class="n">plane_normal</span><span class="p">)</span>
+    
+    <span class="n">ct</span><span class="o">=</span><span class="n">ct</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">ct</span><span class="p">,</span><span class="n">ct</span><span class="p">))</span>
+    <span class="n">ht</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">plane_normal</span><span class="p">,</span><span class="n">ct</span><span class="p">)</span>
+    <span class="n">ht</span><span class="o">=</span><span class="n">ht</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">ht</span><span class="p">,</span><span class="n">ht</span><span class="p">))</span>
+    <span class="n">angle</span><span class="o">=</span><span class="n">coord</span><span class="o">.</span><span class="n">angle_deg</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">,</span><span class="n">ht</span><span class="p">)</span>
+    <span class="n">ot</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">,</span><span class="n">ct</span><span class="p">)</span>
+    <span class="n">ot</span><span class="o">=</span><span class="n">ot</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">ot</span><span class="p">,</span><span class="n">ot</span><span class="p">))</span>
+
+    <span class="n">beam</span><span class="o">.</span><span class="n">I_1</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">angle</span><span class="o">/</span><span class="mf">180.0</span><span class="p">)</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">I_0</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">a0p</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">angle</span><span class="o">/</span><span class="mf">180.0</span><span class="p">)</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">a0</span>
+    
+    <span class="n">beam</span><span class="o">.</span><span class="n">ct</span><span class="o">=</span><span class="n">ct</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">ht</span><span class="o">=</span><span class="n">ht</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">ot</span><span class="o">=</span><span class="n">ot</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">angle</span><span class="o">=</span><span class="n">angle</span>
+    
+    <span class="n">beam</span><span class="o">.</span><span class="n">sigma1</span><span class="o">=</span><span class="mf">0.7</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">a0p</span><span class="o">/</span><span class="n">beam</span><span class="o">.</span><span class="n">lam</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">sigma2</span><span class="o">=</span><span class="mf">0.7</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">a0</span><span class="o">/</span><span class="n">beam</span><span class="o">.</span><span class="n">lam</span>
+    
+    <span class="n">k0</span><span class="o">=</span><span class="n">k_in</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">k_in</span><span class="p">,</span><span class="n">k_in</span><span class="p">))</span>
+    
+    <span class="n">A</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">k0</span><span class="p">,</span><span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">)</span>
+    <span class="n">kda</span><span class="o">=</span><span class="n">A</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span>
+    <span class="n">l1</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">k0</span><span class="p">,</span><span class="n">beam</span><span class="o">.</span><span class="n">ct</span><span class="p">)</span>
+    <span class="n">kdc</span><span class="o">=</span><span class="n">l1</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">ct</span>
+    <span class="n">m1</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">k0</span><span class="p">,</span><span class="n">beam</span><span class="o">.</span><span class="n">ot</span><span class="p">)</span>
+    <span class="n">kdo</span><span class="o">=</span><span class="n">m1</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">ot</span>
+    
+    <span class="n">l2</span><span class="o">=</span><span class="n">l1</span><span class="o">*</span><span class="n">l1</span>
+    <span class="n">m2</span><span class="o">=</span><span class="n">m1</span><span class="o">*</span><span class="n">m1</span>
+    <span class="k">return</span> <span class="n">beam</span><span class="o">.</span><span class="n">I_1</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">m2</span><span class="o">*</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">sigma1</span><span class="o">**</span><span class="mf">2.0</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">l2</span><span class="o">*</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">sigma2</span><span class="o">**</span><span class="mf">2.0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="plane_wave"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.plane_wave">[docs]</a><span class="k">def</span> <span class="nf">plane_wave</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">r</span><span class="p">,</span><span class="n">p</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;The complex plane wave function.</span>
+
+<span class="sd">    :param numpy.ndarray k: Wave-vector (wave propagation direction)</span>
+<span class="sd">    :param numpy.ndarray r: Spatial location (Antenna position in space)</span>
+<span class="sd">    :param numpy.ndarray p: Beam-forming direction (antenna array &quot;pointing&quot; direction)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">k</span><span class="o">-</span><span class="n">p</span><span class="p">,</span><span class="n">r</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="array"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.array">[docs]</a><span class="k">def</span> <span class="nf">array</span><span class="p">(</span><span class="n">k_in</span><span class="p">,</span><span class="n">beam</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;# TODO: Description.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">k_in</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">k_in</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span><span class="p">)</span><span class="o">*</span><span class="mf">0.0</span>
+
+    <span class="c1">#r in meters, divide by lambda</span>
+    <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">beam</span><span class="o">.</span><span class="n">antennas</span><span class="p">:</span>
+        <span class="n">G</span> <span class="o">+=</span> <span class="n">plane_wave</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">r</span><span class="o">/</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">c</span><span class="o">/</span><span class="n">beam</span><span class="o">.</span><span class="n">f</span><span class="p">),</span><span class="n">p</span><span class="p">)</span>
+
+    <span class="c1">#Ugly fix: multiply gain by k_z to emulate beam steering loss as a function of elevation</span>
+    <span class="c1">#should be antenna element gain pattern of k...</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span><span class="o">*</span><span class="n">G</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">I_scale</span><span class="p">)</span><span class="o">*</span><span class="n">p</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="array_beam"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.array_beam">[docs]</a><span class="k">def</span> <span class="nf">array_beam</span><span class="p">(</span><span class="n">az0</span><span class="p">,</span> <span class="n">el0</span><span class="p">,</span> <span class="n">I_0</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">antennas</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;# TODO: Description.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">beam</span> <span class="o">=</span> <span class="n">antenna</span><span class="o">.</span><span class="n">BeamPattern</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">az0</span><span class="p">,</span> <span class="n">el0</span><span class="p">,</span> <span class="n">I_0</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">beam_name</span><span class="o">=</span><span class="s1">&#39;Array&#39;</span><span class="p">)</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">antennas</span> <span class="o">=</span> <span class="n">antennas</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">I_scale</span> <span class="o">=</span> <span class="n">I_0</span><span class="o">/</span><span class="p">(</span><span class="n">antennas</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mf">2.0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">beam</span></div>
+
+<div class="viewcode-block" id="e3d_subarray"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.e3d_subarray">[docs]</a><span class="k">def</span> <span class="nf">e3d_subarray</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;# TODO: Description.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">l0</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">c</span><span class="o">/</span><span class="n">f</span><span class="p">;</span>
+
+    <span class="n">dx</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">3</span><span class="p">);</span>
+    <span class="n">dy</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">;</span>
+
+    <span class="n">xall</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">yall</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">x0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mf">2.5</span><span class="p">,</span><span class="o">-</span><span class="mf">5.5</span><span class="p">,</span><span class="o">-.</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mf">4.5</span><span class="p">,</span><span class="o">-</span><span class="mf">2.0</span><span class="p">,</span><span class="o">.</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()])[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">dx</span>
+    <span class="n">y0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">dy</span>
+
+    <span class="k">for</span> <span class="n">iy</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">11</span><span class="p">):</span>
+        <span class="n">nx</span> <span class="o">=</span> <span class="mi">11</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">iy</span><span class="o">-</span><span class="mi">5</span><span class="p">)</span>
+        <span class="n">x_now</span> <span class="o">=</span> <span class="n">x0</span><span class="p">[</span><span class="n">iy</span><span class="p">]</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">nx</span><span class="p">))</span><span class="o">*</span><span class="n">dx</span>
+        <span class="n">y_now</span> <span class="o">=</span> <span class="n">y0</span><span class="p">[</span><span class="n">iy</span><span class="p">]</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">nx</span><span class="p">))</span>
+        <span class="n">xall</span> <span class="o">+=</span> <span class="n">x_now</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">yall</span> <span class="o">+=</span> <span class="n">y_now</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="n">l0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">xall</span><span class="p">);</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">l0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">yall</span><span class="p">);</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">x</span><span class="o">*</span><span class="mf">0.0</span><span class="p">;</span>
+
+    <span class="k">return</span> <span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span></div>
+
+<div class="viewcode-block" id="e3d_array"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.e3d_array">[docs]</a><span class="k">def</span> <span class="nf">e3d_array</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="n">fname</span><span class="o">=</span><span class="s1">&#39;data/e3d_array.txt&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;# TODO: Description.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">dat</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span><span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">file</span><span class="p">:</span>
+            <span class="n">dat</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="p">))</span> <span class="p">)</span>
+    <span class="n">dat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dat</span><span class="p">)</span>
+
+    <span class="n">sx</span><span class="p">,</span><span class="n">sy</span><span class="p">,</span><span class="n">sz</span> <span class="o">=</span> <span class="n">e3d_subarray</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+    <span class="n">antennas</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sx</span><span class="p">)):</span>
+            <span class="n">antennas</span><span class="o">.</span><span class="n">append</span><span class="p">([</span> <span class="n">sx</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="n">dat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span><span class="n">sy</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="n">dat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span><span class="n">sz</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="p">])</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">antennas</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="e3d_array_stage1"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.e3d_array_stage1">[docs]</a><span class="k">def</span> <span class="nf">e3d_array_stage1</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="n">fname</span><span class="o">=</span><span class="s1">&#39;data/e3d_array.txt&#39;</span><span class="p">,</span><span class="n">opt</span><span class="o">=</span><span class="s1">&#39;dense&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;# TODO: Description.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">dat</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span><span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">file</span><span class="p">:</span>
+            <span class="n">dat</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
+    <span class="n">dat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dat</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">opt</span><span class="o">==</span><span class="s1">&#39;dense&#39;</span><span class="p">:</span>
+        <span class="n">dat</span> <span class="o">=</span> <span class="n">dat</span><span class="p">[</span> <span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dat</span><span class="o">**</span><span class="mf">2.0</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">27.0</span><span class="o">**</span><span class="mf">2.0</span> <span class="p">)</span> <span class="p">,:</span> <span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">dat</span> <span class="o">=</span> <span class="n">dat</span><span class="p">[</span> \
+        <span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span> \
+            <span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span>\
+                <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dat</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="o">**</span><span class="mi">2</span> <span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dat</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">7</span><span class="o">**</span><span class="mi">2</span> <span class="p">),</span> \
+                <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dat</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">22</span><span class="o">**</span><span class="mi">2</span> <span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dat</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">17</span><span class="o">**</span><span class="mi">2</span> <span class="p">)),</span>  \
+            <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dat</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">36</span><span class="o">**</span><span class="mi">2</span> <span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dat</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">30</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span> \
+        <span class="p">),:</span> <span class="p">]</span>
+
+    <span class="n">sx</span><span class="p">,</span><span class="n">sy</span><span class="p">,</span><span class="n">sz</span> <span class="o">=</span> <span class="n">e3d_subarray</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+    <span class="n">antennas</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sx</span><span class="p">)):</span>
+            <span class="n">antennas</span><span class="o">.</span><span class="n">append</span><span class="p">([</span> <span class="n">sx</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="n">dat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span><span class="n">sy</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="n">dat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span><span class="n">sz</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="p">])</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">antennas</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="e3d_module_beam"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.e3d_module_beam">[docs]</a><span class="k">def</span> <span class="nf">e3d_module_beam</span><span class="p">(</span><span class="n">az0</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">el0</span><span class="o">=</span><span class="mf">90.0</span><span class="p">,</span> <span class="n">I_0</span><span class="o">=</span><span class="mi">10</span><span class="o">**</span><span class="mf">2.2</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;# TODO: Description.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">sx</span><span class="p">,</span><span class="n">sy</span><span class="p">,</span><span class="n">sz</span> <span class="o">=</span> <span class="n">e3d_subarray</span><span class="p">(</span><span class="mf">233e6</span><span class="p">)</span>
+    <span class="n">antennas</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sx</span><span class="p">)):</span>
+        <span class="n">antennas</span><span class="o">.</span><span class="n">append</span><span class="p">([</span> <span class="n">sx</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="p">,</span><span class="n">sy</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="p">,</span><span class="n">sz</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="p">])</span>
+    <span class="n">antennas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">antennas</span><span class="p">)</span>
+
+    <span class="n">beam</span> <span class="o">=</span> <span class="n">array_beam</span><span class="p">(</span><span class="n">az0</span><span class="p">,</span> <span class="n">el0</span><span class="p">,</span> <span class="n">I_0</span><span class="o">=</span><span class="n">I_0</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="mf">233e6</span><span class="p">,</span> <span class="n">antennas</span> <span class="o">=</span> <span class="n">antennas</span><span class="p">)</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">beam_name</span> <span class="o">=</span> <span class="s1">&#39;E3D module&#39;</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">antennas_n</span> <span class="o">=</span> <span class="n">antennas</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">beam</span></div>
+
+<div class="viewcode-block" id="e3d_array_beam"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.e3d_array_beam">[docs]</a><span class="k">def</span> <span class="nf">e3d_array_beam</span><span class="p">(</span><span class="n">az0</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">el0</span><span class="o">=</span><span class="mf">90.0</span><span class="p">,</span> <span class="n">I_0</span><span class="o">=</span><span class="mi">10</span><span class="o">**</span><span class="mf">4.5</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="s1">&#39;data/e3d_array.txt&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;# TODO: Description.</span>
+<span class="sd">    </span>
+<span class="sd">    45dB peak according to e3d specs: Technical specification and requirements for antenna unit</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    
+    <span class="n">antennas</span> <span class="o">=</span> <span class="n">e3d_array</span><span class="p">(</span><span class="mf">233e6</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span>
+    <span class="n">beam</span> <span class="o">=</span> <span class="n">array_beam</span><span class="p">(</span><span class="n">az0</span><span class="p">,</span> <span class="n">el0</span><span class="p">,</span> <span class="n">I_0</span><span class="o">=</span><span class="n">I_0</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="mf">233e6</span><span class="p">,</span> <span class="n">antennas</span> <span class="o">=</span> <span class="n">antennas</span><span class="p">)</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">beam_name</span> <span class="o">=</span> <span class="s1">&#39;E3D stage 2&#39;</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">antennas_n</span> <span class="o">=</span> <span class="n">antennas</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">beam</span></div>
+
+<div class="viewcode-block" id="e3d_array_beam_stage1"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.e3d_array_beam_stage1">[docs]</a><span class="k">def</span> <span class="nf">e3d_array_beam_stage1</span><span class="p">(</span><span class="n">az0</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">el0</span><span class="o">=</span><span class="mf">90.0</span><span class="p">,</span> <span class="n">I_0</span><span class="o">=</span><span class="mi">10</span><span class="o">**</span><span class="mf">4.2</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="s1">&#39;data/e3d_array.txt&#39;</span><span class="p">,</span> <span class="n">opt</span><span class="o">=</span><span class="s1">&#39;dense&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;# TODO: Description.</span>
+<span class="sd">    </span>
+<span class="sd">    45dB-3dB=42dB peak according to e3d specs: Technical specification and requirements for antenna unit</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">antennas</span> <span class="o">=</span> <span class="n">e3d_array_stage1</span><span class="p">(</span><span class="mf">233e6</span><span class="p">,</span> <span class="n">fname</span><span class="p">,</span> <span class="n">opt</span><span class="o">=</span><span class="n">opt</span><span class="p">)</span>
+    <span class="n">beam</span> <span class="o">=</span> <span class="n">array_beam</span><span class="p">(</span><span class="n">az0</span><span class="p">,</span> <span class="n">el0</span><span class="p">,</span> <span class="n">I_0</span><span class="o">=</span><span class="n">I_0</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="mf">233e6</span><span class="p">,</span> <span class="n">antennas</span> <span class="o">=</span> <span class="n">antennas</span><span class="p">)</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">beam_name</span> <span class="o">=</span> <span class="s1">&#39;E3D stage 1 &#39;</span> <span class="o">+</span> <span class="n">opt</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">antennas_n</span> <span class="o">=</span> <span class="n">antennas</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">beam</span></div>
+
+
+<span class="k">def</span> <span class="nf">_generate_interpolation_beam_data</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">beam</span><span class="p">,</span> <span class="n">res</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Create a grid of wave vector projections and 2d interpolate the gain function.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">point</span><span class="p">(</span><span class="n">az0</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">el0</span><span class="o">=</span><span class="mf">90.0</span><span class="p">)</span>
+
+    <span class="n">save_raw</span> <span class="o">=</span> <span class="n">fname</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+    <span class="n">save_raw</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;_data&#39;</span>
+    <span class="n">save_raw</span> <span class="o">=</span> <span class="s1">&#39;.&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_raw</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">save_raw</span><span class="p">):</span>
+
+        <span class="n">kx</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="n">res</span><span class="p">)</span>
+        <span class="n">ky</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="n">res</span><span class="p">)</span>
+        
+        <span class="n">S</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">res</span><span class="p">,</span><span class="n">res</span><span class="p">))</span>
+        <span class="n">Xmat</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">res</span><span class="p">,</span><span class="n">res</span><span class="p">))</span>
+        <span class="n">Ymat</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">res</span><span class="p">,</span><span class="n">res</span><span class="p">))</span>
+
+        <span class="n">cnt</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">tot</span> <span class="o">=</span> <span class="n">res</span><span class="o">**</span><span class="mi">2</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">kx</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span><span class="p">,</span><span class="n">y</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ky</span><span class="p">):</span>
+                
+                <span class="k">if</span> <span class="n">cnt</span> <span class="o">%</span> <span class="nb">int</span><span class="p">(</span><span class="n">tot</span><span class="o">/</span><span class="mi">1000</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1"> Gain done&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cnt</span><span class="p">,</span> <span class="n">tot</span><span class="p">))</span>
+                <span class="n">cnt</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                <span class="n">z2</span> <span class="o">=</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="o">**</span><span class="mi">2</span>
+                <span class="k">if</span> <span class="n">z2</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">:</span>
+                    <span class="n">k</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">z2</span><span class="p">)])</span>
+                    <span class="n">S</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">=</span><span class="n">beam</span><span class="o">.</span><span class="n">gain</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">S</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+                <span class="n">Xmat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">=</span><span class="n">x</span>
+                <span class="n">Ymat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">=</span><span class="n">y</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">save_raw</span><span class="p">,</span> <span class="n">S</span><span class="p">)</span>
+
+    <span class="n">S</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">save_raw</span><span class="p">)</span>
+
+    <span class="n">f</span> <span class="o">=</span> <span class="n">sio</span><span class="o">.</span><span class="n">interp2d</span><span class="p">(</span><span class="n">kx</span><span class="p">,</span> <span class="n">ky</span><span class="p">,</span> <span class="n">S</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_rot2d</span><span class="p">(</span><span class="n">theta</span><span class="p">):</span>
+    <span class="n">M_rot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+    <span class="n">M_rot</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">M_rot</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">M_rot</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">M_rot</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">M_rot</span>
+
+<span class="k">def</span> <span class="nf">_scale2d</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">):</span>
+    <span class="n">M_rot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+    <span class="n">M_rot</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span>
+    <span class="n">M_rot</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span>
+    <span class="k">return</span> <span class="n">M_rot</span>
+
+<span class="k">def</span> <span class="nf">_plane_scaling_matrix</span><span class="p">(</span><span class="n">vec</span><span class="p">,</span> <span class="n">factor</span><span class="p">):</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">vec</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">vec</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    
+    <span class="n">M_rot</span> <span class="o">=</span> <span class="n">_rot2d</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">M_scale</span> <span class="o">=</span> <span class="n">_scale2d</span><span class="p">(</span><span class="n">factor</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">M_rot_inv</span> <span class="o">=</span> <span class="n">_rot2d</span><span class="p">(</span><span class="o">-</span><span class="n">theta</span><span class="p">)</span>
+
+    <span class="n">M</span> <span class="o">=</span> <span class="n">M_rot_inv</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">M_scale</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">M_rot</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">M</span>
+
+
+<div class="viewcode-block" id="interpolated_beam"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.interpolated_beam">[docs]</a><span class="k">def</span> <span class="nf">interpolated_beam</span><span class="p">(</span><span class="n">k_in</span><span class="p">,</span> <span class="n">beam</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Assume that the interpolated grid at zenith is merely shifted to the pointing direction and scaled by the sine of the elevation angle. </span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">k_in</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">k_in</span><span class="p">)</span>
+
+    <span class="n">M</span> <span class="o">=</span> <span class="n">_plane_scaling_matrix</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">[:</span><span class="mi">2</span><span class="p">],</span> <span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+    
+    <span class="n">k_trans</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">3</span><span class="p">,),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+    <span class="n">k_trans</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">k</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span>
+    <span class="n">k_trans</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">k</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+    <span class="n">interp_gain</span> <span class="o">=</span> <span class="n">beam</span><span class="o">.</span><span class="n">interp_f</span><span class="p">(</span><span class="n">k_trans</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">k_trans</span><span class="p">[</span><span class="mi">1</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">interp_gain</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">interp_gain</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">return</span> <span class="n">interp_gain</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">I_0</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">on_axis</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="e3d_array_beam_stage1_dense_interp"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.e3d_array_beam_stage1_dense_interp">[docs]</a><span class="k">def</span> <span class="nf">e3d_array_beam_stage1_dense_interp</span><span class="p">(</span><span class="n">az0</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">el0</span><span class="o">=</span><span class="mf">90.0</span><span class="p">,</span> <span class="n">I_0</span><span class="o">=</span><span class="mi">10</span><span class="o">**</span><span class="mf">4.2</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="s1">&#39;data/inerp_e3d_stage1_dense.npy&#39;</span><span class="p">,</span> <span class="n">res</span> <span class="o">=</span> <span class="mi">400</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">fname</span><span class="p">):</span>
+        <span class="n">_beam</span> <span class="o">=</span> <span class="n">e3d_array_beam_stage1</span><span class="p">(</span><span class="n">az0</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">el0</span><span class="o">=</span><span class="mf">90.0</span><span class="p">,</span> <span class="n">I_0</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span>
+        <span class="n">_generate_interpolation_beam_data</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">_beam</span><span class="p">,</span> <span class="n">res</span> <span class="o">=</span> <span class="n">res</span><span class="p">)</span>
+        <span class="k">del</span> <span class="n">_beam</span>
+
+    <span class="n">f_obj</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">f_obj</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+    <span class="n">beam</span> <span class="o">=</span> <span class="n">antenna</span><span class="o">.</span><span class="n">BeamPattern</span><span class="p">(</span><span class="n">interpolated_beam</span><span class="p">,</span> <span class="n">az0</span><span class="p">,</span> <span class="n">el0</span><span class="p">,</span> <span class="n">I_0</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">beam_name</span><span class="o">=</span><span class="s1">&#39;E3D stage 1 dense -interpolated-&#39;</span><span class="p">)</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">interp_f</span> <span class="o">=</span> <span class="n">f</span>
+
+    <span class="k">return</span> <span class="n">beam</span></div>
+
+<div class="viewcode-block" id="e3d_array_beam_interp"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.e3d_array_beam_interp">[docs]</a><span class="k">def</span> <span class="nf">e3d_array_beam_interp</span><span class="p">(</span><span class="n">az0</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">el0</span><span class="o">=</span><span class="mf">90.0</span><span class="p">,</span> <span class="n">I_0</span><span class="o">=</span><span class="mi">10</span><span class="o">**</span><span class="mf">4.2</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="s1">&#39;data/inerp_e3d.npy&#39;</span><span class="p">,</span> <span class="n">res</span> <span class="o">=</span> <span class="mi">400</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">fname</span><span class="p">):</span>
+        <span class="n">_beam</span> <span class="o">=</span> <span class="n">e3d_array_beam</span><span class="p">(</span><span class="n">az0</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">el0</span><span class="o">=</span><span class="mf">90.0</span><span class="p">,</span> <span class="n">I_0</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span>
+        <span class="n">_generate_interpolation_beam_data</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">_beam</span><span class="p">,</span> <span class="n">res</span> <span class="o">=</span> <span class="n">res</span><span class="p">)</span>
+        <span class="k">del</span> <span class="n">_beam</span>
+
+    <span class="n">f_obj</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">f_obj</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+    <span class="n">beam</span> <span class="o">=</span> <span class="n">antenna</span><span class="o">.</span><span class="n">BeamPattern</span><span class="p">(</span><span class="n">interpolated_beam</span><span class="p">,</span> <span class="n">az0</span><span class="p">,</span> <span class="n">el0</span><span class="p">,</span> <span class="n">I_0</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">beam_name</span><span class="o">=</span><span class="s1">&#39;E3D stage 2 -interpolated-&#39;</span><span class="p">)</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">interp_f</span> <span class="o">=</span> <span class="n">f</span>
+
+    <span class="k">return</span> <span class="n">beam</span></div>
+    
+
+
+<div class="viewcode-block" id="airy_beam"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.airy_beam">[docs]</a><span class="k">def</span> <span class="nf">airy_beam</span><span class="p">(</span><span class="n">az0</span><span class="p">,</span> <span class="n">el0</span><span class="p">,</span> <span class="n">I_0</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">a</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;# TODO: Description.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">beam</span> <span class="o">=</span> <span class="n">antenna</span><span class="o">.</span><span class="n">BeamPattern</span><span class="p">(</span><span class="n">airy</span><span class="p">,</span> <span class="n">az0</span><span class="p">,</span> <span class="n">el0</span><span class="p">,</span> <span class="n">I_0</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">beam_name</span><span class="o">=</span><span class="s1">&#39;Airy&#39;</span><span class="p">)</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="n">a</span>
+    <span class="k">return</span> <span class="n">beam</span></div>
+
+
+<div class="viewcode-block" id="uhf_beam"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.uhf_beam">[docs]</a><span class="k">def</span> <span class="nf">uhf_beam</span><span class="p">(</span><span class="n">az0</span><span class="p">,</span> <span class="n">el0</span><span class="p">,</span> <span class="n">I_0</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">beam_name</span><span class="o">=</span><span class="s1">&#39;UHF Measured beam&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;# TODO: Description.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">beam</span> <span class="o">=</span> <span class="n">antenna</span><span class="o">.</span><span class="n">BeamPattern</span><span class="p">(</span><span class="n">uhf_meas</span><span class="p">,</span> <span class="n">az0</span><span class="p">,</span> <span class="n">el0</span><span class="p">,</span> <span class="n">I_0</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">beam_name</span><span class="o">=</span><span class="n">beam_name</span><span class="p">)</span>
+
+    <span class="n">bmod</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="s2">&quot;data/bp.txt&quot;</span><span class="p">)</span>
+    <span class="n">angle</span><span class="o">=</span><span class="n">bmod</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">gain</span><span class="o">=</span><span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="n">bmod</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mf">10.0</span><span class="p">)</span>
+    <span class="n">gf</span><span class="o">=</span><span class="n">sio</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">angle</span><span class="p">),</span><span class="n">gain</span><span class="p">)</span>
+    
+    <span class="n">beam</span><span class="o">.</span><span class="n">gf</span> <span class="o">=</span> <span class="n">gf</span>
+    <span class="k">return</span> <span class="n">beam</span></div>
+
+
+<div class="viewcode-block" id="cassegrain_beam"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.cassegrain_beam">[docs]</a><span class="k">def</span> <span class="nf">cassegrain_beam</span><span class="p">(</span><span class="n">az0</span><span class="p">,</span> <span class="n">el0</span><span class="p">,</span> <span class="n">I_0</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">a0</span><span class="p">,</span> <span class="n">a1</span><span class="p">,</span> <span class="n">beam_name</span><span class="o">=</span><span class="s2">&quot;Cassegrain&quot;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;# TODO: Description.</span>
+
+<span class="sd">    az and el of on-axis</span>
+<span class="sd">    lat and lon of location</span>
+<span class="sd">    I_0 gain on-axis</span>
+<span class="sd">    a0 diameter of main reflector</span>
+<span class="sd">    a1 diameter of the subreflector</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">beam</span> <span class="o">=</span> <span class="n">antenna</span><span class="o">.</span><span class="n">BeamPattern</span><span class="p">(</span><span class="n">cassegrain</span><span class="p">,</span> <span class="n">az0</span><span class="p">,</span> <span class="n">el0</span><span class="p">,</span> <span class="n">I_0</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">beam_name</span><span class="o">=</span><span class="n">beam_name</span><span class="p">)</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">a0</span> <span class="o">=</span> <span class="n">a0</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">a1</span> <span class="o">=</span> <span class="n">a1</span>
+    <span class="k">return</span> <span class="n">beam</span></div>
+
+<div class="viewcode-block" id="planar_beam"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.planar_beam">[docs]</a><span class="k">def</span> <span class="nf">planar_beam</span><span class="p">(</span><span class="n">az0</span><span class="p">,</span> <span class="n">el0</span><span class="p">,</span> <span class="n">I_0</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">a0</span><span class="p">,</span> <span class="n">az1</span><span class="p">,</span> <span class="n">el1</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;# TODO: Description.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">beam</span> <span class="o">=</span> <span class="n">antenna</span><span class="o">.</span><span class="n">BeamPattern</span><span class="p">(</span><span class="n">planar</span><span class="p">,</span> <span class="n">az0</span><span class="p">,</span> <span class="n">el0</span><span class="p">,</span> <span class="n">I_0</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">beam_name</span><span class="o">=</span><span class="s1">&#39;Planar&#39;</span><span class="p">)</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">a0</span> <span class="o">=</span> <span class="n">a0</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">plane_normal</span><span class="o">=</span><span class="n">coord</span><span class="o">.</span><span class="n">azel_to_cart</span><span class="p">(</span><span class="n">az1</span><span class="p">,</span> <span class="n">el1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">lam</span><span class="o">=</span><span class="n">c</span><span class="o">.</span><span class="n">c</span><span class="o">/</span><span class="n">f</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">point</span><span class="p">(</span><span class="n">az0</span><span class="p">,</span><span class="n">el0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">beam</span></div>
+
+
+<div class="viewcode-block" id="unidirectional_broadside_rectangular_array"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.unidirectional_broadside_rectangular_array">[docs]</a><span class="k">def</span> <span class="nf">unidirectional_broadside_rectangular_array</span><span class="p">(</span><span class="n">ar</span><span class="p">,</span><span class="n">br</span><span class="p">,</span><span class="n">theta</span><span class="p">,</span><span class="n">phi</span><span class="p">):</span>
+    <span class="c1"># x = longitudinal angle (i.e. parallel to el.axis), 0 = boresight, radians</span>
+    <span class="c1"># y = transverse angle, 0 = boresight, radians</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">ar</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>    <span class="c1"># sinc component (longitudinal)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">br</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span>      <span class="c1"># sinc component (transverse)</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sinc</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sinc</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="c1"># sinc fn. (= field), NB: np.sinc includes pi !!</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">z</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span>         <span class="c1"># density (from spherical integration)</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">z</span><span class="o">*</span><span class="n">z</span>                   <span class="c1"># sinc^2 fn. (= power)</span>
+    <span class="k">return</span> <span class="n">z</span></div>
+
+
+
+<div class="viewcode-block" id="TSR_gain_point"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.TSR_gain_point">[docs]</a><span class="k">def</span> <span class="nf">TSR_gain_point</span><span class="p">(</span><span class="n">k_in</span><span class="p">,</span> <span class="n">beam</span><span class="p">,</span> <span class="n">az</span><span class="p">,</span> <span class="n">el</span><span class="p">):</span>
+
+    <span class="n">k</span> <span class="o">=</span> <span class="n">k_in</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">k_in</span><span class="p">)</span>
+    
+    <span class="n">Rz</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">rot_mat_z</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">az</span><span class="p">))</span>
+    <span class="n">Rx</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">rot_mat_x</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="mf">90.0</span><span class="o">-</span><span class="n">el</span><span class="p">))</span>
+
+    <span class="n">kb</span> <span class="o">=</span> <span class="n">Rx</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Rz</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">k</span><span class="p">))</span>
+
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arcsin</span><span class="p">(</span><span class="n">kb</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">phi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arcsin</span><span class="p">(</span><span class="n">kb</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">unidirectional_broadside_rectangular_array</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">ar</span><span class="p">,</span> <span class="n">beam</span><span class="o">.</span><span class="n">br</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">phi</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">G</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">I_0</span></div>
+
+
+<div class="viewcode-block" id="TSR_gain"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.TSR_gain">[docs]</a><span class="k">def</span> <span class="nf">TSR_gain</span><span class="p">(</span><span class="n">k_in</span><span class="p">,</span> <span class="n">beam</span><span class="p">):</span>
+
+    <span class="n">k</span> <span class="o">=</span> <span class="n">k_in</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">k_in</span><span class="p">)</span>
+    
+    <span class="n">Rz</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">rot_mat_z</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">az0</span><span class="p">))</span>
+    <span class="n">Rx</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">rot_mat_x</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="mf">90.0</span><span class="o">-</span><span class="n">beam</span><span class="o">.</span><span class="n">el0</span><span class="p">))</span>
+
+    <span class="n">kb</span> <span class="o">=</span> <span class="n">Rx</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Rz</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">k</span><span class="p">))</span>
+
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arcsin</span><span class="p">(</span><span class="n">kb</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">phi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arcsin</span><span class="p">(</span><span class="n">kb</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">unidirectional_broadside_rectangular_array</span><span class="p">(</span><span class="n">beam</span><span class="o">.</span><span class="n">ar</span><span class="p">,</span> <span class="n">beam</span><span class="o">.</span><span class="n">br</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">phi</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">G</span><span class="o">*</span><span class="n">beam</span><span class="o">.</span><span class="n">I_0</span></div>
+
+
+<div class="viewcode-block" id="tsr_fence_beam"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.tsr_fence_beam">[docs]</a><span class="k">def</span> <span class="nf">tsr_fence_beam</span><span class="p">(</span><span class="n">f</span> <span class="o">=</span> <span class="mf">224.0e6</span><span class="p">):</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="mi">30</span>               <span class="c1"># Panel width, metres (30 = 1 panel, 120 = all panels)</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="mi">40</span>               <span class="c1"># Panel height, metres</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="mi">299792458</span>        <span class="c1"># Speed of light, m/s</span>
+    <span class="n">wavelength</span> <span class="o">=</span> <span class="n">c</span><span class="o">/</span><span class="n">f</span>     <span class="c1"># Wavelength, metres</span>
+
+    <span class="n">ar</span> <span class="o">=</span> <span class="n">a</span> <span class="o">/</span> <span class="n">wavelength</span>  <span class="c1"># Antenna size in wavelengths</span>
+    <span class="n">br</span> <span class="o">=</span> <span class="n">b</span> <span class="o">/</span> <span class="n">wavelength</span>  <span class="c1"># ditto</span>
+
+    <span class="c1"># Make an equirectangular projection mesh (2000 points per axis)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="mi">4000</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="mi">4000</span><span class="p">)</span>
+    <span class="n">xx</span><span class="p">,</span><span class="n">yy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
+
+    <span class="c1"># Calclate the beam pattern</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">unidirectional_broadside_rectangular_array</span><span class="p">(</span><span class="n">ar</span><span class="p">,</span><span class="n">br</span><span class="p">,</span><span class="n">xx</span><span class="p">,</span><span class="n">yy</span><span class="p">)</span>
+
+    <span class="c1"># Normalise (4pi steradian * num.pixels / integrated gain / pi^2)</span>
+    <span class="n">scale</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">z</span><span class="o">.</span><span class="n">size</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>   <span class="c1"># Normalise over sphere</span>
+    <span class="n">sincint</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>                    <span class="c1"># Integral of the sinc^2()s: -inf:inf</span>
+
+    <span class="n">els</span> <span class="o">=</span> <span class="p">[</span><span class="mf">30.0</span><span class="p">,</span> <span class="mf">60.0</span><span class="p">,</span> <span class="mf">90.0</span><span class="p">,</span> <span class="mf">60.0</span><span class="p">]</span>
+    <span class="n">azs</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">180.0</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">TSR_fence_gain</span><span class="p">(</span><span class="n">k_in</span><span class="p">,</span> <span class="n">beam</span><span class="p">):</span>
+        <span class="n">G</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="k">for</span> <span class="n">az</span><span class="p">,</span> <span class="n">el</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">azs</span><span class="p">,</span> <span class="n">els</span><span class="p">):</span>
+            <span class="n">G</span> <span class="o">+=</span> <span class="n">TSR_gain_point</span><span class="p">(</span><span class="n">k_in</span><span class="p">,</span> <span class="n">beam</span><span class="p">,</span> <span class="n">az</span> <span class="o">+</span> <span class="n">beam</span><span class="o">.</span><span class="n">az0</span><span class="p">,</span> <span class="n">el</span> <span class="o">+</span> <span class="n">beam</span><span class="o">.</span><span class="n">el0</span> <span class="o">-</span> <span class="mf">90.0</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">G</span>
+
+    <span class="n">beam</span> <span class="o">=</span> <span class="n">antenna</span><span class="o">.</span><span class="n">BeamPattern</span><span class="p">(</span><span class="n">TSR_fence_gain</span><span class="p">,</span> <span class="n">az0</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">el0</span><span class="o">=</span><span class="mf">90.0</span><span class="p">,</span> <span class="n">I_0</span><span class="o">=</span><span class="n">scale</span><span class="o">/</span><span class="n">sincint</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="n">f</span><span class="p">,</span> <span class="n">beam_name</span><span class="o">=</span><span class="s1">&#39;Tromso Space Radar Fence Beam&#39;</span><span class="p">)</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">ar</span> <span class="o">=</span> <span class="n">ar</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">br</span> <span class="o">=</span> <span class="n">br</span>
+
+    <span class="k">return</span> <span class="n">beam</span></div>
+
+
+<div class="viewcode-block" id="tsr_beam"><a class="viewcode-back" href="../modules/antenna_library.html#antenna_library.tsr_beam">[docs]</a><span class="k">def</span> <span class="nf">tsr_beam</span><span class="p">(</span><span class="n">el0</span><span class="p">,</span> <span class="n">f</span> <span class="o">=</span> <span class="mf">224.0e6</span><span class="p">):</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="mi">120</span>              <span class="c1"># Panel width, metres (30 = 1 panel, 120 = all panels)</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="mi">40</span>               <span class="c1"># Panel height, metres</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="mi">299792458</span>        <span class="c1"># Speed of light, m/s</span>
+    <span class="n">wavelength</span> <span class="o">=</span> <span class="n">c</span><span class="o">/</span><span class="n">f</span>     <span class="c1"># Wavelength, metres</span>
+
+    <span class="n">ar</span> <span class="o">=</span> <span class="n">a</span> <span class="o">/</span> <span class="n">wavelength</span>  <span class="c1"># Antenna size in wavelengths</span>
+    <span class="n">br</span> <span class="o">=</span> <span class="n">b</span> <span class="o">/</span> <span class="n">wavelength</span>  <span class="c1"># ditto</span>
+
+    <span class="c1"># Make an equirectangular projection mesh (2000 points per axis)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="mi">4000</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="mi">4000</span><span class="p">)</span>
+    <span class="n">xx</span><span class="p">,</span><span class="n">yy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
+
+    <span class="c1"># Calclate the beam pattern</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">unidirectional_broadside_rectangular_array</span><span class="p">(</span><span class="n">ar</span><span class="p">,</span><span class="n">br</span><span class="p">,</span><span class="n">xx</span><span class="p">,</span><span class="n">yy</span><span class="p">)</span>
+
+    <span class="c1"># Normalise (4pi steradian * num.pixels / integrated gain / pi^2)</span>
+    <span class="n">scale</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">z</span><span class="o">.</span><span class="n">size</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>   <span class="c1"># Normalise over sphere</span>
+    <span class="n">sincint</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>                    <span class="c1"># Integral of the sinc^2()s: -inf:inf</span>
+
+    <span class="n">beam</span> <span class="o">=</span> <span class="n">antenna</span><span class="o">.</span><span class="n">BeamPattern</span><span class="p">(</span><span class="n">TSR_gain</span><span class="p">,</span> <span class="n">az0</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">el0</span><span class="o">=</span><span class="n">el0</span><span class="p">,</span> <span class="n">I_0</span><span class="o">=</span><span class="n">scale</span><span class="o">/</span><span class="n">sincint</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="n">f</span><span class="p">,</span> <span class="n">beam_name</span><span class="o">=</span><span class="s1">&#39;Tromso Space Radar Beam&#39;</span><span class="p">)</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">ar</span> <span class="o">=</span> <span class="n">ar</span>
+    <span class="n">beam</span><span class="o">.</span><span class="n">br</span> <span class="o">=</span> <span class="n">br</span>
+
+    <span class="k">return</span> <span class="n">beam</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/doc.html">Documentation</a></li>
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

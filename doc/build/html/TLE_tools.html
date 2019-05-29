@@ -1,0 +1,366 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>TLE_tools &#8212; SORTS++ 2.8.0 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="population_filter" href="population_filter.html" />
+    <link rel="prev" title="dpt_tools" href="dpt_tools.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="population_filter.html" title="population_filter"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="dpt_tools.html" title="dpt_tools"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">SORTS++ 2.8.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" accesskey="U">Documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-TLE_tools">
+<span id="tle-tools"></span><h1>TLE_tools<a class="headerlink" href="#module-TLE_tools" title="Permalink to this headline">¶</a></h1>
+<p>Collection of useful functions for handling TLE’s.</p>
+<dl class="docutils">
+<dt><strong>Links:</strong></dt>
+<dd><ul class="first last simple">
+<li><a class="reference external" href="https://celestrak.com/publications/AIAA/2006-6753/">AIAA 2006-6753</a></li>
+<li><a class="reference external" href="https://github.com/skyfielders/python-skyfield">python-skyfield</a></li>
+</ul>
+</dd>
+</dl>
+<dl class="function">
+<dt id="TLE_tools.TEME_to_ITRF">
+<code class="descclassname">TLE_tools.</code><code class="descname">TEME_to_ITRF</code><span class="sig-paren">(</span><em>TEME</em>, <em>jd_ut1</em>, <em>xp</em>, <em>yp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TLE_tools.html#TEME_to_ITRF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TLE_tools.TEME_to_ITRF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert TEME position and velocity into standard ITRS coordinates.
+This converts a position and velocity vector in the idiosyncratic
+True Equator Mean Equinox (TEME) frame of reference used by the SGP4
+theory into vectors into the more standard ITRS frame of reference.</p>
+<p><em>Reference:</em> AIAA 2006-6753 Appendix C.</p>
+<p>Original work Copyright (c) 2013-2018 Brandon Rhodes under the MIT license
+Modified work Copyright (c) 2019 Daniel Kastinen</p>
+<p>Since TEME uses the instantaneous North pole and mean direction
+of the Vernal equinox, a simple GMST and polar motion transformation will move to ITRS.</p>
+<p># TODO: There is some ambiguity about if this is ITRS00 or something else? I dont know.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>TEME</strong> (<em>numpy.ndarray</em>) – 6-D state vector in TEME frame given in SI-units.</li>
+<li><strong>jd_ut1</strong> (<em>float</em>) – UT1 Julian date.</li>
+<li><strong>xp</strong> (<em>float</em>) – Polar motion constant for rotation around x axis</li>
+<li><strong>yp</strong> (<em>float</em>) – Polar motion constant for rotation around y axis</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">ITRF 6-D state vector given in SI-units.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="TLE_tools.TEME_to_TLE">
+<code class="descclassname">TLE_tools.</code><code class="descname">TEME_to_TLE</code><span class="sig-paren">(</span><em>state</em>, <em>mjd0</em>, <em>kepler=False</em>, <em>tol=1e-06</em>, <em>tol_v=1e-07</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TLE_tools.html#TEME_to_TLE"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TLE_tools.TEME_to_TLE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert osculating orbital elements in TEME
+to mean elements used in two line element sets (TLE’s).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>kep</strong> (<em>numpy.ndarray</em>) – Osculating State (position and velocity) vector in km and km/s, TEME frame. If <code class="code docutils literal notranslate"><span class="pre">kepler</span> <span class="pre">=</span> <span class="pre">True</span></code> then state is osculating orbital elements, in km and radians. Orbital elements are semi major axis (km), orbital eccentricity, orbital inclination (radians), right ascension of ascending node (radians), argument of perigee (radians), mean anomaly (radians)</li>
+<li><strong>kepler</strong> (<em>bool</em>) – Indicates if input state is kepler elements or cartesian.</li>
+<li><strong>mjd0</strong> (<em>float</em>) – Modified Julian date for state, important for SDP4 iteration.</li>
+<li><strong>tol</strong> (<em>float</em>) – Wanted precision in position of mean element conversion in km.</li>
+<li><strong>tol_v</strong> (<em>float</em>) – Wanted precision in velocity mean element conversion in km/s.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">mean elements of: semi major axis (km), orbital eccentricity, orbital inclination (radians), right ascension of ascending node (radians), argument of perigee (radians), mean anomaly (radians)</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="TLE_tools.TEME_to_TLE_OPTIM">
+<code class="descclassname">TLE_tools.</code><code class="descname">TEME_to_TLE_OPTIM</code><span class="sig-paren">(</span><em>state</em>, <em>mjd0</em>, <em>kepler=False</em>, <em>tol=1e-06</em>, <em>tol_v=1e-07</em>, <em>method=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TLE_tools.html#TEME_to_TLE_OPTIM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TLE_tools.TEME_to_TLE_OPTIM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert osculating orbital elements in TEME
+to mean elements used in two line element sets (TLE’s).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>kep</strong> (<em>numpy.ndarray</em>) – Osculating State (position and velocity) vector in km and km/s, TEME frame. If <code class="code docutils literal notranslate"><span class="pre">kepler</span> <span class="pre">=</span> <span class="pre">True</span></code> then state is osculating orbital elements, in km and radians. Orbital elements are semi major axis (km), orbital eccentricity, orbital inclination (radians), right ascension of ascending node (radians), argument of perigee (radians), mean anomaly (radians)</li>
+<li><strong>kepler</strong> (<em>bool</em>) – Indicates if input state is kepler elements or cartesian.</li>
+<li><strong>mjd0</strong> (<em>float</em>) – Modified Julian date for state, important for SDP4 iteration.</li>
+<li><strong>tol</strong> (<em>float</em>) – Wanted precision in position of mean element conversion in km.</li>
+<li><strong>tol_v</strong> (<em>float</em>) – Wanted precision in velocity mean element conversion in km/s.</li>
+<li><strong>method</strong> (<em>str</em>) – Forces use of SGP4 or SDP4 depending on string ‘n’ or ‘d’, if None method is automatically chosen based on orbital period.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">mean elements of: semi major axis (km), orbital eccentricity, orbital inclination (radians), right ascension of ascending node (radians), argument of perigee (radians), mean anomaly (radians)</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="TLE_tools.TLE_propagation_TEME">
+<code class="descclassname">TLE_tools.</code><code class="descname">TLE_propagation_TEME</code><span class="sig-paren">(</span><em>line1</em>, <em>line2</em>, <em>jd_ut1</em>, <em>wgs='72'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TLE_tools.html#TLE_propagation_TEME"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TLE_tools.TLE_propagation_TEME" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert Two-line element to TEME coordinates at a specific Julian date.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>line1</strong> (<em>str</em>) – TLE line 1</li>
+<li><strong>line2</strong> (<em>str</em>) – TLE line 2</li>
+<li><strong>jd_ut1</strong> (<em>float/numpy.ndarray</em>) – Julian Date UT1 to propagate TLE to.</li>
+<li><strong>wgs</strong> (<em>str</em>) – The used WGS standard, options are <code class="code docutils literal notranslate"><span class="pre">'72'</span></code> or <code class="code docutils literal notranslate"><span class="pre">'84'</span></code>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">(6,len(jd_ut1)) numpy.ndarray of Cartesian states [SI units]</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="TLE_tools.TLE_to_TEME">
+<code class="descclassname">TLE_tools.</code><code class="descname">TLE_to_TEME</code><span class="sig-paren">(</span><em>line1</em>, <em>line2</em>, <em>wgs='72'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TLE_tools.html#TLE_to_TEME"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TLE_tools.TLE_to_TEME" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert Two-line element to TEME coordinates and a Julian date epoch.</p>
+<p>Here it is assumed that the TEME frame uses:
+The Cartesian coordinates produced by the SGP4/SDP4 model have their z
+axis aligned with the true (instantaneous) North pole and the x axis
+aligned with the mean direction of the vernal equinox (accounting for
+precession but not nutation). This actually makes sense since the
+observations are collected from a network of sensors fixed to the
+earth’s surface (and referenced to the true equator) but the position
+of the earth in inertial space (relative to the vernal equinox) must
+be estimated.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>line1</strong> (<em>str</em>) – TLE line 1</li>
+<li><strong>line2</strong> (<em>str</em>) – TLE line 2</li>
+<li><strong>wgs</strong> (<em>str</em>) – The used WGS standard, options are <code class="code docutils literal notranslate"><span class="pre">'72'</span></code> or <code class="code docutils literal notranslate"><span class="pre">'84'</span></code>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">tuple of (6-D numpy.ndarray Cartesian state [SI units], epoch in Julian Date UT1)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="TLE_tools.get_DUT">
+<code class="descclassname">TLE_tools.</code><code class="descname">get_DUT</code><span class="sig-paren">(</span><em>jd_ut1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TLE_tools.html#get_DUT"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TLE_tools.get_DUT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the Difference UT between UT1 and UTC, <span class="math notranslate nohighlight">\(DUT1 = UT1 - UTC\)</span>. This function interpolates between data given by IERS.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>jd_ut1</strong> (<em>float/numpy.ndarray</em>) – Input Julian date in UT1.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">DUT</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">numpy.ndarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="TLE_tools.get_IERS_EOP">
+<code class="descclassname">TLE_tools.</code><code class="descname">get_IERS_EOP</code><span class="sig-paren">(</span><em>fname='/home/danielk/IRF/IRF_GITLAB/SORTSpp/data/eopc04_IAU2000.62-now'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TLE_tools.html#get_IERS_EOP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TLE_tools.get_IERS_EOP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads the IERS EOP data into memory.</p>
+<p>Note: Column descriptions are hard-coded in the function and my change if standard IERS format is changed.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fname</strong> (<em>str</em>) – path to input IERS data file.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">tuple of (numpy.ndarray, list of column descriptions)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="TLE_tools.get_Polar_Motion">
+<code class="descclassname">TLE_tools.</code><code class="descname">get_Polar_Motion</code><span class="sig-paren">(</span><em>jd_ut1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TLE_tools.html#get_Polar_Motion"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TLE_tools.get_Polar_Motion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the Polar motion coefficients <span class="math notranslate nohighlight">\(x_p\)</span> and <span class="math notranslate nohighlight">\(y_p\)</span> used in EOP. This function interpolates between data given by IERS.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>jd_ut1</strong> (<em>float/numpy.ndarray</em>) – Input Julian date in UT1.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><span class="math notranslate nohighlight">\(x_p\)</span> as column 0 and <span class="math notranslate nohighlight">\(y_p\)</span> as column 1</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">numpy.ndarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="TLE_tools.theta_GMST1982">
+<code class="descclassname">TLE_tools.</code><code class="descname">theta_GMST1982</code><span class="sig-paren">(</span><em>jd_ut1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TLE_tools.html#theta_GMST1982"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TLE_tools.theta_GMST1982" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the angle of Greenwich Mean Standard Time 1982 given the JD.
+This angle defines the difference between the idiosyncratic True
+Equator Mean Equinox (TEME) frame of reference used by SGP4 and the
+more standard Pseudo Earth Fixed (PEF) frame of reference.</p>
+<p><em>Reference:</em> AIAA 2006-6753 Appendix C.</p>
+<p>Original work Copyright (c) 2013-2018 Brandon Rhodes under the MIT license
+Modified work Copyright (c) 2019 Daniel Kastinen</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>jd_ut1</strong> (<em>float</em>) – UT1 Julian date.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">tuple of (Earth rotation [rad], Earth angular velocity [rad/day])</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="TLE_tools.tle_bstar">
+<code class="descclassname">TLE_tools.</code><code class="descname">tle_bstar</code><span class="sig-paren">(</span><em>line1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TLE_tools.html#tle_bstar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TLE_tools.tle_bstar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extracts the BSTAR drag coefficient as a float from the first line of a TLE.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="TLE_tools.tle_id">
+<code class="descclassname">TLE_tools.</code><code class="descname">tle_id</code><span class="sig-paren">(</span><em>line1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TLE_tools.html#tle_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TLE_tools.tle_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extracts the Satellite number from the first line of a TLE.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="TLE_tools.tle_jd">
+<code class="descclassname">TLE_tools.</code><code class="descname">tle_jd</code><span class="sig-paren">(</span><em>line1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TLE_tools.html#tle_jd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TLE_tools.tle_jd" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="doc.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="doc.html#simulation-handler">Simulation handler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#class-modules">Class modules</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="doc.html#function-modules">Function modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#instance-libraries">Instance libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#integrator-interfaces">Integrator interfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#tests">Tests</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="dpt_tools.html"
+                        title="previous chapter">dpt_tools</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="population_filter.html"
+                        title="next chapter">population_filter</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="population_filter.html" title="population_filter"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="dpt_tools.html" title="dpt_tools"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">SORTS++ 2.8.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" >Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

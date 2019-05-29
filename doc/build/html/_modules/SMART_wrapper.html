@@ -1,0 +1,296 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>SMART_wrapper &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for SMART_wrapper</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="sd">&#39;&#39;&#39;Wrapper for SMART</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">fileinput</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="n">pathname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">SCRIPT_PATH</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">pathname</span><span class="p">)</span>
+
+<span class="n">SMART_PATH</span> <span class="o">=</span> <span class="s1">&#39;smart-sa&#39;</span>
+<span class="c1">#SMART_IN_name = &#39;smart_input.tdm&#39;</span>
+<span class="c1">#SMART_OUT_name = &#39;smart_output_object_1.dat&#39;</span>
+<span class="c1">#SMART_PRIOR_name = &#39;smart_prior.oem&#39;</span>
+<span class="c1">#OEM_dir = &#39;./oems/&#39;</span>
+<span class="c1">#TRACK_dir = &#39;./tracklets/&#39;</span>
+
+<span class="n">OD_CONFIG_PRIOR_LINE</span> <span class="o">=</span> <span class="mi">90</span>
+<span class="n">OD_CONFIG_PRIOR_FILE_LINE</span> <span class="o">=</span> <span class="mi">93</span>
+<span class="n">SMART_CONFIG_OUTPUT_LINE</span> <span class="o">=</span> <span class="mi">35</span>
+<span class="n">SMART_CONFIG_INPUT_LINE</span> <span class="o">=</span> <span class="mi">47</span>
+<span class="n">OD_CONFIG_name</span> <span class="o">=</span> <span class="s1">&#39;od_config.dat&#39;</span>
+<span class="n">SMART_CONFIG_name</span> <span class="o">=</span> <span class="s1">&#39;smart.inp&#39;</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">This wrapper works best as:</span>
+
+<span class="sd">iniitialize smart class with objects, and lists to input data and input prior and output files</span>
+<span class="sd">Then set the config file with set_prior_mode( somthing ) to what the prior data format is </span>
+<span class="sd">then run trough all the inpout files launching a new sub-process for each SMATR run with a new thread using the compute_orbit_cmd_mode</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="dat_parse_cols"><a class="viewcode-back" href="../SMART_wrapper.html#SMART_wrapper.dat_parse_cols">[docs]</a><span class="k">def</span> <span class="nf">dat_parse_cols</span><span class="p">(</span><span class="n">col</span><span class="p">):</span>
+	<span class="n">ret</span> <span class="o">=</span> <span class="mi">0</span>
+	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
+		<span class="k">if</span> <span class="n">col</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;T&#39;</span><span class="p">:</span>
+			<span class="n">ret</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="n">ret</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">col</span><span class="p">[:</span><span class="mi">4</span><span class="p">])</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="n">ret</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">ret</span></div>
+
+
+<div class="viewcode-block" id="read_dat_file"><a class="viewcode-back" href="../SMART_wrapper.html#SMART_wrapper.read_dat_file">[docs]</a><span class="k">def</span> <span class="nf">read_dat_file</span><span class="p">(</span><span class="n">fname</span><span class="p">):</span>
+	<span class="c1">#return np.genfromtxt(fname, delimiter=&#39; &#39;, comments=&quot;#&quot;)</span>
+	<span class="n">dat</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="n">cols</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;MJD&#39;</span><span class="p">,</span> <span class="s1">&#39;Gregorian Date&#39;</span><span class="p">,</span>\
+	<span class="s1">&#39;X [km]&#39;</span><span class="p">,</span><span class="s1">&#39;Y [km]&#39;</span><span class="p">,</span><span class="s1">&#39;Z [km]&#39;</span><span class="p">,</span> \
+	<span class="s1">&#39;X [km/s]&#39;</span><span class="p">,</span><span class="s1">&#39;Y [km/s]&#39;</span><span class="p">,</span><span class="s1">&#39;Z [km/s]&#39;</span><span class="p">,</span>\
+	<span class="s1">&#39;1-sig X [km]&#39;</span><span class="p">,</span><span class="s1">&#39;1-sig Y [km]&#39;</span><span class="p">,</span><span class="s1">&#39;1-sig Z [km]&#39;</span><span class="p">,</span>\
+	<span class="s1">&#39;1-sig X_dot&#39;</span><span class="p">,</span><span class="s1">&#39;1-sig Y_dot&#39;</span><span class="p">,</span><span class="s1">&#39;1-sig Z_dot&#39;</span><span class="p">,</span>\
+	<span class="s1">&#39;R res [km]&#39;</span><span class="p">,</span><span class="s1">&#39;Az_res [deg]&#39;</span><span class="p">,</span><span class="s1">&#39;El_res [deg]&#39;</span><span class="p">,</span>\
+	<span class="s1">&#39;RR_res[km/s]&#39;</span><span class="p">,</span><span class="s1">&#39;Az_r[deg/s]&#39;</span><span class="p">,</span><span class="s1">&#39;El_r[deg/s]&#39;</span><span class="p">,</span>\
+	<span class="s1">&#39;a [km]&#39;</span><span class="p">,</span><span class="s1">&#39;e [-]&#39;</span><span class="p">,</span><span class="s1">&#39;i [deg]&#39;</span><span class="p">,</span><span class="s1">&#39;RAAN[deg]&#39;</span><span class="p">,</span><span class="s1">&#39;AoP[deg]&#39;</span><span class="p">,</span><span class="s1">&#39;T [deg]&#39;</span>\
+	<span class="p">]</span>
+	<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span><span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+		<span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">file</span><span class="p">:</span>
+			<span class="k">if</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;#&#39;</span><span class="p">:</span>
+				<span class="n">dat</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="nb">map</span><span class="p">(</span><span class="n">dat_parse_cols</span><span class="p">,</span><span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="p">)</span> <span class="p">)</span>
+	<span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dat</span><span class="p">),</span><span class="n">cols</span></div>
+
+
+<div class="viewcode-block" id="change_line_of_file"><a class="viewcode-back" href="../SMART_wrapper.html#SMART_wrapper.change_line_of_file">[docs]</a><span class="k">def</span> <span class="nf">change_line_of_file</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="n">line_n</span><span class="p">,</span><span class="n">new_line</span><span class="p">,</span><span class="n">backup_name</span><span class="p">):</span>
+	<span class="n">line_c</span> <span class="o">=</span> <span class="mi">0</span>
+	<span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fileinput</span><span class="o">.</span><span class="n">input</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">inplace</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">backup</span><span class="o">=</span><span class="n">backup_name</span><span class="p">):</span>
+		<span class="n">line_c</span> <span class="o">+=</span> <span class="mi">1</span>
+		<span class="k">if</span> <span class="n">line_c</span> <span class="o">==</span> <span class="n">line_n</span><span class="p">:</span>
+			<span class="n">line</span> <span class="o">=</span> <span class="n">new_line</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="n">line</span>
+		<span class="nb">print</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="SMART"><a class="viewcode-back" href="../SMART_wrapper.html#SMART_wrapper.SMART">[docs]</a><span class="k">class</span> <span class="nc">SMART</span><span class="p">:</span>
+	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_objects</span><span class="p">,</span> <span class="n">data_list</span><span class="p">,</span> <span class="n">prior_list</span><span class="p">,</span> <span class="n">output_list</span><span class="p">,</span> <span class="n">unique_id</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1</span><span class="p">))):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_n</span> <span class="o">=</span> <span class="n">n_objects</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">data_list</span> <span class="c1">#list of file paths</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_prior</span> <span class="o">=</span> <span class="n">prior_list</span> <span class="c1">#list of file paths</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_output</span> <span class="o">=</span> <span class="n">output_list</span> <span class="c1">#list of file paths</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_backup</span> <span class="o">=</span> <span class="n">unique_id</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_file_change</span> <span class="o">=</span> <span class="kc">False</span>
+		
+		<span class="bp">self</span><span class="o">.</span><span class="n">_SMART_DIR</span> <span class="o">=</span> <span class="n">SCRIPT_PATH</span> <span class="o">+</span> <span class="s1">&#39;/smart/wrk_sa&#39;</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_SMART_I_DIR</span> <span class="o">=</span> <span class="s1">&#39;/input/&#39;</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_SMART_O_DIR</span> <span class="o">=</span> <span class="s1">&#39;/output/&#39;</span>
+
+<div class="viewcode-block" id="SMART.output_folder"><a class="viewcode-back" href="../SMART_wrapper.html#SMART_wrapper.SMART.output_folder">[docs]</a>	<span class="k">def</span> <span class="nf">output_folder</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SMART_DIR</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SMART_O_DIR</span></div>
+
+<div class="viewcode-block" id="SMART.get_prior_mode"><a class="viewcode-back" href="../SMART_wrapper.html#SMART_wrapper.SMART.get_prior_mode">[docs]</a>	<span class="k">def</span> <span class="nf">get_prior_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_SMART_DIR</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SMART_I_DIR</span> <span class="o">+</span> <span class="n">OD_CONFIG_name</span><span class="p">,</span><span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+			<span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()):</span>
+				<span class="k">if</span> <span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="n">OD_CONFIG_PRIOR_LINE</span><span class="p">:</span>
+					<span class="k">return</span> <span class="n">line</span></div>
+
+
+<div class="viewcode-block" id="SMART.set_prior_mode"><a class="viewcode-back" href="../SMART_wrapper.html#SMART_wrapper.SMART.set_prior_mode">[docs]</a>	<span class="k">def</span> <span class="nf">set_prior_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mode</span><span class="p">):</span>
+		<span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;none&#39;</span><span class="p">:</span>
+			<span class="n">mode_int</span> <span class="o">=</span> <span class="mi">0</span>
+		<span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;tle&#39;</span><span class="p">:</span>
+			<span class="n">mode_int</span> <span class="o">=</span> <span class="mi">1</span>
+		<span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;cart&#39;</span><span class="p">:</span>
+			<span class="n">mode_int</span> <span class="o">=</span> <span class="mi">2</span>
+		<span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;orb&#39;</span><span class="p">:</span>
+			<span class="n">mode_int</span> <span class="o">=</span> <span class="mi">3</span>
+		<span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;oem&#39;</span><span class="p">:</span>
+			<span class="n">mode_int</span> <span class="o">=</span> <span class="mi">4</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="n">mode_int</span> <span class="o">=</span> <span class="mi">4</span>
+		<span class="n">change_line_of_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_SMART_DIR</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SMART_I_DIR</span> <span class="o">+</span> <span class="n">OD_CONFIG_name</span><span class="p">,</span> <span class="n">OD_CONFIG_PRIOR_LINE</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mode_int</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backup</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_file_change</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="SMART.set_output_file"><a class="viewcode-back" href="../SMART_wrapper.html#SMART_wrapper.SMART.set_output_file">[docs]</a>	<span class="k">def</span> <span class="nf">set_output_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">index</span><span class="p">):</span>
+		<span class="n">change_line_of_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_SMART_DIR</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SMART_I_DIR</span> <span class="o">+</span> <span class="n">SMART_CONFIG_name</span><span class="p">,</span> <span class="n">SMART_CONFIG_OUTPUT_LINE</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">[</span><span class="n">index</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backup</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_file_change</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+	<span class="k">def</span> <span class="nf">set_input_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">index</span><span class="p">):</span>
+		<span class="n">change_line_of_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_SMART_DIR</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SMART_I_DIR</span> <span class="o">+</span> <span class="n">SMART_CONFIG_name</span><span class="p">,</span> <span class="n">SMART_CONFIG_INPUT_LINE</span><span class="p">,</span> <span class="s1">&#39;input/&#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">index</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backup</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_file_change</span> <span class="o">=</span> <span class="kc">True</span>
+
+<div class="viewcode-block" id="SMART.set_input_file"><a class="viewcode-back" href="../SMART_wrapper.html#SMART_wrapper.SMART.set_input_file">[docs]</a>	<span class="k">def</span> <span class="nf">set_input_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">index</span><span class="p">):</span>
+		<span class="n">change_line_of_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_SMART_DIR</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SMART_I_DIR</span> <span class="o">+</span> <span class="n">OD_CONFIG_name</span><span class="p">,</span> <span class="n">OD_CONFIG_PRIOR_FILE_LINE</span><span class="p">,</span> <span class="s1">&#39;input/&#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">_prior</span><span class="p">[</span><span class="n">index</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backup</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_file_change</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="SMART.compute_orbit_config_mod"><a class="viewcode-back" href="../SMART_wrapper.html#SMART_wrapper.SMART.compute_orbit_config_mod">[docs]</a>	<span class="k">def</span> <span class="nf">compute_orbit_config_mod</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">):</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">set_output_file</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">set_input_file</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">set_input_file</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">_file_change</span> <span class="o">=</span> <span class="kc">True</span>
+			<span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">([</span><span class="n">SMART_PATH</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="SMART.compute_orbit_cmd_mode"><a class="viewcode-back" href="../SMART_wrapper.html#SMART_wrapper.SMART.compute_orbit_cmd_mode">[docs]</a>	<span class="k">def</span> <span class="nf">compute_orbit_cmd_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">):</span>
+			<span class="nb">print</span> <span class="s2">&quot;Launching subp with smart from: &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SMART_DIR</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">SMART_PATH</span>
+			<span class="n">CMD_list</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_SMART_DIR</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">SMART_PATH</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> \
+				<span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> \
+				<span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>  <span class="o">+</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> \
+				<span class="bp">self</span><span class="o">.</span><span class="n">_prior</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="p">]</span>
+
+			<span class="nb">print</span><span class="p">(</span><span class="n">CMD_list</span><span class="p">)</span>
+			<span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">CMD_list</span><span class="p">,</span> <span class="n">cwd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_SMART_DIR</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+	<span class="k">def</span> <span class="nf">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="bp">self</span>
+
+	<span class="k">def</span> <span class="nf">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">traceback</span><span class="p">):</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_file_change</span><span class="p">:</span>
+			<span class="n">file_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SMART_DIR</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SMART_I_DIR</span> <span class="o">+</span> <span class="n">OD_CONFIG_name</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backup</span>
+			<span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">file_name</span><span class="p">):</span>
+				<span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span> <span class="n">file_name</span>  <span class="p">)</span>
+			<span class="n">file_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SMART_DIR</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SMART_I_DIR</span> <span class="o">+</span> <span class="n">SMART_CONFIG_name</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backup</span>
+			<span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">file_name</span><span class="p">):</span>
+				<span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span> <span class="n">file_name</span>  <span class="p">)</span></div>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+
+	<span class="n">fname</span> <span class="o">=</span> <span class="s2">&quot;/home/danielk/IRF/E3D_PA/SORTSpp_sim/sim_dev/orbits/3_orbit.dat&quot;</span>
+	<span class="n">a</span><span class="p">,</span><span class="n">cols</span> <span class="o">=</span> <span class="n">read_dat_file</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+
+	<span class="nb">print</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cols</span><span class="p">)),</span><span class="n">cols</span><span class="p">))</span>
+
+	<span class="n">t</span> <span class="o">=</span> <span class="n">a</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span>
+	<span class="n">r_err</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">a</span><span class="p">[:,</span><span class="mi">8</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">a</span><span class="p">[:,</span><span class="mi">9</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">a</span><span class="p">[:,</span><span class="mi">10</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+	<span class="n">v_err</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">a</span><span class="p">[:,</span><span class="mi">11</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">a</span><span class="p">[:,</span><span class="mi">12</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">a</span><span class="p">[:,</span><span class="mi">13</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+	<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+	<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">r_err</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">v_err</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+	<span class="n">r_err_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">r_err</span><span class="p">)</span>
+	<span class="n">v_err_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">v_err</span><span class="p">)</span>
+	<span class="nb">print</span><span class="p">(</span><span class="n">r_err_mean</span><span class="p">,</span><span class="n">v_err_mean</span><span class="p">)</span>
+
+	<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">	with SMART( \</span>
+<span class="sd">		n_objects = 1,\</span>
+<span class="sd">		data_list = [&#39;EISCAT_ENVISAT_2016-09-06.tdm&#39;], \</span>
+<span class="sd">		prior_list = [&#39;Envisat_2016-09-06.tle&#39;], \</span>
+<span class="sd">		output_list = [&#39;ENVISAT_2016-09-06_OUT&#39;], \</span>
+<span class="sd">		) as smart_instance_1:</span>
+
+<span class="sd">		mode = smart_instance_1.get_prior_mode()</span>
+<span class="sd">		print &quot;MODE: &quot; + mode</span>
+<span class="sd">		if int(mode.strip()) != 1:</span>
+<span class="sd">			print &quot;Error: wrong mode, fixing&quot;</span>
+<span class="sd">			smart_instance_1.set_prior_mode(&#39;tle&#39;)</span>
+<span class="sd">		smart_instance_1.compute_orbit_cmd_mode()</span>
+<span class="sd">	&#39;&#39;&#39;</span>
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/doc.html">Documentation</a></li>
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

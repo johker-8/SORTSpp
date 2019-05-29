@@ -1,0 +1,763 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>simulate_tracking &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for simulate_tracking</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="sd">&#39;&#39;&#39;Functions for simulating the tracking of an object in space.</span>
+
+
+<span class="sd">**Usage examples:**</span>
+
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    import radar_library as rl</span>
+<span class="sd">    from propagator_sgp4 import PropagatorSGP4</span>
+<span class="sd">    </span>
+<span class="sd">    radar=rl.eiscat_3d(beam=&#39;gauss&#39;)</span>
+
+<span class="sd">    o=so.SpaceObject(</span>
+<span class="sd">        a=7000,</span>
+<span class="sd">        e=0.0,</span>
+<span class="sd">        i=72,</span>
+<span class="sd">        raan=0,</span>
+<span class="sd">        aop=0,</span>
+<span class="sd">        mu0=0,</span>
+<span class="sd">        C_D=2.3,</span>
+<span class="sd">        A=1.0,</span>
+<span class="sd">        m=1.0,</span>
+<span class="sd">        d=0.1,</span>
+<span class="sd">        propagator = PropagatorSGP4,</span>
+<span class="sd">        propagator_options = {</span>
+<span class="sd">            &#39;polar_motion&#39;: False,</span>
+<span class="sd">        },</span>
+<span class="sd">    )</span>
+<span class="sd">    </span>
+<span class="sd">    _t0 = time.time()</span>
+<span class="sd">    passes = get_passes(o, radar, 0, 18.*3600., max_dpos=1e3)</span>
+<span class="sd">    _t1=time.time()</span>
+<span class="sd">    print(&quot;wall clock time %1.2f&quot;%(_t1-_t0))</span>
+
+<span class="sd">    print_passes(passes)</span>
+
+<span class="sd">    p_id = 1</span>
+
+<span class="sd">    t0, t1 = passes[&#39;t&#39;][0][p_id]</span>
+<span class="sd">    t = n.linspace(t0, t1, num=1000)</span>
+
+<span class="sd">    scan_snr = get_scan_snr(t, o, radar)</span>
+<span class="sd">    track_snr = get_track_snr(t, o, radar)</span>
+
+<span class="sd">    fig = plt.figure(figsize=(15,15))</span>
+<span class="sd">    ax = fig.add_subplot(211)</span>
+<span class="sd">    ax = plot_snr(t, track_snr, radar, ax=ax)</span>
+<span class="sd">    ax.set_title(&#39;SNR when tracking&#39;)</span>
+
+<span class="sd">    ax = fig.add_subplot(212)</span>
+<span class="sd">    ax = plot_snr(t, scan_snr, radar, ax=ax)</span>
+<span class="sd">    ax.set_title(&#39;SNR when scanning&#39;)</span>
+
+<span class="sd">    ts, angs = get_angles(passes, o, radar)</span>
+<span class="sd">    ax = plot_angles(ts, angs)</span>
+
+<span class="sd">    plt.show()</span>
+
+
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">n</span>
+<span class="kn">import</span> <span class="nn">scipy.constants</span> <span class="k">as</span> <span class="nn">c</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">mpl_toolkits.mplot3d</span> <span class="k">import</span> <span class="n">Axes3D</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+
+<span class="c1"># SORTS imports</span>
+<span class="kn">import</span> <span class="nn">space_object</span> <span class="k">as</span> <span class="nn">so</span>
+<span class="kn">from</span> <span class="nn">propagator_sgp4</span> <span class="k">import</span> <span class="n">MU_earth</span>
+<span class="kn">import</span> <span class="nn">coord</span>
+<span class="kn">import</span> <span class="nn">debris</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">plothelp</span>
+<span class="kn">import</span> <span class="nn">dpt_tools</span> <span class="k">as</span> <span class="nn">dpt</span>
+
+
+<div class="viewcode-block" id="find_linspace_num"><a class="viewcode-back" href="../modules/simulate_tracking.html#simulate_tracking.find_linspace_num">[docs]</a><span class="k">def</span> <span class="nf">find_linspace_num</span><span class="p">(</span><span class="n">t0</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">max_dpos</span><span class="o">=</span><span class="mf">1e3</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Find the number of linearly spaced temporal positions which are sufficient to achieve a maximum spatial separation.</span>
+<span class="sd">    Assume elliptic orbit and use the velocity at periapsis, does not take perturbation patterns into account.</span>
+<span class="sd">    </span>
+<span class="sd">    :param float t0: Start time in seconds</span>
+<span class="sd">    :param float t1: End time in seconds</span>
+<span class="sd">    :param float a: Semi-major axis in meters</span>
+<span class="sd">    :param float max_dpos: Maximum separation between evaluation points in meters.</span>
+<span class="sd">    :return: Number of points needed</span>
+<span class="sd">    :rtype: int</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">elliptic_radius</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">radians</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">orbital_speed</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">MU_earth</span><span class="p">)</span>
+    <span class="n">R</span> <span class="o">=</span> <span class="p">(</span><span class="n">t1</span><span class="o">-</span><span class="n">t0</span><span class="p">)</span><span class="o">*</span><span class="n">v</span>
+    <span class="n">n_points</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">R</span><span class="o">/</span><span class="n">max_dpos</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">n_points</span></div>
+
+
+<div class="viewcode-block" id="print_passes"><a class="viewcode-back" href="../modules/simulate_tracking.html#simulate_tracking.print_passes">[docs]</a><span class="k">def</span> <span class="nf">print_passes</span><span class="p">(</span><span class="n">det_times</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Function to pretty print detection times list returned by the :func:`simulate_tracking.get_passes` function.</span>
+<span class="sd">        </span>
+<span class="sd">        :param list det_times: List of dictionaries generated by get_passes.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">txc</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">t</span><span class="p">,</span><span class="n">snr</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">det_times</span><span class="p">[</span><span class="s1">&#39;t&#39;</span><span class="p">],</span><span class="n">det_times</span><span class="p">[</span><span class="s1">&#39;snr&#39;</span><span class="p">]):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;For TX </span><span class="si">%i</span><span class="s1">: </span><span class="si">%i</span><span class="s1"> detections&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">txc</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)))</span>
+        <span class="k">for</span> <span class="n">di</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)):</span>
+            <span class="k">for</span> <span class="n">rx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">snr</span><span class="p">[</span><span class="n">di</span><span class="p">])):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Detection </span><span class="si">%i</span><span class="s1">: Peak snr tx</span><span class="si">%i</span><span class="s1">-rx</span><span class="si">%i</span><span class="s1"> </span><span class="si">%.2f</span><span class="s1"> dB at </span><span class="si">%.2f</span><span class="s1"> h (pass </span><span class="si">%.2f</span><span class="s1"> h - </span><span class="si">%.2f</span><span class="s1"> h)&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">di</span><span class="p">,</span><span class="n">txc</span><span class="p">,</span><span class="n">rx</span><span class="p">,</span>\
+                    <span class="mf">10.0</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">snr</span><span class="p">[</span><span class="n">di</span><span class="p">][</span><span class="n">rx</span><span class="p">][</span><span class="mi">0</span><span class="p">]),</span><span class="n">snr</span><span class="p">[</span><span class="n">di</span><span class="p">][</span><span class="n">rx</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mf">3600.0</span><span class="p">,</span> <span class="n">t</span><span class="p">[</span><span class="n">di</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mf">3600.0</span><span class="p">,</span><span class="n">t</span><span class="p">[</span><span class="n">di</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mf">3600.0</span><span class="p">))</span>
+        <span class="n">txc</span><span class="o">+=</span><span class="mi">1</span></div>
+
+<div class="viewcode-block" id="get_scan_snr"><a class="viewcode-back" href="../modules/simulate_tracking.html#simulate_tracking.get_scan_snr">[docs]</a><span class="k">def</span> <span class="nf">get_scan_snr</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">o</span><span class="p">,</span><span class="n">radar</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Takes a series of times, a space object and a radar system and calculates the SNR for that space object given the scan pattern of the radar over the given times.</span>
+
+<span class="sd">    :param numpy.ndarray t: Times in seconds relative space object epoch over witch SNR should be evaluated.</span>
+<span class="sd">    :param SpaceObject o: Space object to be measured.</span>
+<span class="sd">    :param RadarSystem radar: Radar system that performs the measurement.</span>
+<span class="sd">    :return: List of lists of numpy.ndarray&#39;s corresponding to TX antenna index, RX antenna index and SNR-array in that order of list depth.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    
+    <span class="n">ecef</span><span class="o">=</span><span class="n">o</span><span class="o">.</span><span class="n">get_orbit</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+
+    <span class="n">zenith_v</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">tx_ecef</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">rx_ecef</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">tx</span> <span class="ow">in</span> <span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">:</span>
+        <span class="n">tx_ecef</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">tx</span><span class="o">.</span><span class="n">ecef</span> <span class="p">)</span>
+        <span class="n">zenith_v</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">coord</span><span class="o">.</span><span class="n">azel_ecef</span><span class="p">(</span><span class="n">tx</span><span class="o">.</span><span class="n">lat</span><span class="p">,</span> <span class="n">tx</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">90.0</span><span class="p">)</span> <span class="p">)</span>
+    <span class="k">for</span> <span class="n">rx</span> <span class="ow">in</span> <span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">:</span>
+        <span class="n">rx_ecef</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">rx</span><span class="o">.</span><span class="n">ecef</span> <span class="p">)</span>
+    
+    <span class="n">postx_v</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">posrx_v</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">idx_v</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">rx_dets</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">rxp0</span> <span class="ow">in</span> <span class="n">rx_ecef</span><span class="p">:</span>
+        <span class="n">pos_vecs</span><span class="o">=</span><span class="p">(</span><span class="n">ecef</span><span class="o">.</span><span class="n">T</span><span class="o">-</span><span class="n">rxp0</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">posrx_v</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pos_vecs</span><span class="p">)</span>
+
+    <span class="c1"># for each transmitter</span>
+    <span class="k">for</span> <span class="n">txi</span><span class="p">,</span><span class="n">txp0</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">tx_ecef</span><span class="p">):</span>
+        <span class="n">zenith</span> <span class="o">=</span> <span class="n">zenith_v</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span>
+        <span class="n">pos_vecs</span><span class="o">=</span><span class="p">(</span><span class="n">ecef</span><span class="o">.</span><span class="n">T</span><span class="o">-</span><span class="n">txp0</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">pos_vecs0</span><span class="o">=</span><span class="n">pos_vecs</span><span class="o">/</span><span class="n">n</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">pos_vecs</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span><span class="o">**</span><span class="mf">2.0</span><span class="o">+</span><span class="n">pos_vecs</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span><span class="o">**</span><span class="mf">2.0</span><span class="o">+</span><span class="n">pos_vecs</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span><span class="o">**</span><span class="mf">2.0</span><span class="p">)</span>
+
+        <span class="n">postx_v</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pos_vecs</span><span class="p">)</span>
+
+
+    <span class="n">snrs</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">txi</span><span class="p">,</span><span class="n">tx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">):</span>
+        <span class="n">snrs</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">rxi</span><span class="p">,</span><span class="n">rx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">):</span>
+            <span class="n">snr_curve</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">I</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)):</span>
+                <span class="n">tx_dist</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">postx_v</span><span class="p">[</span><span class="n">txi</span><span class="p">][:,</span><span class="n">I</span><span class="p">])</span>
+
+                <span class="n">k_obj_tx</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">ecef2local</span><span class="p">(</span>
+                    <span class="n">lat</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">lat</span><span class="p">,</span>
+                    <span class="n">lon</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span>
+                    <span class="n">alt</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">alt</span><span class="p">,</span>
+                    <span class="n">x</span> <span class="o">=</span> <span class="n">postx_v</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="mi">0</span><span class="p">,</span><span class="n">I</span><span class="p">],</span>
+                    <span class="n">y</span> <span class="o">=</span> <span class="n">postx_v</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="mi">1</span><span class="p">,</span><span class="n">I</span><span class="p">],</span>
+                    <span class="n">z</span> <span class="o">=</span> <span class="n">postx_v</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="mi">2</span><span class="p">,</span><span class="n">I</span><span class="p">],</span>
+                <span class="p">)</span>
+                <span class="n">k_obj_rx</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">ecef2local</span><span class="p">(</span>
+                    <span class="n">lat</span> <span class="o">=</span> <span class="n">rx</span><span class="o">.</span><span class="n">lat</span><span class="p">,</span>
+                    <span class="n">lon</span> <span class="o">=</span> <span class="n">rx</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span>
+                    <span class="n">alt</span> <span class="o">=</span> <span class="n">rx</span><span class="o">.</span><span class="n">alt</span><span class="p">,</span>
+                    <span class="n">x</span> <span class="o">=</span> <span class="n">posrx_v</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="mi">0</span><span class="p">,</span><span class="n">I</span><span class="p">],</span>
+                    <span class="n">y</span> <span class="o">=</span> <span class="n">posrx_v</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="mi">1</span><span class="p">,</span><span class="n">I</span><span class="p">],</span>
+                    <span class="n">z</span> <span class="o">=</span> <span class="n">posrx_v</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="mi">2</span><span class="p">,</span><span class="n">I</span><span class="p">],</span>
+                <span class="p">)</span>
+
+                <span class="n">k0</span><span class="o">=</span><span class="n">tx</span><span class="o">.</span><span class="n">get_scan</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">I</span><span class="p">])</span><span class="o">.</span><span class="n">local_pointing</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">I</span><span class="p">])</span> <span class="c1">#get scan pointing</span>
+                <span class="n">tx</span><span class="o">.</span><span class="n">beam</span><span class="o">.</span><span class="n">point_k0</span><span class="p">(</span><span class="n">k0</span><span class="p">)</span>
+                <span class="n">gain_tx</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">beam</span><span class="o">.</span><span class="n">gain</span><span class="p">(</span><span class="n">k_obj_tx</span><span class="p">)</span>
+                
+                <span class="n">rx_dist</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">posrx_v</span><span class="p">[</span><span class="n">rxi</span><span class="p">][:,</span><span class="n">I</span><span class="p">])</span>
+                
+                <span class="n">rx</span><span class="o">.</span><span class="n">beam</span><span class="o">.</span><span class="n">point_k0</span><span class="p">(</span><span class="n">k_obj_rx</span><span class="p">)</span>
+                <span class="n">gain_rx</span> <span class="o">=</span> <span class="n">rx</span><span class="o">.</span><span class="n">beam</span><span class="o">.</span><span class="n">gain</span><span class="p">(</span><span class="n">k_obj_rx</span><span class="p">)</span>
+
+                <span class="n">snr</span><span class="o">=</span><span class="n">debris</span><span class="o">.</span><span class="n">hard_target_enr</span><span class="p">(</span><span class="n">gain_tx</span><span class="p">,</span>
+                                        <span class="n">gain_rx</span><span class="p">,</span>
+                                        <span class="n">rx</span><span class="o">.</span><span class="n">wavelength</span><span class="p">,</span>
+                                        <span class="n">tx</span><span class="o">.</span><span class="n">tx_power</span><span class="p">,</span>
+                                        <span class="n">tx_dist</span><span class="p">,</span>
+                                        <span class="n">rx_dist</span><span class="p">,</span>
+                                        <span class="n">diameter_m</span><span class="o">=</span><span class="n">o</span><span class="o">.</span><span class="n">d</span><span class="p">,</span>
+                                        <span class="n">bandwidth</span><span class="o">=</span><span class="n">tx</span><span class="o">.</span><span class="n">coh_int_bandwidth</span><span class="p">,</span>
+                                        <span class="n">rx_noise_temp</span><span class="o">=</span><span class="n">rx</span><span class="o">.</span><span class="n">rx_noise</span><span class="p">)</span>
+
+                <span class="n">snr_curve</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">snr</span><span class="p">)</span>
+
+            <span class="n">snr_curve</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">snr_curve</span><span class="p">)</span>
+            <span class="n">snrs</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="n">rxi</span><span class="p">]</span> <span class="o">=</span> <span class="n">snr_curve</span>
+    <span class="k">return</span> <span class="n">snrs</span></div>
+
+
+
+<div class="viewcode-block" id="get_track_snr"><a class="viewcode-back" href="../modules/simulate_tracking.html#simulate_tracking.get_track_snr">[docs]</a><span class="k">def</span> <span class="nf">get_track_snr</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">o</span><span class="p">,</span><span class="n">radar</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Takes a series of times, a space object and a radar system and calculates the SNR for that space object measured by that radar over the given times.</span>
+
+<span class="sd">    :param numpy.ndarray t: Times in seconds relative space object epoch over witch SNR should be evaluated.</span>
+<span class="sd">    :param SpaceObject o: Space object to be measured.</span>
+<span class="sd">    :param RadarSystem radar: Radar system that performs the measurement.</span>
+<span class="sd">    :return: List of lists of numpy.ndarray&#39;s corresponding to TX antenna index, RX antenna index and SNR-array in that order of list depth.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    
+    <span class="n">ecef</span><span class="o">=</span><span class="n">o</span><span class="o">.</span><span class="n">get_orbit</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+
+    <span class="n">tx_ecef</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">rx_ecef</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">tx</span> <span class="ow">in</span> <span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">:</span>
+        <span class="n">tx_ecef</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">tx</span><span class="o">.</span><span class="n">ecef</span> <span class="p">)</span>
+    <span class="k">for</span> <span class="n">rx</span> <span class="ow">in</span> <span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">:</span>
+        <span class="n">rx_ecef</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">rx</span><span class="o">.</span><span class="n">ecef</span> <span class="p">)</span>
+    
+    <span class="n">postx_v</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">posrx_v</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">rxp0</span> <span class="ow">in</span> <span class="n">rx_ecef</span><span class="p">:</span>
+        <span class="n">pos_vecs</span><span class="o">=</span><span class="p">(</span><span class="n">ecef</span><span class="o">.</span><span class="n">T</span><span class="o">-</span><span class="n">rxp0</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">posrx_v</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pos_vecs</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">txi</span><span class="p">,</span><span class="n">txp0</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">tx_ecef</span><span class="p">):</span>
+        <span class="n">pos_vecs</span><span class="o">=</span><span class="p">(</span><span class="n">ecef</span><span class="o">.</span><span class="n">T</span><span class="o">-</span><span class="n">txp0</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">postx_v</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pos_vecs</span><span class="p">)</span>
+
+
+    <span class="n">snrs</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">txi</span><span class="p">,</span><span class="n">tx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">):</span>
+        <span class="n">snrs</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">rxi</span><span class="p">,</span><span class="n">rx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">):</span>
+            <span class="n">snr_curve</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">I</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)):</span>
+
+                <span class="n">tx_dist</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">postx_v</span><span class="p">[</span><span class="n">txi</span><span class="p">][:,</span><span class="n">I</span><span class="p">])</span>
+                <span class="n">k0</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">ecef2local</span><span class="p">(</span>
+                    <span class="n">lat</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">lat</span><span class="p">,</span>
+                    <span class="n">lon</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span>
+                    <span class="n">alt</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">alt</span><span class="p">,</span>
+                    <span class="n">x</span> <span class="o">=</span> <span class="n">postx_v</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="mi">0</span><span class="p">,</span><span class="n">I</span><span class="p">],</span>
+                    <span class="n">y</span> <span class="o">=</span> <span class="n">postx_v</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="mi">1</span><span class="p">,</span><span class="n">I</span><span class="p">],</span>
+                    <span class="n">z</span> <span class="o">=</span> <span class="n">postx_v</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="mi">2</span><span class="p">,</span><span class="n">I</span><span class="p">],</span>
+                <span class="p">)</span>
+                <span class="n">tx</span><span class="o">.</span><span class="n">beam</span><span class="o">.</span><span class="n">point_k0</span><span class="p">(</span><span class="n">k0</span><span class="p">)</span>
+                <span class="n">gain_tx</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">beam</span><span class="o">.</span><span class="n">gain</span><span class="p">(</span><span class="n">k0</span><span class="p">)</span>
+                
+                <span class="n">rx_dist</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">posrx_v</span><span class="p">[</span><span class="n">rxi</span><span class="p">][:,</span><span class="n">I</span><span class="p">])</span>
+                <span class="c1"># point towards object</span>
+                <span class="n">k0</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">ecef2local</span><span class="p">(</span>
+                    <span class="n">lat</span> <span class="o">=</span> <span class="n">rx</span><span class="o">.</span><span class="n">lat</span><span class="p">,</span>
+                    <span class="n">lon</span> <span class="o">=</span> <span class="n">rx</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span>
+                    <span class="n">alt</span> <span class="o">=</span> <span class="n">rx</span><span class="o">.</span><span class="n">alt</span><span class="p">,</span>
+                    <span class="n">x</span> <span class="o">=</span> <span class="n">posrx_v</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="mi">0</span><span class="p">,</span><span class="n">I</span><span class="p">],</span>
+                    <span class="n">y</span> <span class="o">=</span> <span class="n">posrx_v</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="mi">1</span><span class="p">,</span><span class="n">I</span><span class="p">],</span>
+                    <span class="n">z</span> <span class="o">=</span> <span class="n">posrx_v</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="mi">2</span><span class="p">,</span><span class="n">I</span><span class="p">],</span>
+                <span class="p">)</span>
+                <span class="n">rx</span><span class="o">.</span><span class="n">beam</span><span class="o">.</span><span class="n">point_k0</span><span class="p">(</span><span class="n">k0</span><span class="p">)</span>
+                <span class="n">gain_rx</span> <span class="o">=</span> <span class="n">rx</span><span class="o">.</span><span class="n">beam</span><span class="o">.</span><span class="n">gain</span><span class="p">(</span><span class="n">k0</span><span class="p">)</span>
+
+                <span class="n">snr</span><span class="o">=</span><span class="n">debris</span><span class="o">.</span><span class="n">hard_target_enr</span><span class="p">(</span><span class="n">gain_tx</span><span class="p">,</span>
+                                        <span class="n">gain_rx</span><span class="p">,</span>
+                                        <span class="n">rx</span><span class="o">.</span><span class="n">wavelength</span><span class="p">,</span>
+                                        <span class="n">tx</span><span class="o">.</span><span class="n">tx_power</span><span class="p">,</span>
+                                        <span class="n">tx_dist</span><span class="p">,</span>
+                                        <span class="n">rx_dist</span><span class="p">,</span>
+                                        <span class="n">diameter_m</span><span class="o">=</span><span class="n">o</span><span class="o">.</span><span class="n">d</span><span class="p">,</span>
+                                        <span class="n">bandwidth</span><span class="o">=</span><span class="n">tx</span><span class="o">.</span><span class="n">coh_int_bandwidth</span><span class="p">,</span>
+                                        <span class="n">rx_noise_temp</span><span class="o">=</span><span class="n">rx</span><span class="o">.</span><span class="n">rx_noise</span><span class="p">)</span>
+
+                <span class="n">snr_curve</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">snr</span><span class="p">)</span>
+
+            <span class="n">snr_curve</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">snr_curve</span><span class="p">)</span>
+            <span class="n">snrs</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="n">rxi</span><span class="p">]</span> <span class="o">=</span> <span class="n">snr_curve</span>
+    <span class="k">return</span> <span class="n">snrs</span></div>
+
+
+<div class="viewcode-block" id="plot_snr"><a class="viewcode-back" href="../modules/simulate_tracking.html#simulate_tracking.plot_snr">[docs]</a><span class="k">def</span> <span class="nf">plot_snr</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">all_snrs</span><span class="p">,</span><span class="n">radar</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Plots the SNR&#39;s structure (list of lists of numpy.ndarray&#39;s) returned by :func:`simulate_tracking.get_track_snr` and :func:`simulate_tracking.get_scan_snr`.</span>
+
+<span class="sd">    :param numpy.ndarray t: Times corresponding to the evaluated SNR&#39;s.</span>
+<span class="sd">    :param all_snrs: List structure returned by :func:`simulate_tracking.get_track_snr` and :func:`simulate_tracking.get_scan_snr`.</span>
+<span class="sd">    :param RadarSystem radar: Radar system that measured the SNR&#39;s.</span>
+<span class="sd">    :param ax: matplotlib axis to plot the SNR&#39;s on. If not given, create new figure and axis.</span>
+<span class="sd">    :return: The matplotlib axis object</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    
+    <span class="n">tv</span> <span class="o">=</span> <span class="n">t</span><span class="o">/</span><span class="mf">3600.0</span>
+    <span class="k">for</span> <span class="n">txi</span><span class="p">,</span><span class="n">snrs</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">all_snrs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">snrs</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="n">tight_layout</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">rxi</span><span class="p">,</span><span class="n">snr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">snrs</span><span class="p">):</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">tv</span><span class="p">,</span> <span class="mf">10.0</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">snr</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;SNR: </span><span class="si">{}</span><span class="s1"> to </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">,</span><span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">[</span><span class="n">rxi</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
+            <span class="n">ylabel</span><span class="o">=</span><span class="s1">&#39;SNR [dB]&#39;</span><span class="p">,</span>
+            <span class="n">xlabel</span><span class="o">=</span><span class="s1">&#39;time [h]&#39;</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">ax</span></div>
+
+
+<div class="viewcode-block" id="find_pass_interval"><a class="viewcode-back" href="../modules/simulate_tracking.html#simulate_tracking.find_pass_interval">[docs]</a><span class="k">def</span> <span class="nf">find_pass_interval</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">radar</span><span class="p">,</span> <span class="n">logger</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Find a pass inside the FOV of a radar given a series of times for a space object.</span>
+<span class="sd">    </span>
+<span class="sd">    :param numpy.ndarray t: Linear vector of times to use as a base to find pass in seconds relative space object epoch.</span>
+<span class="sd">    :param SpaceObject o: Space object to find pass interval for.</span>
+<span class="sd">    :param RadarSystem radar: Radar system that defines the FOV.</span>
+<span class="sd">    :return: Tuple of (passes, passes_id, idx_v, postx_v, posrx_v), description below.</span>
+
+<span class="sd">    **Return data:**</span>
+
+<span class="sd">        * passes: Three layers of lists where first layer is a list corresponding to every RX antenna of the radar system. Second layer is the a entry in the list for every pass. Last layer of lists is a list of two elements where the first is the time in seconds when object enters the FOV and second is the time in seconds when the object leaves the FOV.</span>
+<span class="sd">        * passes_id: Same structure as the passes data but with the time indices&#39;s instead of the actual times.</span>
+<span class="sd">        * idx_v: List of arrays of indices&#39;s of input time vector where the space object is inside the TX FOV, length of list is equal to the number of TX stations.</span>
+<span class="sd">        * postx_v: list of arrays containing the position of the space object relative the TX stations, length of list is equal to number of TX stations and the array is the length of the input time vector.</span>
+<span class="sd">        * posrx_v: list of arrays containing the position of the space object relative the RX stations, length of list is equal to number of RX stations and the array is the length of the input time vector.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">ecef</span> <span class="o">=</span> <span class="n">o</span><span class="o">.</span><span class="n">get_orbit</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+    
+    <span class="n">dt</span> <span class="o">=</span> <span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">-</span> <span class="n">n</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">t</span><span class="p">))</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+
+    <span class="n">zenith_v</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">tx_ecef</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">rx_ecef</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">tx</span> <span class="ow">in</span> <span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">:</span>
+        <span class="n">tx_ecef</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">tx</span><span class="o">.</span><span class="n">ecef</span> <span class="p">)</span>
+        <span class="n">zenith_v</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">coord</span><span class="o">.</span><span class="n">azel_ecef</span><span class="p">(</span><span class="n">tx</span><span class="o">.</span><span class="n">lat</span><span class="p">,</span> <span class="n">tx</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">90.0</span><span class="p">)</span> <span class="p">)</span>
+    <span class="k">for</span> <span class="n">rx</span> <span class="ow">in</span> <span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">:</span>
+        <span class="n">rx_ecef</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">rx</span><span class="o">.</span><span class="n">ecef</span> <span class="p">)</span>
+    
+
+    <span class="n">postx_v</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">posrx_v</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">idx_v</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">rxp0</span> <span class="ow">in</span> <span class="n">rx_ecef</span><span class="p">:</span>
+        <span class="n">pos_vecs</span><span class="o">=</span><span class="p">(</span><span class="n">ecef</span><span class="o">.</span><span class="n">T</span><span class="o">-</span><span class="n">rxp0</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">posrx_v</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pos_vecs</span><span class="p">)</span>
+
+    <span class="c1"># for each transmitter</span>
+    <span class="k">for</span> <span class="n">txi</span><span class="p">,</span><span class="n">txp0</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">tx_ecef</span><span class="p">):</span>
+        <span class="n">zenith</span> <span class="o">=</span> <span class="n">zenith_v</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span>
+        <span class="n">pos_vecs</span> <span class="o">=</span> <span class="p">(</span><span class="n">ecef</span><span class="o">.</span><span class="n">T</span><span class="o">-</span><span class="n">txp0</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">pos_vecs0</span> <span class="o">=</span> <span class="n">pos_vecs</span><span class="o">/</span><span class="n">n</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">pos_vecs</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span><span class="o">**</span><span class="mf">2.0</span><span class="o">+</span><span class="n">pos_vecs</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span><span class="o">**</span><span class="mf">2.0</span><span class="o">+</span><span class="n">pos_vecs</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span><span class="o">**</span><span class="mf">2.0</span><span class="p">)</span>
+        
+        <span class="c1"># elevation angle for transmitter</span>
+        <span class="n">z_angles</span> <span class="o">=</span> <span class="mf">180.0</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="n">pos_vecs0</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span><span class="o">*</span><span class="n">zenith</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">pos_vecs0</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span><span class="o">*</span><span class="n">zenith</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">pos_vecs0</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span><span class="o">*</span><span class="n">zenith</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span><span class="o">/</span><span class="n">n</span><span class="o">.</span><span class="n">pi</span>
+
+        <span class="c1"># there the elevation angle is larger than elevation cutoff</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">z_angles</span> <span class="o">&lt;</span> <span class="p">(</span><span class="mf">90.0</span> <span class="o">-</span> <span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span><span class="o">.</span><span class="n">el_thresh</span><span class="p">)</span> <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">postx_v</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pos_vecs</span><span class="p">)</span>
+        <span class="n">idx_v</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">logger</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;txi</span><span class="si">{}</span><span class="s2">: idx </span><span class="si">{}</span><span class="s2"> &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">txi</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">)))</span>
+
+        <span class="c1">#remove later</span>
+        <span class="c1">#plt.plot(z_angles)</span>
+        <span class="c1">#plt.show()</span>
+
+
+    <span class="c1">#find passes</span>
+    <span class="c1">#format</span>
+    <span class="c1"># [tx num][pass num][0 = above, 1 = below]</span>
+    <span class="n">passes</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">)</span>
+    <span class="n">passes_id</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">txi</span><span class="p">,</span><span class="n">idx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">idx_v</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">Tv</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+            <span class="n">passes</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span> <span class="o">=</span> <span class="p">[[</span><span class="n">Tv</span><span class="p">[</span><span class="mi">0</span><span class="p">]]]</span>
+            <span class="n">passes_id</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">]]</span>
+            <span class="k">for</span> <span class="n">ti</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">Tv</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">Tv</span><span class="p">[</span><span class="n">ti</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">Tv</span><span class="p">[</span><span class="n">ti</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="o">*</span><span class="n">dt</span><span class="p">:</span>
+                    <span class="n">passes</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Tv</span><span class="p">[</span><span class="n">ti</span><span class="p">])</span>
+                    <span class="n">passes</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">Tv</span><span class="p">[</span><span class="n">ti</span><span class="o">+</span><span class="mi">1</span><span class="p">]])</span>
+
+                    <span class="n">passes_id</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ti</span><span class="p">)</span>
+                    <span class="n">passes_id</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">ti</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">passes</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Tv</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">passes_id</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">Tv</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">passes</span><span class="p">,</span> <span class="n">passes_id</span><span class="p">,</span> <span class="n">idx_v</span><span class="p">,</span> <span class="n">postx_v</span><span class="p">,</span> <span class="n">posrx_v</span></div>
+
+
+<div class="viewcode-block" id="get_passes"><a class="viewcode-back" href="../modules/simulate_tracking.html#simulate_tracking.get_passes">[docs]</a><span class="k">def</span> <span class="nf">get_passes</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">radar</span><span class="p">,</span> <span class="n">t0</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">max_dpos</span><span class="o">=</span><span class="mf">1e3</span><span class="p">,</span> <span class="n">logger</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">plot</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">t_samp</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Follow object and determine possible maintenance track window. I.e. get all passes of the object inside the radar system FOV.</span>
+<span class="sd">    </span>
+<span class="sd">    :param SpaceObject o: Space object to find passes for.</span>
+<span class="sd">    :param RadarSystem radar: Radar system that defines the FOV.</span>
+<span class="sd">    :param float t0: Start time for passes search in seconds relative space object epoch.</span>
+<span class="sd">    :param float t1: Stop time for passes search in seconds relative space object epoch.</span>
+<span class="sd">    :param float max_dpos: Maximum separation in km between orbital evaluation points.</span>
+<span class="sd">    :param Logger logger: Logger object for logging the execution of the function.</span>
+<span class="sd">    :param float t_samp: If not None, overrides the &quot;max_dpos&quot; variable and fixes a time-sampling.</span>
+<span class="sd">    :return: Dictionary containing information about all passes of the space object inside the radar system FOV.</span>
+<span class="sd">    :rtype: dict</span>
+
+<span class="sd">    **Output dictionary:**</span>
+
+<span class="sd">      * t: Three layers of lists where first layer is a list corresponding to every RX antenna of the radar system. Second layer is the a entry in the list for every pass. Last layer of lists is a list of two elements where the first is the time in seconds when object enters the FOV and second is the time in seconds when the object leaves the FOV. I.e. :code:`pass_start_time = passes[&quot;t&quot;][tx_index][pass_index][0]` and :code:`pass_end_time = passes[&quot;t&quot;][tx_index][pass_index][1]`.</span>
+<span class="sd">      * snr: This structure has the same format as the &quot;t&quot; item but with an extra layer of lists of receivers before the bottom. Then instead of the bottom layer of lists being start and stop times it records the peak SNR at the first item and the time of that peak SNR in the second item. I.e. :code:`pass_peak_snr = passes[&quot;snr&quot;][tx_index][pass_index][rx_index][0]` and :code:`pass_peak_snr_time = passes[&quot;snr&quot;][tx_index][pass_index][rx_index][1]`.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">pass_struct</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;t&quot;</span><span class="p">:[],</span><span class="s2">&quot;snr&quot;</span><span class="p">:[]}</span>
+
+    <span class="k">if</span> <span class="n">t_samp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">num_t</span> <span class="o">=</span> <span class="n">find_linspace_num</span><span class="p">(</span><span class="n">t0</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">o</span><span class="o">.</span><span class="n">a</span><span class="o">*</span><span class="mf">1e3</span><span class="p">,</span> <span class="n">o</span><span class="o">.</span><span class="n">e</span><span class="p">,</span> <span class="n">max_dpos</span><span class="o">=</span><span class="n">max_dpos</span><span class="p">)</span>
+        <span class="n">t</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">t0</span><span class="p">,</span><span class="n">t1</span><span class="p">,</span><span class="n">num</span><span class="o">=</span><span class="n">num_t</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">t</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">t0</span><span class="p">,</span><span class="n">t1</span><span class="p">,</span><span class="n">t_samp</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">num_t</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">logger</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;n_points </span><span class="si">%d</span><span class="s2"> </span><span class="si">%1.2f</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">num_t</span><span class="p">,</span><span class="n">max_dpos</span><span class="p">))</span>
+
+    <span class="c1"># time vector</span>
+    
+
+
+    <span class="k">if</span> <span class="n">logger</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">date0_y</span><span class="p">,</span><span class="n">date0_m</span><span class="p">,</span><span class="n">date0_d</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">jd_to_date</span><span class="p">(</span><span class="n">dpt</span><span class="o">.</span><span class="n">mjd_to_jd</span><span class="p">(</span><span class="n">o</span><span class="o">.</span><span class="n">mjd0</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;--&gt; Getting </span><span class="si">{}</span><span class="s1"> orbit location between: </span><span class="si">{:.5f}</span><span class="s1"> h and </span><span class="si">{:.5f}</span><span class="s1"> h relative </span><span class="si">{}</span><span class="s1">-</span><span class="si">{}</span><span class="s1">-</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">num_t</span><span class="p">,</span> <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">3600</span><span class="p">),</span> <span class="n">t</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">3600</span><span class="p">),</span> <span class="n">date0_y</span><span class="p">,</span> <span class="n">date0_m</span><span class="p">,</span> <span class="n">date0_d</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        
+    <span class="n">passes</span><span class="p">,</span> <span class="n">passes_id</span><span class="p">,</span> <span class="n">idx_v</span><span class="p">,</span> <span class="n">postx_v</span><span class="p">,</span> <span class="n">posrx_v</span> <span class="o">=</span> <span class="n">find_pass_interval</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">radar</span><span class="p">,</span> <span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">logger</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;passes:</span><span class="se">\n</span><span class="s2"> </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">passes</span><span class="p">))</span>
+
+
+    <span class="n">tx_dets</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">idx_v</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">tx_dets</span> <span class="o">+=</span> <span class="mi">1</span>
+    
+    <span class="k">if</span> <span class="n">tx_dets</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">logger</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;no passes visible from any RX station&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pass_struct</span>
+
+    <span class="k">if</span> <span class="n">logger</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;--&gt; List of passes constructed&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">passes</span><span class="p">))</span>
+
+    <span class="n">snrs</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">txi</span><span class="p">,</span><span class="n">idx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">idx_v</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">snrs</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">passes</span><span class="p">[</span><span class="n">txi</span><span class="p">])</span>
+            <span class="n">tx</span> <span class="o">=</span> <span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">pid</span><span class="p">,</span><span class="n">pass_ids</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">passes_id</span><span class="p">[</span><span class="n">txi</span><span class="p">]):</span>
+                <span class="n">idx_p</span> <span class="o">=</span> <span class="n">idx</span><span class="p">[</span><span class="n">pass_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">pass_ids</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+
+
+                <span class="k">if</span> <span class="n">logger</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">idx_p</span><span class="p">))</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pass_ids</span><span class="p">))</span>
+
+                <span class="n">snrs</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="n">pid</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">)</span>
+                <span class="n">rx_dets</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">for</span> <span class="n">rxi</span><span class="p">,</span><span class="n">rx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">):</span>
+                    <span class="n">snr_curve</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">for</span> <span class="n">I</span> <span class="ow">in</span> <span class="n">idx_p</span><span class="p">:</span>
+                        <span class="n">tx_dist</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">postx_v</span><span class="p">[</span><span class="n">txi</span><span class="p">][:,</span><span class="n">I</span><span class="p">])</span>
+                        <span class="n">k0</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">ecef2local</span><span class="p">(</span>
+                            <span class="n">lat</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">lat</span><span class="p">,</span>
+                            <span class="n">lon</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span>
+                            <span class="n">alt</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">alt</span><span class="p">,</span>
+                            <span class="n">x</span> <span class="o">=</span> <span class="n">postx_v</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="mi">0</span><span class="p">,</span><span class="n">I</span><span class="p">],</span>
+                            <span class="n">y</span> <span class="o">=</span> <span class="n">postx_v</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="mi">1</span><span class="p">,</span><span class="n">I</span><span class="p">],</span>
+                            <span class="n">z</span> <span class="o">=</span> <span class="n">postx_v</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="mi">2</span><span class="p">,</span><span class="n">I</span><span class="p">],</span>
+                        <span class="p">)</span>
+                        <span class="n">tx</span><span class="o">.</span><span class="n">beam</span><span class="o">.</span><span class="n">point_k0</span><span class="p">(</span><span class="n">k0</span><span class="p">)</span>
+                        <span class="n">gain_tx</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">beam</span><span class="o">.</span><span class="n">gain</span><span class="p">(</span><span class="n">k0</span><span class="p">)</span>
+                        
+                        <span class="n">rx_dist</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">posrx_v</span><span class="p">[</span><span class="n">rxi</span><span class="p">][:,</span><span class="n">I</span><span class="p">])</span>
+                        <span class="c1"># point towards object</span>
+                        <span class="n">k0</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">ecef2local</span><span class="p">(</span>
+                            <span class="n">lat</span> <span class="o">=</span> <span class="n">rx</span><span class="o">.</span><span class="n">lat</span><span class="p">,</span>
+                            <span class="n">lon</span> <span class="o">=</span> <span class="n">rx</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span>
+                            <span class="n">alt</span> <span class="o">=</span> <span class="n">rx</span><span class="o">.</span><span class="n">alt</span><span class="p">,</span>
+                            <span class="n">x</span> <span class="o">=</span> <span class="n">posrx_v</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="mi">0</span><span class="p">,</span><span class="n">I</span><span class="p">],</span>
+                            <span class="n">y</span> <span class="o">=</span> <span class="n">posrx_v</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="mi">1</span><span class="p">,</span><span class="n">I</span><span class="p">],</span>
+                            <span class="n">z</span> <span class="o">=</span> <span class="n">posrx_v</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="mi">2</span><span class="p">,</span><span class="n">I</span><span class="p">],</span>
+                        <span class="p">)</span>
+                        <span class="n">rx</span><span class="o">.</span><span class="n">beam</span><span class="o">.</span><span class="n">point_k0</span><span class="p">(</span><span class="n">k0</span><span class="p">)</span>
+                        <span class="n">gain_rx</span> <span class="o">=</span> <span class="n">rx</span><span class="o">.</span><span class="n">beam</span><span class="o">.</span><span class="n">gain</span><span class="p">(</span><span class="n">k0</span><span class="p">)</span>
+                        
+                        <span class="n">snr</span><span class="o">=</span><span class="n">debris</span><span class="o">.</span><span class="n">hard_target_enr</span><span class="p">(</span><span class="n">gain_tx</span><span class="p">,</span>
+                                                <span class="n">gain_rx</span><span class="p">,</span>
+                                                <span class="n">rx</span><span class="o">.</span><span class="n">wavelength</span><span class="p">,</span>
+                                                <span class="n">tx</span><span class="o">.</span><span class="n">tx_power</span><span class="p">,</span>
+                                                <span class="n">tx_dist</span><span class="p">,</span>
+                                                <span class="n">rx_dist</span><span class="p">,</span>
+                                                <span class="n">diameter_m</span><span class="o">=</span><span class="n">o</span><span class="o">.</span><span class="n">d</span><span class="p">,</span>
+                                                <span class="n">bandwidth</span><span class="o">=</span><span class="n">tx</span><span class="o">.</span><span class="n">coh_int_bandwidth</span><span class="p">,</span>
+                                                <span class="n">rx_noise_temp</span><span class="o">=</span><span class="n">rx</span><span class="o">.</span><span class="n">rx_noise</span><span class="p">)</span>
+                        
+                        <span class="k">if</span> <span class="n">logger</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">--&gt; TX-d: </span><span class="si">%.2f</span><span class="s1"> km | TX-g: </span><span class="si">%.2f</span><span class="s1"> dB&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">tx_dist</span><span class="o">*</span><span class="mf">1e-3</span><span class="p">,</span><span class="mf">10.0</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">gain_tx</span><span class="p">)))</span>
+                            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;--&gt; RX-d: </span><span class="si">%.2f</span><span class="s1"> km | RX-g: </span><span class="si">%.2f</span><span class="s1"> dB&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">rx_dist</span><span class="o">*</span><span class="mf">1e-3</span><span class="p">,</span><span class="mf">10.0</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">gain_rx</span><span class="p">)))</span>
+                            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;--&gt; SNR: </span><span class="si">%.2f</span><span class="s1"> dB &#39;</span><span class="o">%</span><span class="p">(</span><span class="mf">10.0</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">snr</span><span class="p">)</span> <span class="p">))</span>
+                        <span class="n">snr_curve</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">snr</span><span class="p">)</span>
+
+                    <span class="n">snr_curve</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">snr_curve</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
+                        <span class="n">snr_curve_dB</span> <span class="o">=</span> <span class="mf">10.0</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">snr_curve</span><span class="p">)</span>
+                        <span class="n">snr_curve_dB</span><span class="p">[</span><span class="n">snr_curve_dB</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">idx_p</span><span class="p">],</span><span class="n">snr_curve_dB</span><span class="p">)</span>
+                        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">idx_p</span><span class="p">[</span><span class="n">n</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">snr_curve</span><span class="p">)]],</span><span class="n">n</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">snr_curve_dB</span><span class="p">),</span><span class="s1">&#39;or&#39;</span><span class="p">)</span>
+                        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;tx </span><span class="si">%i</span><span class="s2">, pass </span><span class="si">%i</span><span class="s2">, rx </span><span class="si">%i</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">txi</span><span class="p">,</span><span class="n">pid</span><span class="p">,</span><span class="n">rxi</span><span class="p">))</span>
+                        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;SNR max: </span><span class="si">%.2f</span><span class="s1"> @ </span><span class="si">%.2f</span><span class="s1"> h&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">snr_curve_dB</span><span class="p">),</span><span class="n">t</span><span class="p">[</span><span class="n">idx_p</span><span class="p">[</span><span class="n">n</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">snr_curve</span><span class="p">)]]</span><span class="o">/</span><span class="mf">3600.0</span><span class="p">))</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">snr_curve</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                        <span class="n">snr_max</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">snr_curve</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">snr_max</span><span class="o">=</span><span class="mf">0.0</span>
+                    <span class="k">if</span> <span class="n">snr_max</span> <span class="o">&gt;=</span> <span class="n">tx</span><span class="o">.</span><span class="n">enr_thresh</span><span class="p">:</span>
+                        <span class="n">rx_dets</span><span class="o">+=</span><span class="mi">1</span>
+                        <span class="n">snrs</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="n">pid</span><span class="p">][</span><span class="n">rxi</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">snr_max</span><span class="p">,</span><span class="n">t</span><span class="p">[</span><span class="n">idx_p</span><span class="p">[</span><span class="n">n</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">snr_curve</span><span class="p">)]]]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">snrs</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="n">pid</span><span class="p">][</span><span class="n">rxi</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+
+                <span class="k">if</span> <span class="n">rx_dets</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">snrs</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="n">pid</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+                <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
+                    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">))</span>
+                    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3d&#39;</span><span class="p">)</span>
+                    <span class="n">plothelp</span><span class="o">.</span><span class="n">draw_earth_grid</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+                    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ecef</span><span class="p">[</span><span class="mi">0</span><span class="p">,:],</span><span class="n">ecef</span><span class="p">[</span><span class="mi">1</span><span class="p">,:],</span><span class="n">ecef</span><span class="p">[</span><span class="mi">2</span><span class="p">,:],</span><span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">I</span> <span class="ow">in</span> <span class="n">idx_p</span><span class="p">:</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">postx_v</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="mi">0</span><span class="p">,</span><span class="n">I</span><span class="p">]],[</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">postx_v</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="mi">1</span><span class="p">,</span><span class="n">I</span><span class="p">]],[</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="n">postx_v</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="mi">2</span><span class="p">,</span><span class="n">I</span><span class="p">]],</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">rxi</span><span class="p">,</span><span class="n">rx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">):</span>
+                            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">rx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">rx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">posrx_v</span><span class="p">[</span><span class="n">rxi</span><span class="p">][</span><span class="mi">0</span><span class="p">,</span><span class="n">I</span><span class="p">]],[</span><span class="n">rx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">rx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">posrx_v</span><span class="p">[</span><span class="n">rxi</span><span class="p">][</span><span class="mi">1</span><span class="p">,</span><span class="n">I</span><span class="p">]],[</span><span class="n">rx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">rx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="n">posrx_v</span><span class="p">[</span><span class="n">rxi</span><span class="p">][</span><span class="mi">2</span><span class="p">,</span><span class="n">I</span><span class="p">]],</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">)</span>
+                    <span class="n">delta</span> <span class="o">=</span> <span class="mf">1000e3</span>
+                    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">([</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">delta</span><span class="p">,</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">delta</span><span class="p">])</span>
+                    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">([</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">delta</span><span class="p">,</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">delta</span><span class="p">])</span>
+                    <span class="n">ax</span><span class="o">.</span><span class="n">set_zlim</span><span class="p">([</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">delta</span><span class="p">,</span><span class="n">tx</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">delta</span><span class="p">])</span>
+                    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+            <span class="n">passes</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span> <span class="n">x</span> <span class="k">for</span> <span class="n">ix</span><span class="p">,</span><span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">passes</span><span class="p">[</span><span class="n">txi</span><span class="p">])</span> <span class="k">if</span> <span class="n">snrs</span><span class="p">[</span><span class="n">txi</span><span class="p">][</span><span class="n">ix</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">]</span> <span class="c1">#remove tracks that were not above detection tresholds at any pair</span>
+            <span class="n">snrs</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span>   <span class="o">=</span> <span class="p">[</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">snrs</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">]</span> <span class="c1">#remove tracks that were not above detection tresholds at any pair</span>
+    
+    <span class="k">for</span> <span class="n">txi</span><span class="p">,</span><span class="n">tx_snr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">snrs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">tx_snr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">snrs</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">txi</span><span class="p">,</span><span class="n">tx_pass</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">passes</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">tx_pass</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">passes</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">pass_struct</span><span class="p">[</span><span class="s1">&#39;snr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">snrs</span>
+    <span class="n">pass_struct</span><span class="p">[</span><span class="s1">&#39;t&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">passes</span>
+
+    <span class="k">return</span> <span class="n">pass_struct</span></div>
+
+<div class="viewcode-block" id="get_angles"><a class="viewcode-back" href="../modules/simulate_tracking.html#simulate_tracking.get_angles">[docs]</a><span class="k">def</span> <span class="nf">get_angles</span><span class="p">(</span><span class="n">passes</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">radar</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Takes the passes structure that is output from :func:`simulate_tracking.get_passes`, the space object and the radar system and calculates the zenith angle for all passes.</span>
+
+<span class="sd">    :param dict passes: Output from :func:`simulate_tracking.get_passes` that contains information about passes of an space object.</span>
+<span class="sd">    :param SpaceObject o: Space object that made the passes.</span>
+<span class="sd">    :param RadarSystem radar: Radar system that defines the FOV.</span>
+<span class="sd">    :param float dt: Time step for angle evaluation.</span>
+<span class="sd">    :return: Tuple of list of lists of times and list of lists of angles corresponding to each pass.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">zenith_v</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">tx_ecef</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">rx_ecef</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">tx</span> <span class="ow">in</span> <span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">:</span>
+        <span class="n">tx_ecef</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">tx</span><span class="o">.</span><span class="n">ecef</span> <span class="p">)</span>
+        <span class="n">zenith_v</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">coord</span><span class="o">.</span><span class="n">azel_ecef</span><span class="p">(</span><span class="n">tx</span><span class="o">.</span><span class="n">lat</span><span class="p">,</span> <span class="n">tx</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">90.0</span><span class="p">)</span> <span class="p">)</span>
+
+    <span class="n">angs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">ts</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">txi</span><span class="p">,</span><span class="n">txp</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">passes</span><span class="p">[</span><span class="s1">&#39;t&#39;</span><span class="p">]):</span>
+        <span class="n">angs</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
+        <span class="n">ts</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
+        <span class="n">zenith</span> <span class="o">=</span> <span class="n">zenith_v</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span>
+        <span class="n">txp0</span> <span class="o">=</span> <span class="n">tx_ecef</span><span class="p">[</span><span class="n">txi</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">ps</span> <span class="ow">in</span> <span class="n">txp</span><span class="p">:</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ps</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">ps</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">dt</span><span class="p">)</span>
+            <span class="n">ecef</span><span class="o">=</span><span class="n">o</span><span class="o">.</span><span class="n">get_orbit</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+
+            <span class="n">pos_vecs</span><span class="o">=</span><span class="p">(</span><span class="n">ecef</span><span class="o">.</span><span class="n">T</span><span class="o">-</span><span class="n">txp0</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+            <span class="n">pos_vecs0</span><span class="o">=</span><span class="n">pos_vecs</span><span class="o">/</span><span class="n">n</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">pos_vecs</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span><span class="o">**</span><span class="mf">2.0</span><span class="o">+</span><span class="n">pos_vecs</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span><span class="o">**</span><span class="mf">2.0</span><span class="o">+</span><span class="n">pos_vecs</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span><span class="o">**</span><span class="mf">2.0</span><span class="p">)</span>
+            <span class="n">z_angles</span><span class="o">=</span><span class="mf">180.0</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="n">pos_vecs0</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span><span class="o">*</span><span class="n">zenith</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">pos_vecs0</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span><span class="o">*</span><span class="n">zenith</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">pos_vecs0</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span><span class="o">*</span><span class="n">zenith</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span><span class="o">/</span><span class="n">n</span><span class="o">.</span><span class="n">pi</span>
+
+            <span class="n">angs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">z_angles</span><span class="p">)</span>
+            <span class="n">ts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ts</span><span class="p">,</span> <span class="n">angs</span></div>
+
+<div class="viewcode-block" id="plot_angles"><a class="viewcode-back" href="../modules/simulate_tracking.html#simulate_tracking.plot_angles">[docs]</a><span class="k">def</span> <span class="nf">plot_angles</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">angs</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Plot the angles data returned by the :func:`simulate_tracking.get_angles` function.</span>
+
+<span class="sd">    :param list ts: List of times for each pass that the angles were evaluated over.</span>
+<span class="sd">    :param list angs: List of angles for each pass.</span>
+<span class="sd">    :param ax: matplotlib axis to plot the SNR&#39;s on. If not given, create new figure and axis.</span>
+<span class="sd">    :return: The matplotlib axis object</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="n">tight_layout</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">txc</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">txt</span><span class="p">,</span><span class="n">txa</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span><span class="n">angs</span><span class="p">):</span>
+        <span class="n">psc</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">pst</span><span class="p">,</span><span class="n">psa</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">txt</span><span class="p">,</span><span class="n">txa</span><span class="p">):</span>
+            <span class="n">tv</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pst</span><span class="p">)</span><span class="o">/</span><span class="mf">60.0</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">tv</span> <span class="o">-</span> <span class="n">tv</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">psa</span><span class="p">),</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;TX</span><span class="si">{}</span><span class="s1"> - pass </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">txc</span><span class="p">,</span><span class="n">psc</span><span class="p">))</span>
+            <span class="n">psc</span><span class="o">+=</span><span class="mi">1</span>
+        <span class="n">txc</span><span class="o">+=</span><span class="mi">1</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set</span><span class="p">(</span> \
+        <span class="n">title</span><span class="o">=</span><span class="s1">&#39;passes Angles&#39;</span><span class="p">,</span> \
+        <span class="n">ylabel</span><span class="o">=</span><span class="s1">&#39;Zenith angle [deg]&#39;</span><span class="p">,</span> \
+        <span class="n">xlabel</span><span class="o">=</span><span class="s1">&#39;Time since entering FOV [min]&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">ax</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">radar_library</span> <span class="k">as</span> <span class="nn">rl</span>
+    <span class="kn">from</span> <span class="nn">propagator_sgp4</span> <span class="k">import</span> <span class="n">PropagatorSGP4</span>
+    
+    <span class="n">radar</span><span class="o">=</span><span class="n">rl</span><span class="o">.</span><span class="n">eiscat_3d</span><span class="p">(</span><span class="n">beam</span><span class="o">=</span><span class="s1">&#39;gauss&#39;</span><span class="p">)</span>
+
+    <span class="n">o</span><span class="o">=</span><span class="n">so</span><span class="o">.</span><span class="n">SpaceObject</span><span class="p">(</span>
+        <span class="n">a</span><span class="o">=</span><span class="mi">7000</span><span class="p">,</span>
+        <span class="n">e</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">i</span><span class="o">=</span><span class="mi">72</span><span class="p">,</span>
+        <span class="n">raan</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">aop</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">mu0</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">C_D</span><span class="o">=</span><span class="mf">2.3</span><span class="p">,</span>
+        <span class="n">A</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">m</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">d</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+        <span class="n">propagator</span> <span class="o">=</span> <span class="n">PropagatorSGP4</span><span class="p">,</span>
+        <span class="n">propagator_options</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;polar_motion&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">)</span>
+    
+    <span class="n">_t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">passes</span> <span class="o">=</span> <span class="n">get_passes</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">radar</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">18.</span><span class="o">*</span><span class="mf">3600.</span><span class="p">,</span> <span class="n">max_dpos</span><span class="o">=</span><span class="mf">1e3</span><span class="p">)</span>
+    <span class="n">_t1</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;wall clock time </span><span class="si">%1.2f</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">_t1</span><span class="o">-</span><span class="n">_t0</span><span class="p">))</span>
+
+    <span class="n">print_passes</span><span class="p">(</span><span class="n">passes</span><span class="p">)</span>
+
+    <span class="n">p_id</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="n">t0</span><span class="p">,</span> <span class="n">t1</span> <span class="o">=</span> <span class="n">passes</span><span class="p">[</span><span class="s1">&#39;t&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">p_id</span><span class="p">]</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">t0</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+
+    <span class="n">scan_snr</span> <span class="o">=</span> <span class="n">get_scan_snr</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">radar</span><span class="p">)</span>
+    <span class="n">track_snr</span> <span class="o">=</span> <span class="n">get_track_snr</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">radar</span><span class="p">)</span>
+
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">))</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">211</span><span class="p">)</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_snr</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">track_snr</span><span class="p">,</span> <span class="n">radar</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;SNR when tracking&#39;</span><span class="p">)</span>
+
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">212</span><span class="p">)</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_snr</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">scan_snr</span><span class="p">,</span> <span class="n">radar</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;SNR when scanning&#39;</span><span class="p">)</span>
+
+    <span class="n">ts</span><span class="p">,</span> <span class="n">angs</span> <span class="o">=</span> <span class="n">get_angles</span><span class="p">(</span><span class="n">passes</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">radar</span><span class="p">)</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_angles</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">angs</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/doc.html">Documentation</a></li>
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

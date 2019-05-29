@@ -1,0 +1,256 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>ccsds_write &#8212; SORTS++ 2.8.0 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="coord" href="coord.html" />
+    <link rel="prev" title="debris" href="debris.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="coord.html" title="coord"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="debris.html" title="debris"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">SORTS++ 2.8.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" accesskey="U">Documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-ccsds_write">
+<span id="ccsds-write"></span><h1>ccsds_write<a class="headerlink" href="#module-ccsds_write" title="Permalink to this headline">¶</a></h1>
+<p>Simple CCSDS TDM file writer.</p>
+<p>EISCAT UHF antenna coordinates:
+05 SENTER1              7725445.727  664387.767   71.354+14.2 (pedestal foot alt + antenna height)</p>
+<p>WGS84: 69.58649229 N 19.22592538 E, 71.354+14.2 m (pedestal foot alt + antenna height)
+distance = d - 20.0 + 5.0 m [- subreflector round trip + elevation arm length] +/- 4 m</p>
+<p><a class="reference external" href="https://public.ccsds.org/Pubs/503x0b1c1.pdf">https://public.ccsds.org/Pubs/503x0b1c1.pdf</a></p>
+<dl class="function">
+<dt id="ccsds_write.date2unix">
+<code class="descclassname">ccsds_write.</code><code class="descname">date2unix</code><span class="sig-paren">(</span><em>year</em>, <em>month</em>, <em>day</em>, <em>hour</em>, <em>minute</em>, <em>second</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ccsds_write.html#date2unix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ccsds_write.date2unix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert date to unix time in seconds</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>year</strong> (<em>int</em>) – Year as integer. Years preceding 1 A.D. should be 0 or negative. The year before 1 A.D. is 0, 10 B.C. is year -9.</li>
+<li><strong>month</strong> (<em>int</em>) – Month as integer, Jan = 1, Feb. = 2, etc.</li>
+<li><strong>day</strong> (<em>int</em>) – Day</li>
+<li><strong>hour</strong> (<em>int</em>) – Hour in 24h format</li>
+<li><strong>minute</strong> (<em>int</em>) – Minute</li>
+<li><strong>second</strong> (<em>float</em>) – Second, may contain fractional part.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Unix time in seconds</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ccsds_write.unix2date">
+<code class="descclassname">ccsds_write.</code><code class="descname">unix2date</code><span class="sig-paren">(</span><em>unix</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ccsds_write.html#unix2date"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ccsds_write.unix2date" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert unix time in seconds to UTC date datetime object</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>unix</strong> (<em>float</em>) – Unix time in seconds.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Datetime object in UTC</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">datetime.datetime</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ccsds_write.unix2datestr">
+<code class="descclassname">ccsds_write.</code><code class="descname">unix2datestr</code><span class="sig-paren">(</span><em>unix</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ccsds_write.html#unix2datestr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ccsds_write.unix2datestr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert unix time in seconds to Gregorian calendar UTC date-time formatted string</p>
+<dl class="docutils">
+<dt><strong>Uses:</strong></dt>
+<dd><ul class="first last simple">
+<li><a class="reference internal" href="#ccsds_write.unix2date" title="ccsds_write.unix2date"><code class="xref py py-func docutils literal notranslate"><span class="pre">unix2date()</span></code></a></li>
+</ul>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>unix</strong> (<em>float</em>) – Unix time in seconds.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Gregorian calendar UTC date-time formatted string</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">str</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ccsds_write.unix2datestrf">
+<code class="descclassname">ccsds_write.</code><code class="descname">unix2datestrf</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ccsds_write.html#unix2datestrf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ccsds_write.unix2datestrf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert unix time in seconds to Gregorian calendar UTC date-time formatted string</p>
+<p>Different implementation?</p>
+<dl class="docutils">
+<dt><strong>Uses:</strong></dt>
+<dd><ul class="first last simple">
+<li><a class="reference internal" href="#ccsds_write.unix2date" title="ccsds_write.unix2date"><code class="xref py py-func docutils literal notranslate"><span class="pre">unix2date()</span></code></a></li>
+</ul>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>unix</strong> (<em>float</em>) – Unix time in seconds.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Gregorian calendar UTC date-time formatted string</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">str</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ccsds_write.write_ccsds">
+<code class="descclassname">ccsds_write.</code><code class="descname">write_ccsds</code><span class="sig-paren">(</span><em>t_pulse, m_range, m_range_rate, m_range_std, m_range_rate_std, freq=230000000.0, tx_ecef=[0, 0, 0], rx_ecef=[0, 0, 0], tx='EISCAT UHF', rx='EISCAT UHF', oid='ERS-1', tdm_type='track', fname='track.tdm'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ccsds_write.html#write_ccsds"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ccsds_write.write_ccsds" title="Permalink to this definition">¶</a></dt>
+<dd><p># TODO: Document function.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ccsds_write.write_oem">
+<code class="descclassname">ccsds_write.</code><code class="descname">write_oem</code><span class="sig-paren">(</span><em>t</em>, <em>state</em>, <em>oid=42</em>, <em>fname='oems/state.oem'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ccsds_write.html#write_oem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ccsds_write.write_oem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses a series of unix-times and state vectors in ITRF2000 to create a CCSDS OEM file.</p>
+<dl class="docutils">
+<dt><strong>Uses:</strong></dt>
+<dd><ul class="first last simple">
+<li><a class="reference internal" href="#ccsds_write.unix2datestrf" title="ccsds_write.unix2datestrf"><code class="xref py py-func docutils literal notranslate"><span class="pre">unix2datestrf()</span></code></a></li>
+<li><a class="reference internal" href="#ccsds_write.unix2datestr" title="ccsds_write.unix2datestr"><code class="xref py py-func docutils literal notranslate"><span class="pre">unix2datestr()</span></code></a></li>
+</ul>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>t</strong> (<em>list/numpy.ndarray</em>) – Vector of unix-times</li>
+<li><strong>state</strong> (<em>numpy.ndarray</em>) – 6-D states given in SI units in the ITRF2000 frame. Rows correspond to different states and columns to dimensions.</li>
+<li><strong>OID</strong> (<em>int</em>) – Object ID and name (written in OEM as the same but with different formating)</li>
+<li><strong>fname</strong> (<em>str</em>) – Output file-path for OEM.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="doc.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="doc.html#simulation-handler">Simulation handler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#class-modules">Class modules</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="doc.html#function-modules">Function modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#instance-libraries">Instance libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#integrator-interfaces">Integrator interfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#tests">Tests</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="debris.html"
+                        title="previous chapter">debris</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="coord.html"
+                        title="next chapter">coord</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="coord.html" title="coord"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="debris.html" title="debris"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">SORTS++ 2.8.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" >Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,7 @@
+plot_population
+===========================
+
+.. automodule:: plot_population
+   :members:
+   :undoc-members:
+   :show-inheritance:

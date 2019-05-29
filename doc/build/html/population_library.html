@@ -1,0 +1,267 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>population_library &#8212; SORTS++ 2.8.0 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="antenna_library" href="antenna_library.html" />
+    <link rel="prev" title="radar_library" href="radar_library.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="antenna_library.html" title="antenna_library"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="radar_library.html" title="radar_library"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">SORTS++ 2.8.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" accesskey="U">Documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-population_library">
+<span id="population-library"></span><h1>population_library<a class="headerlink" href="#module-population_library" title="Permalink to this headline">¶</a></h1>
+<p>Library of population instances.</p>
+<dl class="function">
+<dt id="population_library.filtered_master_catalog_factor">
+<code class="descclassname">population_library.</code><code class="descname">filtered_master_catalog_factor</code><span class="sig-paren">(</span><em>radar</em>, <em>input_file='./master/celn_20090501_00.sim'</em>, <em>mjd0=54952.0</em>, <em>filter_name='filtered'</em>, <em>treshhold=0.01</em>, <em>min_inc=50</em>, <em>seed=None</em>, <em>prop_time=24.0</em>, <em>propagator=&lt;class 'propagator_sgp4.PropagatorSGP4'&gt;</em>, <em>propagator_options={}</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/population_library.html#filtered_master_catalog_factor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#population_library.filtered_master_catalog_factor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a random realization of the master population specified by the input file/population but filtered according detectability from a <a class="reference internal" href="radar_config.html#radar_config.RadarSystem" title="radar_config.RadarSystem"><code class="xref py py-class docutils literal notranslate"><span class="pre">radar_config.RadarSystem</span></code></a>.</p>
+<p>Filter results are saved in the same folder as the <code class="code docutils literal notranslate"><span class="pre">input_file</span></code> variable specifies the Master catalog file location.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>radar</strong> (<a class="reference internal" href="radar_config.html#radar_config.RadarSystem" title="radar_config.RadarSystem"><em>RadarSystem</em></a>) – The radar configuration used for the detectability filtering.</li>
+<li><strong>input_file</strong> (<em>str</em>) – Path to the input MASTER file. Is not used if <code class="code docutils literal notranslate"><span class="pre">master_base</span></code> is given.</li>
+<li><strong>filter_name</strong> (<em>str</em>) – Name to give to the output-definition file so that a cached file can be used to load population instead of re-calculating every time.</li>
+<li><strong>sort</strong> (<em>bool</em>) – If <code class="code docutils literal notranslate"><span class="pre">True</span></code> sort according to diameters in ascending order.</li>
+<li><strong>treshhold</strong> (<em>float</em>) – Diameter limit in meters below witch sampling objects are not included. Can be <code class="code docutils literal notranslate"><span class="pre">None</span></code> to skip filtering.</li>
+<li><strong>min_inc</strong> (<em>float</em>) – Inclination limit in degrees below witch sampling objects are not included. Can be <code class="code docutils literal notranslate"><span class="pre">None</span></code> to skip filtering.</li>
+<li><strong>seed</strong> (<em>int</em>) – Random number generator seed given to <code class="code docutils literal notranslate"><span class="pre">numpy.random.seed</span></code> to allow for consisted generation of a random realization of the population. If seed is <code class="code docutils literal notranslate"><span class="pre">None</span></code> a random seed from high-entropy data is used.</li>
+<li><strong>prop_time</strong> (<em>float</em>) – Propagation time used to check if object is detectable.</li>
+<li><strong>propagator</strong> (<a class="reference internal" href="propagator_base.html#propagator_base.PropagatorBase" title="propagator_base.PropagatorBase"><em>PropagatorBase</em></a>) – Propagator class pointer used for <a class="reference internal" href="space_object.html#space_object.SpaceObject" title="space_object.SpaceObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">space_object.SpaceObject</span></code></a>.</li>
+<li><strong>propagator_options</strong> (<em>dict</em>) – Propagator initialization keyword arguments.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Filtered master population</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="population.html#population.Population" title="population.Population">population.Population</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="population_library.master_catalog">
+<code class="descclassname">population_library.</code><code class="descname">master_catalog</code><span class="sig-paren">(</span><em>input_file='./master/celn_20090501_00.sim'</em>, <em>mjd0=54952.0</em>, <em>sort=True</em>, <em>propagator=&lt;class 'propagator_sgp4.PropagatorSGP4'&gt;</em>, <em>propagator_options={}</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/population_library.html#master_catalog"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#population_library.master_catalog" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the master catalog specified in the input file as a population instance. The catalog only contains the master sampling objects and not an actual realization of the population using the factor.</p>
+<p>The format of the input master files is:</p>
+<blockquote>
+<div><ol class="arabic simple" start="0">
+<li>ID</li>
+<li>Factor</li>
+<li>Mass [kg]</li>
+<li>Diameter [m]</li>
+<li>m/A [kg/m2]</li>
+<li>a [km]</li>
+<li>e</li>
+<li>i [deg]</li>
+<li>RAAN [deg]</li>
+<li>AoP [deg]</li>
+<li>M [deg]</li>
+</ol>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>input_file</strong> (<em>str</em>) – Path to the input MASTER file.</li>
+<li><strong>sort</strong> (<em>bool</em>) – If <code class="code docutils literal notranslate"><span class="pre">True</span></code> sort according to diameters in descending order.</li>
+<li><strong>mjd0</strong> (<em>float</em>) – The epoch of the catalog file in Modified Julian Days.</li>
+<li><strong>propagator</strong> (<a class="reference internal" href="propagator_base.html#propagator_base.PropagatorBase" title="propagator_base.PropagatorBase"><em>PropagatorBase</em></a>) – Propagator class pointer used for <a class="reference internal" href="space_object.html#space_object.SpaceObject" title="space_object.SpaceObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">space_object.SpaceObject</span></code></a>.</li>
+<li><strong>propagator_options</strong> (<em>dict</em>) – Propagator initialization keyword arguments.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Master catalog</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="population.html#population.Population" title="population.Population">population.Population</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="population_library.master_catalog_factor">
+<code class="descclassname">population_library.</code><code class="descname">master_catalog_factor</code><span class="sig-paren">(</span><em>input_file='./master/celn_20090501_00.sim'</em>, <em>mjd0=54952.0</em>, <em>master_base=None</em>, <em>treshhold=0.01</em>, <em>seed=None</em>, <em>propagator=&lt;class 'propagator_sgp4.PropagatorSGP4'&gt;</em>, <em>propagator_options={}</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/population_library.html#master_catalog_factor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#population_library.master_catalog_factor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a random realization of the master population specified by the input file/population. In other words, each sampling object in the catalog is sampled a “factor” number of times with random mean anomalies to create the population.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>input_file</strong> (<em>str</em>) – Path to the input MASTER file. Is not used if <code class="code docutils literal notranslate"><span class="pre">master_base</span></code> is given.</li>
+<li><strong>mjd0</strong> (<em>float</em>) – The epoch of the catalog file in Modified Julian Days. Is not used if <code class="code docutils literal notranslate"><span class="pre">master_base</span></code> is given.</li>
+<li><strong>master_base</strong> (<a class="reference internal" href="population.html#population.Population" title="population.Population"><em>population.Population</em></a>) – A master catalog consisting only of sampling objects. This catalog will be modified and the pointer to it returned.</li>
+<li><strong>sort</strong> (<em>bool</em>) – If <code class="code docutils literal notranslate"><span class="pre">True</span></code> sort according to diameters in ascending order.</li>
+<li><strong>treshhold</strong> (<em>float</em>) – Diameter limit in meters below witch sampling objects are not included. Can be <code class="code docutils literal notranslate"><span class="pre">None</span></code> to skip filtering.</li>
+<li><strong>seed</strong> (<em>int</em>) – Random number generator seed given to <code class="code docutils literal notranslate"><span class="pre">numpy.random.seed</span></code> to allow for consisted generation of a random realization of the population. If seed is <code class="code docutils literal notranslate"><span class="pre">None</span></code> a random seed from high-entropy data is used.</li>
+<li><strong>propagator</strong> (<a class="reference internal" href="propagator_base.html#propagator_base.PropagatorBase" title="propagator_base.PropagatorBase"><em>PropagatorBase</em></a>) – Propagator class pointer used for <a class="reference internal" href="space_object.html#space_object.SpaceObject" title="space_object.SpaceObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">space_object.SpaceObject</span></code></a>. Is not used if <code class="code docutils literal notranslate"><span class="pre">master_base</span></code> is given.</li>
+<li><strong>propagator_options</strong> (<em>dict</em>) – Propagator initialization keyword arguments. Is not used if <code class="code docutils literal notranslate"><span class="pre">master_base</span></code> is given.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Master population</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="population.html#population.Population" title="population.Population">population.Population</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="population_library.tle_snapshot">
+<code class="descclassname">population_library.</code><code class="descname">tle_snapshot</code><span class="sig-paren">(</span><em>tle_file</em>, <em>sgp4_propagation=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/population_library.html#tle_snapshot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#population_library.tle_snapshot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads a TLE-snapshot file and converts the TLE’s to orbits in a TEME frame and creates a population file. The BSTAR parameter is saved in column BSTAR (or <code class="code docutils literal notranslate"><span class="pre">_objs[:,12</span></code>). A snapshot generally contains several TLE’s for the same object thus will this population also contain duplicate objects.</p>
+<blockquote>
+<div><p><em>Numerical propagator assumptions:</em> 
+To propagate with a numerical propagator one needs to make assumptions.</p>
+<blockquote>
+<div><ul class="simple">
+<li>Density is :math:<a href="#id1"><span class="problematic" id="id2">`</span></a>5cdot 10^3 ;</li>
+</ul>
+</div></blockquote>
+</div></blockquote>
+<dl class="docutils">
+<dt>rac{kg}{m^3}`.</dt>
+<dd><blockquote class="first">
+<div><ul class="simple">
+<li>Object is a sphere</li>
+<li>Drag coefficient is 2.3.</li>
+</ul>
+</div></blockquote>
+<table class="last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">param str tle_file:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">Path to the input TLE snapshot file.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">param bool sgp4_propagation:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">If <code class="code docutils literal notranslate"><span class="pre">False</span></code> then the population is specifically constructed to be propagated with <a class="reference internal" href="propagator_orekit.html#propagator_orekit.PropagatorOrekit" title="propagator_orekit.PropagatorOrekit"><code class="xref py py-class docutils literal notranslate"><span class="pre">propagator_orekit.PropagatorOrekit</span></code></a> and assumptions are made on mass, density and shape of objects. Otherwise the <a class="reference internal" href="space_object.html#space_object.SpaceObject" title="space_object.SpaceObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">space_object.SpaceObject</span></code></a> is configured to use SGP4 propagation.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">return:</th><td class="field-body">TLE snapshot as a population with numerical propagator</td>
+</tr>
+<tr class="field-even field"><th class="field-name">rtype:</th><td class="field-body">population.Population</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="doc.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="doc.html#simulation-handler">Simulation handler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#class-modules">Class modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#function-modules">Function modules</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="doc.html#instance-libraries">Instance libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#integrator-interfaces">Integrator interfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#tests">Tests</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="radar_library.html"
+                        title="previous chapter">radar_library</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="antenna_library.html"
+                        title="next chapter">antenna_library</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="antenna_library.html" title="antenna_library"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="radar_library.html" title="radar_library"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">SORTS++ 2.8.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" >Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

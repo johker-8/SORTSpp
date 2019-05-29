@@ -1,0 +1,223 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>keplerian_sgp4 &#8212; SORTS++ 2.4.1 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 2.4.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-keplerian_sgp4">
+<span id="keplerian-sgp4"></span><h1>keplerian_sgp4<a class="headerlink" href="#module-keplerian_sgp4" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="keplerian_sgp4.SGP4">
+<em class="property">class </em><code class="descclassname">keplerian_sgp4.</code><code class="descname">SGP4</code><span class="sig-paren">(</span><em>mjd_epoch</em>, <em>mean_elements</em>, <em>B</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_sgp4.html#SGP4"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_sgp4.SGP4" title="Permalink to this definition">¶</a></dt>
+<dd><p>The SGP4 class acts as a wrapper around the sgp4 module 
+uploaded by Brandon Rhodes (<a class="reference external" href="http://pypi.python.org/pypi/sgp4/">http://pypi.python.org/pypi/sgp4/</a>).</p>
+<p>It converts orbital elements into the TLE-like ‘satellite’-structure which
+is used by the module for the propagation.</p>
+<dl class="docutils">
+<dt>Notes:</dt>
+<dd>The class can be directly used for propagation. Alternatively, 
+a simple propagator function is provided below.</dd>
+</dl>
+<dl class="attribute">
+<dt id="keplerian_sgp4.SGP4.GM">
+<code class="descname">GM</code><em class="property"> = 398600.8</em><a class="headerlink" href="#keplerian_sgp4.SGP4.GM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="keplerian_sgp4.SGP4.MJD_0">
+<code class="descname">MJD_0</code><em class="property"> = 2400000.5</em><a class="headerlink" href="#keplerian_sgp4.SGP4.MJD_0" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="keplerian_sgp4.SGP4.Q0">
+<code class="descname">Q0</code><em class="property"> = 120.0</em><a class="headerlink" href="#keplerian_sgp4.SGP4.Q0" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="keplerian_sgp4.SGP4.RHO0">
+<code class="descname">RHO0</code><em class="property"> = 2.461e-08</em><a class="headerlink" href="#keplerian_sgp4.SGP4.RHO0" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="keplerian_sgp4.SGP4.R_EARTH">
+<code class="descname">R_EARTH</code><em class="property"> = 6378.135</em><a class="headerlink" href="#keplerian_sgp4.SGP4.R_EARTH" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="keplerian_sgp4.SGP4.S0">
+<code class="descname">S0</code><em class="property"> = 78.0</em><a class="headerlink" href="#keplerian_sgp4.SGP4.S0" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="keplerian_sgp4.SGP4.WGS">
+<code class="descname">WGS</code><em class="property"> = EarthGravity(tumin=13.446839696959309, mu=398600.8, radiusearthkm=6378.135, xke=0.07436691613317342, j2=0.001082616, j3=-2.53881e-06, j4=-1.65597e-06, j3oj2=-0.002345069720011528)</em><a class="headerlink" href="#keplerian_sgp4.SGP4.WGS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="keplerian_sgp4.SGP4.position">
+<code class="descname">position</code><span class="sig-paren">(</span><em>mjd_</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_sgp4.html#SGP4.position"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_sgp4.SGP4.position" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inertial position at epoch <a href="#id1"><span class="problematic" id="id2">mjd_</span></a></p>
+<p><a href="#id3"><span class="problematic" id="id4">mjd_</span></a> : epoch where satellite should be propagated to</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="keplerian_sgp4.SGP4.state">
+<code class="descname">state</code><span class="sig-paren">(</span><em>mjd_</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_sgp4.html#SGP4.state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_sgp4.SGP4.state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inertial position and velocity ([m], [m/s]) at epoch <a href="#id5"><span class="problematic" id="id6">mjd_</span></a></p>
+<p><a href="#id7"><span class="problematic" id="id8">mjd_</span></a> : epoch where satellite should be propagated to</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="keplerian_sgp4.SGP4.velocity">
+<code class="descname">velocity</code><span class="sig-paren">(</span><em>mjd_</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_sgp4.html#SGP4.velocity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_sgp4.SGP4.velocity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inertial velocity at epoch <a href="#id9"><span class="problematic" id="id10">mjd_</span></a></p>
+<p><a href="#id11"><span class="problematic" id="id12">mjd_</span></a> : epoch where satellite should be propagated to</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="keplerian_sgp4.eci2ecef">
+<code class="descclassname">keplerian_sgp4.</code><code class="descname">eci2ecef</code><span class="sig-paren">(</span><em>t</em>, <em>p</em>, <em>mjd0=57084</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_sgp4.html#eci2ecef"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_sgp4.eci2ecef" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="keplerian_sgp4.gmst">
+<code class="descclassname">keplerian_sgp4.</code><code class="descname">gmst</code><span class="sig-paren">(</span><em>mjd_UT1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_sgp4.html#gmst"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_sgp4.gmst" title="Permalink to this definition">¶</a></dt>
+<dd><p>Greenwich Mean Sidereal Time (copied from Montenbruck &amp; Gill: Satellite orbits)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="keplerian_sgp4.gstime">
+<code class="descclassname">keplerian_sgp4.</code><code class="descname">gstime</code><span class="sig-paren">(</span><em>jdut1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_sgp4.html#gstime"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_sgp4.gstime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="keplerian_sgp4.m_get_orbit">
+<code class="descclassname">keplerian_sgp4.</code><code class="descname">m_get_orbit</code><span class="sig-paren">(</span><em>t</em>, <em>a</em>, <em>e</em>, <em>inc</em>, <em>raan</em>, <em>aop</em>, <em>mu0</em>, <em>C_D=2.3</em>, <em>A=1.0</em>, <em>m=100.0</em>, <em>mjd0=54729.51782528</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_sgp4.html#m_get_orbit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_sgp4.m_get_orbit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="keplerian_sgp4.polarm">
+<code class="descclassname">keplerian_sgp4.</code><code class="descname">polarm</code><span class="sig-paren">(</span><em>xp</em>, <em>yp</em>, <em>ttt</em>, <em>opt</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_sgp4.html#polarm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_sgp4.polarm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="keplerian_sgp4.sgp4_propagation">
+<code class="descclassname">keplerian_sgp4.</code><code class="descname">sgp4_propagation</code><span class="sig-paren">(</span><em>mjd_epoch</em>, <em>mean_elements</em>, <em>B=0.0</em>, <em>dt=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_sgp4.html#sgp4_propagation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_sgp4.sgp4_propagation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lazy SGP4 propagation using SGP4 class</p>
+<p>Create a satellite object from mean elements and propagate it</p>
+<p>mean_elements : [a0,e0,i0,raan0,aop0,M0] 
+B             : Ballistic coefficient ( 0.5*C_D*A/m )
+dt            : Time difference w.r.t. element epoch in seconds
+mjd_epoch     : Epoch of elements as Modified Julian Date (MJD)</p>
+<blockquote>
+<div>Can be ignored if the exact epoch is unimportant</div></blockquote>
+</dd></dl>
+
+<dl class="class">
+<dt id="keplerian_sgp4.sgp4_propagator">
+<em class="property">class </em><code class="descclassname">keplerian_sgp4.</code><code class="descname">sgp4_propagator</code><a class="reference internal" href="../_modules/keplerian_sgp4.html#sgp4_propagator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_sgp4.sgp4_propagator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="base_propagator.html#base_propagator.base_propagator" title="base_propagator.base_propagator"><code class="xref py py-class docutils literal notranslate"><span class="pre">base_propagator.base_propagator</span></code></a></p>
+<dl class="method">
+<dt id="keplerian_sgp4.sgp4_propagator.get_orbit">
+<code class="descname">get_orbit</code><span class="sig-paren">(</span><em>t</em>, <em>a</em>, <em>e</em>, <em>inc</em>, <em>raan</em>, <em>aop</em>, <em>mu0</em>, <em>mjd0</em>, <em>A=1</em>, <em>m=1000.0</em>, <em>C_D=2.3</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_sgp4.html#sgp4_propagator.get_orbit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_sgp4.sgp4_propagator.get_orbit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="keplerian_sgp4.teme2ecef">
+<code class="descclassname">keplerian_sgp4.</code><code class="descname">teme2ecef</code><span class="sig-paren">(</span><em>t</em>, <em>p</em>, <em>mjd0=57084</em>, <em>model='00'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_sgp4.html#teme2ecef"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_sgp4.teme2ecef" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="keplerian_sgp4.teme2ecef_state">
+<code class="descclassname">keplerian_sgp4.</code><code class="descname">teme2ecef_state</code><span class="sig-paren">(</span><em>t</em>, <em>p</em>, <em>v</em>, <em>mjd0=57084</em>, <em>model='00'</em>, <em>lod=0.0015563</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_sgp4.html#teme2ecef_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_sgp4.teme2ecef_state" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="keplerian_sgp4.test_simple">
+<code class="descclassname">keplerian_sgp4.</code><code class="descname">test_simple</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_sgp4.html#test_simple"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_sgp4.test_simple" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/modules/keplerian_sgp4.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 2.4.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

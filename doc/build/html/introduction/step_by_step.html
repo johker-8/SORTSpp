@@ -1,0 +1,189 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Step by step guides &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Usage examples" href="../usage_examples.html" />
+    <link rel="prev" title="Installing propagators" href="propagators.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../usage_examples.html" title="Usage examples"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="propagators.html" title="Installing propagators"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="step-by-step-guides">
+<h1>Step by step guides<a class="headerlink" href="#step-by-step-guides" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="step-by-step-fresh-ubuntu-16-04-lts">
+<h2>Step by step: fresh Ubuntu 16.04 LTS<a class="headerlink" href="#step-by-step-fresh-ubuntu-16-04-lts" title="Permalink to this headline">¶</a></h2>
+<p>If needed:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo dpkg --configure -a
+</pre></div>
+</div>
+<p>Proceed to:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo apt-get install git
+<span class="nb">cd</span> /my/projects_dir/
+git clone https://gitlab.irf.se/danielk/SORTSpp.git
+<span class="nb">cd</span> SORTSpp/
+</pre></div>
+</div>
+<p>Check your currently installed python versions:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python --version
+</pre></div>
+</div>
+<p>If this does NOT return <cite>Python 2.7.x</cite>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo apt-get install python-dev
+</pre></div>
+</div>
+<p>Check that pip is installed and bound to your python 2.7:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip --version
+</pre></div>
+</div>
+<p>If pip is NOT installed:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo apt-get install python-pip
+</pre></div>
+</div>
+<p>At this stage: DO NOT UPGRADE PIP. Do this after the virtualenv is installed and activated.</p>
+<p>Then install and create a virtualenv, here the name “env2.7” is used since this name is included in the .gitignore file and will not be detected by git:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install virtualenv
+virtualenv --version
+virtualenv env2.7
+</pre></div>
+</div>
+<p>Activate virtualenv:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span> env2.7/bin/activate
+</pre></div>
+</div>
+<p>If needed (should already be latest version), upgrade the pip inside the virtualenv:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install --upgrade pip
+</pre></div>
+</div>
+<p>Then make sure additional requirements are fulfilled:</p>
+<ul class="simple">
+<li>Used by matplotlib</li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo apt-get install libfreetype6-dev
+sudo apt-get install libpng12-dev
+sudo apt-get install python-tk
+</pre></div>
+</div>
+<ul class="simple">
+<li>Used by mpi4py</li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo apt-get install libopenmpi-dev
+</pre></div>
+</div>
+<p>Then install the dependency requirement for SORTS++</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install -r pip_req.txt
+</pre></div>
+</div>
+<p>Then test the installation following the test section below.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="propagators.html">Installing propagators</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Step by step guides</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#step-by-step-fresh-ubuntu-16-04-lts">Step by step: fresh Ubuntu 16.04 LTS</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/doc.html">Documentation</a></li>
+</ul>
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Step by step guides</a><ul>
+<li><a class="reference internal" href="#step-by-step-fresh-ubuntu-16-04-lts">Step by step: fresh Ubuntu 16.04 LTS</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="propagators.html"
+                        title="previous chapter">Installing propagators</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../usage_examples.html"
+                        title="next chapter">Usage examples</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../usage_examples.html" title="Usage examples"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="propagators.html" title="Installing propagators"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

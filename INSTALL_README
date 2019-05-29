@@ -1,0 +1,51 @@
+#### INSTALLING REQUIREMENTS
+
+first install viritual env:
+pip install virtualenv
+
+create a viritual env inside this folder WITH THE NAME "env2.7":
+virtualenv env2.7
+
+activate the venv:
+source ./env2.7/bin/activate
+
+install requrements:
+pip install -r pip_req.txt
+
+pip requirements (also in pip_req.txt):
+
+backports.functools-lru-cache==1.5
+cycler==0.10.0
+h5py==2.7.1
+kiwisolver==1.0.1
+matplotlib==2.2.2
+mpi4py==3.0.0
+numpy==1.14.3
+pkg-resources==0.0.0
+pyparsing==2.2.0
+pyproj==1.9.5.1
+python-dateutil==2.7.3
+pytz==2018.4
+scipy==1.1.0
+sgp4==1.4
+six==1.11.0
+subprocess32==3.5.1
+basemap==1.1.0
+
+## To install basemap:
+
+first install:
+sudo apt-get install proj-bin
+
+get the source:
+wget --no-check-certificate https://github.com/matplotlib/basemap/archive/master.tar.gz
+
+Untar the basemap version X.Y.Z source tar.gz file, and and cd to the basemap-X.Y.Z directory:
+export GEOS_DIR=<where you want the libs and headers to go>
+
+Then go to the geos distribution in the basemap tar and run:
+./configure --prefix=$GEOS_DIR
+make; make install
+
+then be sure to use the python bin in the venv to install basemap as:
+/..../SORTSpp/env2.7/bin/python setup.py install

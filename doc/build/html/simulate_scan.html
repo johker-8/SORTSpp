@@ -1,0 +1,176 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>simulate_scan &#8212; SORTS++ 2.8.0 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="simulate_tracking" href="simulate_tracking.html" />
+    <link rel="prev" title="ray_trace" href="ray_trace.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="simulate_tracking.html" title="simulate_tracking"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="ray_trace.html" title="ray_trace"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">SORTS++ 2.8.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" accesskey="U">Documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-simulate_scan">
+<span id="simulate-scan"></span><h1>simulate_scan<a class="headerlink" href="#module-simulate_scan" title="Permalink to this headline">¶</a></h1>
+<p>Simulate discovery observations with user-defined scan pattern.</p>
+<p>OLD DOC:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Can simulate beampark detections</li>
+<li>Detections of fence-style scanning</li>
+<li>Output simulated IOD measurements</li>
+</ul>
+</div></blockquote>
+<dl class="function">
+<dt id="simulate_scan.find_n">
+<code class="descclassname">simulate_scan.</code><code class="descname">find_n</code><span class="sig-paren">(</span><em>t0</em>, <em>t1</em>, <em>o</em>, <em>max_dpos=100.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulate_scan.html#find_n"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulate_scan.find_n" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="simulate_scan.get_iod">
+<code class="descclassname">simulate_scan.</code><code class="descname">get_iod</code><span class="sig-paren">(</span><em>o</em>, <em>tx</em>, <em>rxs</em>, <em>res1</em>, <em>dt=1.0</em>, <em>plott=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulate_scan.html#get_iod"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulate_scan.get_iod" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the peak SNR for detection for each transmit-receiver pair.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulate_scan.get_iods">
+<code class="descclassname">simulate_scan.</code><code class="descname">get_iods</code><span class="sig-paren">(</span><em>o</em>, <em>radar</em>, <em>sim_t0</em>, <em>sim_t1</em>, <em>eval_gain=False</em>, <em>logger=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulate_scan.html#get_iods"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulate_scan.get_iods" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find passes of an object between sim_t0 and sim_t1.
+If eval_gain is True, we report the time when gain is maximized.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulate_scan.get_pass">
+<code class="descclassname">simulate_scan.</code><code class="descname">get_pass</code><span class="sig-paren">(</span><em>o</em>, <em>t0</em>, <em>tx</em>, <em>el_thresh=30.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulate_scan.html#get_pass"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulate_scan.get_pass" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine when the object goes below the horizon.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulate_scan.get_passes0">
+<code class="descclassname">simulate_scan.</code><code class="descname">get_passes0</code><span class="sig-paren">(</span><em>o</em>, <em>tx</em>, <em>t0=0</em>, <em>t1=86400.0</em>, <em>max_dpos=100.0</em>, <em>min_angle=50</em>, <em>max_dt=3600</em>, <em>plott=False</em>, <em>z_ang_thresh=80.0</em>, <em>eval_gain=False</em>, <em>follow_target=False</em>, <em>logger=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulate_scan.html#get_passes0"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulate_scan.get_passes0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Do a grid search for closest on-axis position of an object o.
+This is used to find detections of an object.
+We take into account the scan pattern of the radar</p>
+<p>Can use either minimum on-axis angle or maximum gain of TX antenna
+as selection criteria for returning a candidate detection.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulate_scan.pp_det">
+<code class="descclassname">simulate_scan.</code><code class="descname">pp_det</code><span class="sig-paren">(</span><em>det_times</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulate_scan.html#pp_det"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulate_scan.pp_det" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to pretty print detection times list returned by the <a class="reference internal" href="#simulate_scan.get_iods" title="simulate_scan.get_iods"><code class="xref py py-func docutils literal notranslate"><span class="pre">simulate_scan.get_iods()</span></code></a> function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>det_times</strong> (<em>list</em>) – List of dictionaries generated by get_iods.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="doc.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="doc.html#simulation-handler">Simulation handler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#class-modules">Class modules</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="doc.html#function-modules">Function modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#instance-libraries">Instance libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#integrator-interfaces">Integrator interfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#tests">Tests</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="ray_trace.html"
+                        title="previous chapter">ray_trace</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="simulate_tracking.html"
+                        title="next chapter">simulate_tracking</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="simulate_tracking.html" title="simulate_tracking"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="ray_trace.html" title="ray_trace"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">SORTS++ 2.8.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" >Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

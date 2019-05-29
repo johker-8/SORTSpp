@@ -1,0 +1,7 @@
+opi
+===========================
+
+.. automodule:: opi
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,260 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>radar_config &#8212; SORTS++ 2.8.0 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="antenna" href="antenna.html" />
+    <link rel="prev" title="simulation" href="simulation.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="antenna.html" title="antenna"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="simulation.html" title="simulation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">SORTS++ 2.8.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" accesskey="U">Documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-radar_config">
+<span id="radar-config"></span><h1>radar_config<a class="headerlink" href="#module-radar_config" title="Permalink to this headline">¶</a></h1>
+<p>This module is used to define the radar network configuration.</p>
+<p># TODO: Change all attribute names according to convention: ‘var’ public, ‘_var’ internal, ‘__var’ private.
+# TODO: It would make sens to change it so that a rx antenna is always a reciver but a TX antenna inherrents RX antenna as it is now but that every TX antenna is also automatically counted as a RX antenna so that you do not e.g. have to specify ‘skibotten RX’ and ‘skibotten TX’, instead it would only be ‘skibotten’ but a instance of TX instead of RX and then you intead only loop over stations in radar system and know that all have RX capabilities but at least one have to have TX capabilities.
+# TODO: Change name of this module to radar.py</p>
+<dl class="class">
+<dt id="radar_config.RadarSystem">
+<em class="property">class </em><code class="descclassname">radar_config.</code><code class="descname">RadarSystem</code><span class="sig-paren">(</span><em>tx_lst</em>, <em>rx_lst</em>, <em>name</em>, <em>max_on_axis=90.0</em>, <em>min_SNRdb=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/radar_config.html#RadarSystem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_config.RadarSystem" title="Permalink to this definition">¶</a></dt>
+<dd><p>A network of transmitting and receiving radar systems.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first simple">
+<li><strong>_tx</strong> (<em>list</em>) – List of transmitting sites, i.e. instances of <a class="reference internal" href="antenna.html#antenna.AntennaTX" title="antenna.AntennaTX"><code class="xref py py-class docutils literal notranslate"><span class="pre">antenna.AntennaTX</span></code></a></li>
+<li><strong>_rx</strong> (<em>list</em>) – List of receiving sites, i.e. instances of <a class="reference internal" href="antenna.html#antenna.AntennaRX" title="antenna.AntennaRX"><code class="xref py py-class docutils literal notranslate"><span class="pre">antenna.AntennaRX</span></code></a></li>
+<li><strong>max_on_axis</strong> (<em>float</em>) – Maximum angle between pointing direction and a received signal.</li>
+<li><strong>name</strong> (<em>string</em>) – Verbose name of the radar system</li>
+<li><strong>_horizon_elevation</strong> (<em>float</em>) – Elevation in degrees of the horizon, i.e. minimum elevation the radar system can measure and point.</li>
+<li><strong>min_SNRdb</strong> (<em>float</em>) – Minimum SNR detectable by radar system in dB.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>tx_lst</strong> (<em>list</em>) – List of transmitting sites, i.e. instances of <a class="reference internal" href="antenna.html#antenna.AntennaTX" title="antenna.AntennaTX"><code class="xref py py-class docutils literal notranslate"><span class="pre">antenna.AntennaTX</span></code></a></li>
+<li><strong>rx_lst</strong> (<em>list</em>) – List of receiving sites, i.e. instances of <a class="reference internal" href="antenna.html#antenna.AntennaRX" title="antenna.AntennaRX"><code class="xref py py-class docutils literal notranslate"><span class="pre">antenna.AntennaRX</span></code></a></li>
+<li><strong>name</strong> (<em>string</em>) – Verbose name of the radar system</li>
+<li><strong>max_on_axis</strong> (<em>float</em>) – Maximum angle between pointing direction and a received signal.</li>
+<li><strong>min_SNRdb</strong> (<em>float</em>) – Minimum SNR detectable by radar system in dB.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="radar_config.RadarSystem.set_FOV">
+<code class="descname">set_FOV</code><span class="sig-paren">(</span><em>max_on_axis</em>, <em>horizon_elevation</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/radar_config.html#RadarSystem.set_FOV"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_config.RadarSystem.set_FOV" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the Field of View (FOV) for this radar system. The FOV is imposed on every receiving station and transmitting station in the network. The FOV is assumed to be azimutally symmetric.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>max_on_axis</strong> (<em>float</em>) – Maximum angle in degrees from the pointing direction at witch a detection can be made.</li>
+<li><strong>horizon_elevation</strong> (<em>float</em>) – The elevation angle in degrees of the FOV.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="radar_config.RadarSystem.set_SNR_limits">
+<code class="descname">set_SNR_limits</code><span class="sig-paren">(</span><em>min_total_SNRdb</em>, <em>min_pair_SNRdb</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/radar_config.html#RadarSystem.set_SNR_limits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_config.RadarSystem.set_SNR_limits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the Signal to Noise Ratio (SNR) limits for the system.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>min_total_SNRdb</strong> (<em>float</em>) – The minimum SNR in dB that is required on at least one transmitter-receiver pair for a detection to be made.</li>
+<li><strong>min_pair_SNRdb</strong> (<em>float</em>) – The minimum SNR in dB that is required for a transmitter-receiver pair to have a detection.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="radar_config.RadarSystem.set_TX_bandwith">
+<code class="descname">set_TX_bandwith</code><span class="sig-paren">(</span><em>bw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/radar_config.html#RadarSystem.set_TX_bandwith"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_config.RadarSystem.set_TX_bandwith" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the transmission bandwidth in Hz of all transmitters in the radar system.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>bw</strong> (<em>float</em>) – Transmission bandwidth in Hz. This is basically what range of frequencies available for wave forming the transmission, e.g. how fast bit-key-shifting code can switch from 0 to <span class="math notranslate nohighlight">\(\pi\)</span> and can then be calculated as the inverse of the baud length.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="radar_config.RadarSystem.set_beam">
+<code class="descname">set_beam</code><span class="sig-paren">(</span><em>beam</em>, <em>mode='all'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/radar_config.html#RadarSystem.set_beam"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_config.RadarSystem.set_beam" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the radiation pattern for transmitters, receivers or entire radar system.</p>
+<p>To manually set custom beams for each transmitter and receiver in the radar system, set the attributes directly using instances of <a class="reference internal" href="antenna.html#antenna.BeamPattern" title="antenna.BeamPattern"><code class="xref py py-class docutils literal notranslate"><span class="pre">antenna.BeamPattern</span></code></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>beam</strong> (<a class="reference internal" href="antenna.html#antenna.BeamPattern" title="antenna.BeamPattern"><em>BeamPattern</em></a>) – The radiation pattern to set for radar system.</li>
+<li><strong>mode</strong> (<em>str</em>) – String describing what part of radar system to set beam for: Options are <code class="docutils literal notranslate"><span class="pre">'TX'</span></code> for transmission, <code class="docutils literal notranslate"><span class="pre">'RX'</span></code> for reception, or both when left unset.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">antenna_library</span> <span class="kn">as</span> <span class="nn">alib</span>
+<span class="kn">from</span> <span class="nn">my_radar</span> <span class="kn">import</span> <span class="n">radar</span>
+
+<span class="c1">#radar is a instance of RadarSystem</span>
+<span class="n">radar</span><span class="o">.</span><span class="n">set_beam</span><span class="p">(</span>
+    <span class="n">alib</span><span class="o">.</span><span class="n">planar_beam</span><span class="p">(</span><span class="n">az0</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">el0</span><span class="o">=</span><span class="mi">90</span><span class="p">,</span> <span class="n">lat</span><span class="o">=</span><span class="mi">68</span><span class="p">,</span> <span class="n">lon</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">I_0</span><span class="o">=</span><span class="mi">10</span><span class="o">**</span><span class="mf">4.5</span><span class="p">,</span> <span class="n">a0</span><span class="o">=</span><span class="mf">40.0</span><span class="p">,</span> <span class="n">az1</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">el1</span><span class="o">=</span><span class="mf">90.0</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="mf">233e6</span><span class="p">),</span>
+    <span class="s1">&#39;TX&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="radar_config.RadarSystem.set_scan">
+<code class="descname">set_scan</code><span class="sig-paren">(</span><em>SST</em>, <em>secondary_list=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/radar_config.html#RadarSystem.set_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_config.RadarSystem.set_scan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the observation schema that the radar system will use.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>SST</strong> (<em>radar_scan</em>) – Sets the main SST observation schema.</li>
+<li><strong>secondary_list</strong> (<em>list</em>) – Sets a list of other observation schema’s, i.e. instances of <code class="xref py py-class docutils literal notranslate"><span class="pre">radar_scans.radar_scan</span></code>, that are interleaved with the main SST scan.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="radar_config.plot_radar_conf">
+<code class="descclassname">radar_config.</code><code class="descname">plot_radar_conf</code><span class="sig-paren">(</span><em>radar</em>, <em>save=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/radar_config.html#plot_radar_conf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_config.plot_radar_conf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the geographical situation of an instance of <code class="xref py py-class docutils literal notranslate"><span class="pre">antenna.RadarSystem</span></code>.</p>
+<p># TODO: Make sure this function is up to date and general, also look over the Earth plotting.
+# TODO: see <a class="reference external" href="http://geologyandpython.com/maps.html">http://geologyandpython.com/maps.html</a> and <a class="reference external" href="https://scitools.org.uk/cartopy/docs/latest/index.html">https://scitools.org.uk/cartopy/docs/latest/index.html</a></p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="doc.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="doc.html#simulation-handler">Simulation handler</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="doc.html#class-modules">Class modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#function-modules">Function modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#instance-libraries">Instance libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#integrator-interfaces">Integrator interfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#tests">Tests</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="simulation.html"
+                        title="previous chapter">simulation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="antenna.html"
+                        title="next chapter">antenna</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="antenna.html" title="antenna"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="simulation.html" title="simulation"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">SORTS++ 2.8.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" >Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

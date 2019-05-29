@@ -1,0 +1,395 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>radar_scan_library &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for radar_scan_library</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="sd">&#39;&#39;&#39;A collection of :class:`radar_scans.RadarScan` instances, such as fence scans or ionospheric grids.</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+
+ <span class="c1">#test radar pointing class</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">mpl_toolkits.mplot3d</span> <span class="k">import</span> <span class="n">Axes3D</span>
+
+<span class="kn">import</span> <span class="nn">coord</span>
+<span class="kn">import</span> <span class="nn">plothelp</span>
+
+<span class="kn">import</span> <span class="nn">radar_scans</span> <span class="k">as</span> <span class="nn">rs</span>
+
+<div class="viewcode-block" id="point_beampark"><a class="viewcode-back" href="../modules/radar_scan_library.html#radar_scan_library.point_beampark">[docs]</a><span class="k">def</span> <span class="nf">point_beampark</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">az</span><span class="p">,</span> <span class="n">el</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Pointing function for a single point beampark. AZ-EL coordinate system.</span>
+<span class="sd">    </span>
+<span class="sd">    :param float t: Seconds past epoch.</span>
+<span class="sd">    :param float az: Azimuth in degrees east of north.</span>
+<span class="sd">    :param float el: Elevation in degrees above horizon.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">return</span> <span class="n">az</span><span class="p">,</span> <span class="n">el</span><span class="p">,</span> <span class="mf">1.0</span></div>
+
+<div class="viewcode-block" id="point_n_beampark"><a class="viewcode-back" href="../modules/radar_scan_library.html#radar_scan_library.point_n_beampark">[docs]</a><span class="k">def</span> <span class="nf">point_n_beampark</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">az</span><span class="p">,</span> <span class="n">el</span><span class="p">,</span> <span class="n">dwell_time</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Pointing function for a n-point beampark with fixed dwell-times. AZ-EL coordinate system.</span>
+<span class="sd">    </span>
+<span class="sd">    :param float t: Seconds past epoch.</span>
+<span class="sd">    :param list az: Azimuths in degrees east of north.</span>
+<span class="sd">    :param list el: Elevations in degrees above horizon.</span>
+<span class="sd">    :param float dwell_time: Time in seconds spent at each azimuth-elevation pair of pointing direction.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">t</span><span class="o">/</span><span class="n">dwell_time</span><span class="p">)</span>
+    <span class="n">ind</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ind</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">az</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">az</span><span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="n">el</span><span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="mf">1.0</span></div>
+
+<div class="viewcode-block" id="point_n_dyn_beampark"><a class="viewcode-back" href="../modules/radar_scan_library.html#radar_scan_library.point_n_dyn_beampark">[docs]</a><span class="k">def</span> <span class="nf">point_n_dyn_beampark</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">az</span><span class="p">,</span> <span class="n">el</span><span class="p">,</span> <span class="n">scan_time</span><span class="p">,</span> <span class="n">dwell_time</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Pointing function for a n-point beampark with variable dwell-times. AZ-EL coordinate system.</span>
+<span class="sd">    </span>
+<span class="sd">    :param float t: Seconds past epoch.</span>
+<span class="sd">    :param list az: Azimuths in degrees east of north.</span>
+<span class="sd">    :param list el: Elevations in degrees above horizon.</span>
+<span class="sd">    :param float scan_time: Total scan time, sum of dwell times.</span>
+<span class="sd">    :param list dwell_time: Times in seconds to spend at each azimuth-elevation pair of pointing direction.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">t</span> <span class="o">%</span> <span class="n">scan_time</span>
+    <span class="n">elap_t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">dwell_time</span><span class="p">)</span>
+    <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">elap_t</span> <span class="o">&gt;</span> <span class="n">t</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">az</span><span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="n">el</span><span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="mf">1.0</span></div>
+
+
+<div class="viewcode-block" id="point_ew_fence_scan"><a class="viewcode-back" href="../modules/radar_scan_library.html#radar_scan_library.point_ew_fence_scan">[docs]</a><span class="k">def</span> <span class="nf">point_ew_fence_scan</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">angles</span><span class="p">,</span> <span class="n">dwell_time</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Pointing function for a east-west fence scan. NED coordinate system.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">((</span><span class="n">t</span><span class="o">/</span><span class="n">dwell_time</span><span class="p">)</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">angles</span><span class="p">))</span>
+    <span class="n">angle</span> <span class="o">=</span> <span class="n">angles</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">ind</span><span class="p">)]</span>
+    <span class="n">e</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">angle</span><span class="o">/</span><span class="mf">180.0</span><span class="p">)</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">angle</span><span class="o">/</span><span class="mf">180.0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">d</span></div>
+
+<div class="viewcode-block" id="point_ns_fence_scan"><a class="viewcode-back" href="../modules/radar_scan_library.html#radar_scan_library.point_ns_fence_scan">[docs]</a><span class="k">def</span> <span class="nf">point_ns_fence_scan</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">angles</span><span class="p">,</span> <span class="n">dwell_time</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Pointing function for a north-south fence scan. NED coordinate system.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">((</span><span class="n">t</span><span class="o">/</span><span class="n">dwell_time</span><span class="p">)</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">angles</span><span class="p">))</span>
+    <span class="n">angle</span> <span class="o">=</span> <span class="n">angles</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">ind</span><span class="p">)]</span>
+    <span class="n">no</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">angle</span><span class="o">/</span><span class="mf">180.0</span><span class="p">)</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">angle</span><span class="o">/</span><span class="mf">180.0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">no</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">d</span></div>
+
+<div class="viewcode-block" id="point_sph_rng_scan"><a class="viewcode-back" href="../modules/radar_scan_library.html#radar_scan_library.point_sph_rng_scan">[docs]</a><span class="k">def</span> <span class="nf">point_sph_rng_scan</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">dwell_time</span><span class="p">,</span> <span class="n">min_el</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Pointing function for a spherically uniform random scan with a minimum elevation and fixed state at epoch, i.e reproducable sequence. NED coordinate system.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">t_n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">t</span><span class="o">/</span><span class="n">dwell_time</span><span class="p">))</span>
+
+    <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">state</span> <span class="o">+</span> <span class="n">t_n</span><span class="p">)</span>
+    <span class="n">in_FOV</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">while</span> <span class="ow">not</span> <span class="n">in_FOV</span><span class="p">:</span>
+        <span class="n">on_sph</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="n">on_sph</span><span class="p">:</span>
+            <span class="n">xi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">*</span><span class="mf">2.0</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="n">xin</span> <span class="o">=</span> <span class="n">xi</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">xi</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">xin</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">:</span>
+                <span class="n">on_sph</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="mf">2.0</span><span class="o">*</span><span class="p">(</span><span class="n">xi</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">xi</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="n">xi</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">xi</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span><span class="o">/</span><span class="n">xin</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="mf">2.0</span><span class="o">*</span><span class="p">(</span><span class="n">xi</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">xi</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">xi</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">xi</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="n">xin</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">(</span><span class="n">xi</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">xi</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">xi</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">xi</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="n">xin</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">arcsin</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">min_el</span><span class="p">:</span>
+            <span class="n">in_FOV</span> <span class="o">=</span> <span class="kc">True</span>
+    
+    <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">-</span><span class="n">z</span></div>
+
+<div class="viewcode-block" id="point_ns_fence_rng_scan"><a class="viewcode-back" href="../modules/radar_scan_library.html#radar_scan_library.point_ns_fence_rng_scan">[docs]</a><span class="k">def</span> <span class="nf">point_ns_fence_rng_scan</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">angles</span><span class="p">,</span> <span class="n">dwell_time</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Pointing function for a uniform radnom north-south fence scan using a fixed state at epoch, i.e reproducable sequence. NED coordinate system.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">t_n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">t</span><span class="o">/</span><span class="n">dwell_time</span><span class="p">))</span>
+
+    <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">state</span> <span class="o">+</span> <span class="n">t_n</span><span class="p">)</span>
+    <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">angles</span><span class="p">))</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="n">angle</span> <span class="o">=</span> <span class="n">angles</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">ind</span><span class="p">)]</span>
+    <span class="n">no</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">angle</span><span class="o">/</span><span class="mf">180.0</span><span class="p">)</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">angle</span><span class="o">/</span><span class="mf">180.0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">no</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">d</span></div>
+
+<div class="viewcode-block" id="point_cross_fence_scan"><a class="viewcode-back" href="../modules/radar_scan_library.html#radar_scan_library.point_cross_fence_scan">[docs]</a><span class="k">def</span> <span class="nf">point_cross_fence_scan</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">angles</span><span class="p">,</span> <span class="n">dwell_time</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="n">n_ang</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">angles</span><span class="p">)</span>
+    <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">((</span><span class="n">t</span><span class="o">/</span><span class="n">dwell_time</span><span class="p">)</span> <span class="o">%</span> <span class="n">n_ang</span><span class="p">)</span>
+    <span class="n">angle</span> <span class="o">=</span> <span class="n">angles</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">ind</span><span class="p">)]</span>
+
+    <span class="k">if</span> <span class="n">ind</span> <span class="o">&lt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">n_ang</span><span class="o">*</span><span class="mf">0.5</span><span class="p">):</span>
+        <span class="n">no</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">angle</span><span class="o">/</span><span class="mf">180.0</span><span class="p">)</span>
+        <span class="n">d</span><span class="o">=-</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">angle</span><span class="o">/</span><span class="mf">180.0</span><span class="p">)</span>
+        <span class="n">e</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">e</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">angle</span><span class="o">/</span><span class="mf">180.0</span><span class="p">)</span>
+        <span class="n">d</span><span class="o">=-</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">angle</span><span class="o">/</span><span class="mf">180.0</span><span class="p">)</span>
+        <span class="n">no</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">return</span> <span class="n">no</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">d</span></div>
+
+<div class="viewcode-block" id="point_circle_fence"><a class="viewcode-back" href="../modules/radar_scan_library.html#radar_scan_library.point_circle_fence">[docs]</a><span class="k">def</span> <span class="nf">point_circle_fence</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">az</span><span class="p">,</span> <span class="n">el</span><span class="p">,</span> <span class="n">dwell_time</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="n">ind</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">((</span><span class="n">t</span><span class="o">/</span><span class="n">dwell_time</span><span class="p">)</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">az</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">az</span><span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="n">el</span><span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="mf">1.0</span></div>
+
+
+
+<div class="viewcode-block" id="calculate_fence_angles"><a class="viewcode-back" href="../modules/radar_scan_library.html#radar_scan_library.calculate_fence_angles">[docs]</a><span class="k">def</span> <span class="nf">calculate_fence_angles</span><span class="p">(</span><span class="n">min_el</span><span class="p">,</span> <span class="n">angle_step</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Calculate a vector of angles to be used in a fence scan.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">angular_extent</span><span class="o">=</span><span class="mf">180.0</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">min_el</span>
+    <span class="n">n_pos</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">angular_extent</span><span class="o">/</span><span class="n">angle_step</span><span class="p">)</span>
+    <span class="n">angles</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_pos</span><span class="p">)</span><span class="o">*</span><span class="n">angle_step</span><span class="o">+</span><span class="n">min_el</span>
+    <span class="k">return</span> <span class="n">angles</span></div>
+
+
+<span class="c1">#below are models</span>
+
+<div class="viewcode-block" id="beampark_model"><a class="viewcode-back" href="../modules/radar_scan_library.html#radar_scan_library.beampark_model">[docs]</a><span class="k">def</span> <span class="nf">beampark_model</span><span class="p">(</span><span class="n">az</span><span class="p">,</span> <span class="n">el</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">alt</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Beampark&quot;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;A beampark model.</span>
+<span class="sd">    </span>
+<span class="sd">        :param float az: Azimuth in degrees east of north.</span>
+<span class="sd">        :param float el: Elevation in degrees above horizon.</span>
+<span class="sd">        :param float lat: Geographical latitude of radar system in decimal degrees  (North+).</span>
+<span class="sd">        :param float lon: Geographical longitude of radar system in decimal degrees (East+).</span>
+<span class="sd">        :param float alt: Geographical altitude above geoid surface of radar system in meter.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">beampark</span> <span class="o">=</span> <span class="n">rs</span><span class="o">.</span><span class="n">RadarScan</span><span class="p">(</span>
+        <span class="n">lat</span><span class="o">=</span><span class="n">lat</span><span class="p">,</span>
+        <span class="n">lon</span><span class="o">=</span><span class="n">lon</span><span class="p">,</span>
+        <span class="n">alt</span><span class="o">=</span><span class="n">alt</span><span class="p">,</span>
+        <span class="n">pointing_function</span><span class="o">=</span><span class="n">point_beampark</span><span class="p">,</span>
+        <span class="n">min_dwell_time</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span>
+        <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+        <span class="n">pointing_coord</span><span class="o">=</span><span class="s1">&#39;azel&#39;</span>
+    <span class="p">)</span>
+    <span class="n">beampark</span><span class="o">.</span><span class="n">keyword_arguments</span><span class="p">(</span>
+        <span class="n">az</span> <span class="o">=</span> <span class="n">az</span><span class="p">,</span>
+        <span class="n">el</span> <span class="o">=</span> <span class="n">el</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">beampark</span><span class="o">.</span><span class="n">_info_str</span> <span class="o">=</span> <span class="s1">&#39;Dwell time: Inf, Pointing: azimuth=</span><span class="si">%.2f</span><span class="s1"> deg,elevation=</span><span class="si">%.2f</span><span class="s1"> deg&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">az</span><span class="p">,</span> <span class="n">el</span><span class="p">,)</span>
+    <span class="k">return</span> <span class="n">beampark</span></div>
+
+<div class="viewcode-block" id="n_const_pointing_model"><a class="viewcode-back" href="../modules/radar_scan_library.html#radar_scan_library.n_const_pointing_model">[docs]</a><span class="k">def</span> <span class="nf">n_const_pointing_model</span><span class="p">(</span><span class="n">az</span><span class="p">,</span> <span class="n">el</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">alt</span><span class="p">,</span> <span class="n">dwell_time</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Model for a n-point beampark with fixed dwell-times.</span>
+<span class="sd">    </span>
+<span class="sd">    :param list az: Azimuths in degrees east of north.</span>
+<span class="sd">    :param list el: Elevations in degrees above horizon.</span>
+<span class="sd">    :param float lat: Geographical latitude of radar system in decimal degrees  (North+).</span>
+<span class="sd">    :param float lon: Geographical longitude of radar system in decimal degrees (East+).</span>
+<span class="sd">    :param float alt: Geographical altitude above geoid surface of radar system in meter.</span>
+<span class="sd">    :param float dwell_time: Time spent at each azimuth-elevation pair of pointing direction.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">az</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">el</span><span class="p">),</span> <span class="s1">&#39;Length of az and el lists do not match (</span><span class="si">{}</span><span class="s1"> and </span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">az</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">el</span><span class="p">))</span>
+    
+    <span class="n">n_const_pointing</span> <span class="o">=</span> <span class="n">rs</span><span class="o">.</span><span class="n">RadarScan</span><span class="p">(</span>
+        <span class="n">lat</span> <span class="o">=</span> <span class="n">lat</span><span class="p">,</span>
+        <span class="n">lon</span> <span class="o">=</span> <span class="n">lon</span><span class="p">,</span>
+        <span class="n">alt</span> <span class="o">=</span> <span class="n">alt</span><span class="p">,</span>
+        <span class="n">pointing_function</span> <span class="o">=</span> <span class="n">point_n_beampark</span><span class="p">,</span>
+        <span class="n">min_dwell_time</span><span class="o">=</span><span class="n">dwell_time</span><span class="p">,</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%i</span><span class="s1"> beampark scan&#39;</span> <span class="o">%</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">az</span><span class="p">),),</span>
+        <span class="n">pointing_coord</span> <span class="o">=</span> <span class="s1">&#39;azel&#39;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">n_const_pointing</span><span class="o">.</span><span class="n">keyword_arguments</span><span class="p">(</span>
+        <span class="n">dwell_time</span> <span class="o">=</span> <span class="n">dwell_time</span><span class="p">,</span>
+        <span class="n">az</span> <span class="o">=</span> <span class="n">az</span><span class="p">,</span>
+        <span class="n">el</span> <span class="o">=</span> <span class="n">el</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">n_const_pointing</span><span class="o">.</span><span class="n">_scan_time</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">az</span><span class="p">)</span><span class="o">*</span><span class="n">dwell_time</span>
+    <span class="k">return</span> <span class="n">n_const_pointing</span></div>
+
+<div class="viewcode-block" id="n_dyn_dwell_pointing_model"><a class="viewcode-back" href="../modules/radar_scan_library.html#radar_scan_library.n_dyn_dwell_pointing_model">[docs]</a><span class="k">def</span> <span class="nf">n_dyn_dwell_pointing_model</span><span class="p">(</span><span class="n">az</span><span class="p">,</span> <span class="n">el</span><span class="p">,</span> <span class="n">dwells</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">alt</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Model for a n-point beampark with variable dwell-times.</span>
+<span class="sd">    </span>
+<span class="sd">    :param list az: Azimuths in degrees east of north.</span>
+<span class="sd">    :param list el: Elevations in degrees above horizon.</span>
+<span class="sd">    :param list dwells: Times to spend at each azimuth-elevation pair of pointing direction.</span>
+<span class="sd">    :param float lat: Geographical latitude of radar system in decimal degrees  (North+).</span>
+<span class="sd">    :param float lon: Geographical longitude of radar system in decimal degrees (East+).</span>
+<span class="sd">    :param float alt: Geographical altitude above geoid surface of radar system in meter.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">n_dyn_pointing</span> <span class="o">=</span> <span class="n">rs</span><span class="o">.</span><span class="n">RadarScan</span><span class="p">(</span>
+        <span class="n">lat</span> <span class="o">=</span> <span class="n">lat</span><span class="p">,</span>
+        <span class="n">lon</span> <span class="o">=</span> <span class="n">lon</span><span class="p">,</span>
+        <span class="n">alt</span> <span class="o">=</span> <span class="n">alt</span><span class="p">,</span>
+        <span class="n">pointing_function</span> <span class="o">=</span> <span class="n">point_n_dyn_beampark</span><span class="p">,</span>
+        <span class="n">min_dwell_time</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">dwells</span><span class="p">),</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;Dynamic dwell scan&#39;</span><span class="p">,</span>
+        <span class="n">pointing_coord</span> <span class="o">=</span> <span class="s1">&#39;azel&#39;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">n_dyn_pointing</span><span class="o">.</span><span class="n">_scan_time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dwells</span><span class="p">)</span>
+
+    <span class="n">n_dyn_pointing</span><span class="o">.</span><span class="n">keyword_arguments</span><span class="p">(</span>
+        <span class="n">dwell_time</span> <span class="o">=</span> <span class="n">dwells</span><span class="p">,</span>
+        <span class="n">az</span> <span class="o">=</span> <span class="n">az</span><span class="p">,</span>
+        <span class="n">el</span> <span class="o">=</span> <span class="n">el</span><span class="p">,</span>
+        <span class="n">scan_time</span> <span class="o">=</span> <span class="n">n_dyn_pointing</span><span class="o">.</span><span class="n">_scan_time</span><span class="p">,</span>
+    <span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">n_dyn_pointing</span></div>
+
+<div class="viewcode-block" id="sph_rng_model"><a class="viewcode-back" href="../modules/radar_scan_library.html#radar_scan_library.sph_rng_model">[docs]</a><span class="k">def</span> <span class="nf">sph_rng_model</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">alt</span><span class="p">,</span> <span class="n">min_el</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span> <span class="n">dwell_time</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">):</span>
+    <span class="n">sph_rng</span> <span class="o">=</span> <span class="n">rs</span><span class="o">.</span><span class="n">RadarScan</span><span class="p">(</span>
+        <span class="n">lat</span> <span class="o">=</span> <span class="n">lat</span><span class="p">,</span>
+        <span class="n">lon</span> <span class="o">=</span> <span class="n">lon</span><span class="p">,</span>
+        <span class="n">alt</span> <span class="o">=</span> <span class="n">alt</span><span class="p">,</span>
+        <span class="n">pointing_function</span> <span class="o">=</span> <span class="n">point_sph_rng_scan</span><span class="p">,</span>
+        <span class="n">min_dwell_time</span> <span class="o">=</span> <span class="n">dwell_time</span><span class="p">,</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;Spherical random scan&#39;</span><span class="p">,</span>
+        <span class="n">pointing_coord</span> <span class="o">=</span> <span class="s1">&#39;ned&#39;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">sph_rng</span><span class="o">.</span><span class="n">keyword_arguments</span><span class="p">(</span>
+        <span class="n">dwell_time</span> <span class="o">=</span> <span class="n">dwell_time</span><span class="p">,</span>
+        <span class="n">min_el</span> <span class="o">=</span> <span class="n">min_el</span><span class="o">/</span><span class="mf">180.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="mi">86246443</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">sph_rng</span><span class="o">.</span><span class="n">_info_str</span> <span class="o">=</span> <span class="s1">&#39;Dwell time: </span><span class="si">%.2f</span><span class="s1"> s, Minimum elevation=</span><span class="si">%.2f</span><span class="s1"> deg&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dwell_time</span><span class="p">,</span> <span class="n">min_el</span><span class="p">,)</span>
+    <span class="n">sph_rng</span><span class="o">.</span><span class="n">_scan_time</span> <span class="o">=</span> <span class="n">dwell_time</span><span class="o">*</span><span class="mf">1000.0</span>
+    <span class="k">return</span> <span class="n">sph_rng</span></div>
+
+<div class="viewcode-block" id="ew_fence_model"><a class="viewcode-back" href="../modules/radar_scan_library.html#radar_scan_library.ew_fence_model">[docs]</a><span class="k">def</span> <span class="nf">ew_fence_model</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">alt</span><span class="p">,</span> <span class="n">min_el</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span> <span class="n">angle_step</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">dwell_time</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">):</span>
+    <span class="n">ew_fence</span> <span class="o">=</span> <span class="n">rs</span><span class="o">.</span><span class="n">RadarScan</span><span class="p">(</span>
+        <span class="n">lat</span> <span class="o">=</span> <span class="n">lat</span><span class="p">,</span>
+        <span class="n">lon</span> <span class="o">=</span> <span class="n">lon</span><span class="p">,</span>
+        <span class="n">alt</span> <span class="o">=</span> <span class="n">alt</span><span class="p">,</span>
+        <span class="n">pointing_function</span> <span class="o">=</span> <span class="n">point_ew_fence_scan</span><span class="p">,</span>
+        <span class="n">min_dwell_time</span> <span class="o">=</span> <span class="n">dwell_time</span><span class="p">,</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;East west fence scan&#39;</span><span class="p">,</span>
+        <span class="n">pointing_coord</span> <span class="o">=</span> <span class="s1">&#39;ned&#39;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">angles</span> <span class="o">=</span> <span class="n">calculate_fence_angles</span><span class="p">(</span><span class="n">min_el</span> <span class="o">=</span> <span class="n">min_el</span><span class="p">,</span> <span class="n">angle_step</span> <span class="o">=</span> <span class="n">angle_step</span><span class="p">)</span>
+    <span class="n">ew_fence</span><span class="o">.</span><span class="n">keyword_arguments</span><span class="p">(</span>
+        <span class="n">dwell_time</span> <span class="o">=</span> <span class="n">dwell_time</span><span class="p">,</span>
+        <span class="n">angles</span> <span class="o">=</span> <span class="n">angles</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">ew_fence</span><span class="o">.</span><span class="n">_scan_time</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">angles</span><span class="p">)</span><span class="o">*</span><span class="n">dwell_time</span>
+    <span class="n">ew_fence</span><span class="o">.</span><span class="n">_info_str</span> <span class="o">=</span> <span class="s1">&#39;Dwell time: </span><span class="si">%.2f</span><span class="s1"> s, Scan time: </span><span class="si">%.2f</span><span class="s1"> s, Minimum elevation=</span><span class="si">%.2f</span><span class="s1"> deg&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dwell_time</span><span class="p">,</span> <span class="n">ew_fence</span><span class="o">.</span><span class="n">_scan_time</span><span class="p">,</span> <span class="n">min_el</span><span class="p">,)</span>
+    <span class="k">return</span> <span class="n">ew_fence</span></div>
+
+<div class="viewcode-block" id="ns_fence_model"><a class="viewcode-back" href="../modules/radar_scan_library.html#radar_scan_library.ns_fence_model">[docs]</a><span class="k">def</span> <span class="nf">ns_fence_model</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">alt</span><span class="p">,</span> <span class="n">min_el</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span> <span class="n">angle_step</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dwell_time</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">):</span>
+    <span class="n">ns_fence</span> <span class="o">=</span> <span class="n">ew_fence_model</span><span class="p">(</span><span class="n">min_el</span> <span class="o">=</span> <span class="n">min_el</span><span class="p">,</span> <span class="n">angle_step</span> <span class="o">=</span> <span class="n">angle_step</span><span class="p">,</span> <span class="n">dwell_time</span> <span class="o">=</span> <span class="n">dwell_time</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span> <span class="o">=</span> <span class="n">lon</span><span class="p">,</span> <span class="n">alt</span> <span class="o">=</span> <span class="n">alt</span><span class="p">)</span>
+    <span class="n">ns_fence</span><span class="o">.</span><span class="n">_pointing_function</span> <span class="o">=</span> <span class="n">point_ns_fence_scan</span>
+    <span class="n">ns_fence</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;North south fence scan&#39;</span>
+    <span class="k">return</span> <span class="n">ns_fence</span></div>
+
+<div class="viewcode-block" id="ns_fence_rng_model"><a class="viewcode-back" href="../modules/radar_scan_library.html#radar_scan_library.ns_fence_rng_model">[docs]</a><span class="k">def</span> <span class="nf">ns_fence_rng_model</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">alt</span><span class="p">,</span> <span class="n">min_el</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span> <span class="n">angle_step</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dwell_time</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">):</span>
+    <span class="n">ns_fence</span> <span class="o">=</span> <span class="n">ew_fence_model</span><span class="p">(</span><span class="n">min_el</span> <span class="o">=</span> <span class="n">min_el</span><span class="p">,</span> <span class="n">angle_step</span> <span class="o">=</span> <span class="n">angle_step</span><span class="p">,</span> <span class="n">dwell_time</span> <span class="o">=</span> <span class="n">dwell_time</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span> <span class="o">=</span> <span class="n">lon</span><span class="p">,</span> <span class="n">alt</span> <span class="o">=</span> <span class="n">alt</span><span class="p">)</span>
+    <span class="n">ns_fence</span><span class="o">.</span><span class="n">_pointing_function</span> <span class="o">=</span> <span class="n">point_ns_fence_rng_scan</span>
+
+    <span class="n">ns_fence</span><span class="o">.</span><span class="n">keyword_arguments</span><span class="p">(</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="mi">86246443</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">ns_fence</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;Random north south fence scan&#39;</span>
+    <span class="k">return</span> <span class="n">ns_fence</span></div>
+
+<div class="viewcode-block" id="flat_grid_model"><a class="viewcode-back" href="../modules/radar_scan_library.html#radar_scan_library.flat_grid_model">[docs]</a><span class="k">def</span> <span class="nf">flat_grid_model</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">alt</span><span class="p">,</span> <span class="n">n_side</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="mf">300e3</span><span class="p">,</span> <span class="n">side_len</span> <span class="o">=</span> <span class="mf">100e3</span><span class="p">,</span> <span class="n">dwell_time</span> <span class="o">=</span> <span class="mf">0.4</span><span class="p">):</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">side_len</span><span class="o">*</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">side_len</span><span class="o">*</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="n">n_side</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">side_len</span><span class="o">*</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">side_len</span><span class="o">*</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="n">n_side</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+    
+    <span class="n">xmat</span><span class="p">,</span> <span class="n">ymat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sparse</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">indexing</span><span class="o">=</span><span class="s1">&#39;ij&#39;</span><span class="p">)</span>
+    
+    <span class="n">az_points</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">el_points</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">xi</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_side</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">yi</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_side</span><span class="p">):</span>
+            <span class="n">az</span><span class="p">,</span> <span class="n">el</span><span class="p">,</span> <span class="n">r</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">cart_to_azel</span><span class="p">([</span><span class="n">xmat</span><span class="p">[</span><span class="n">xi</span><span class="p">,</span><span class="n">yi</span><span class="p">],</span> <span class="n">ymat</span><span class="p">[</span><span class="n">xi</span><span class="p">,</span><span class="n">yi</span><span class="p">],</span> <span class="n">height</span><span class="p">])</span>
+            <span class="n">az_points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">az</span><span class="p">)</span>
+            <span class="n">el_points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">el</span><span class="p">)</span>
+            
+    
+    <span class="n">grid_scan</span> <span class="o">=</span> <span class="n">n_const_pointing_model</span><span class="p">(</span><span class="n">lat</span><span class="o">=</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="o">=</span><span class="n">lon</span><span class="p">,</span> <span class="n">alt</span><span class="o">=</span><span class="n">alt</span><span class="p">,</span> <span class="n">az</span> <span class="o">=</span> <span class="n">az_points</span><span class="p">,</span> <span class="n">el</span> <span class="o">=</span> <span class="n">el_points</span><span class="p">,</span> <span class="n">dwell_time</span> <span class="o">=</span> <span class="n">dwell_time</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">grid_scan</span></div>
+    
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/doc.html">Documentation</a></li>
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,155 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>keplerian_simple &#8212; SORTS++ 2.4.1 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 2.4.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-keplerian_simple">
+<span id="keplerian-simple"></span><h1>keplerian_simple<a class="headerlink" href="#module-keplerian_simple" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="keplerian_simple.angle_deg">
+<code class="descclassname">keplerian_simple.</code><code class="descname">angle_deg</code><span class="sig-paren">(</span><em>a</em>, <em>b</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_simple.html#angle_deg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_simple.angle_deg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="keplerian_simple.find_Ek">
+<code class="descclassname">keplerian_simple.</code><code class="descname">find_Ek</code><span class="sig-paren">(</span><em>mu</em>, <em>e</em>, <em>n_kaula=20</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_simple.html#find_Ek"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_simple.find_Ek" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="keplerian_simple.get_earth">
+<code class="descclassname">keplerian_simple.</code><code class="descname">get_earth</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_simple.html#get_earth"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_simple.get_earth" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="keplerian_simple.get_passes">
+<code class="descclassname">keplerian_simple.</code><code class="descname">get_passes</code><span class="sig-paren">(</span><em>t0</em>, <em>t1</em>, <em>a</em>, <em>e</em>, <em>i</em>, <em>raan</em>, <em>aop</em>, <em>station</em>, <em>pointing_dir</em>, <em>mu0=0.0</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_simple.html#get_passes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_simple.get_passes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="keplerian_simple.gmst">
+<code class="descclassname">keplerian_simple.</code><code class="descname">gmst</code><span class="sig-paren">(</span><em>mjd_UT1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_simple.html#gmst"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_simple.gmst" title="Permalink to this definition">¶</a></dt>
+<dd><p>Greenwich Mean Sidereal Time (copied from Montenbruck &amp; Gill: Satellite orbits)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="keplerian_simple.kep2ecef">
+<code class="descclassname">keplerian_simple.</code><code class="descname">kep2ecef</code><span class="sig-paren">(</span><em>t</em>, <em>a</em>, <em>e</em>, <em>i</em>, <em>raan</em>, <em>aop</em>, <em>t_oe=0.0</em>, <em>mu0=0.0</em>, <em>n_kaula=20</em>, <em>mjd0=57084</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_simple.html#kep2ecef"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_simple.kep2ecef" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="keplerian_simple.m_get_orbit">
+<code class="descclassname">keplerian_simple.</code><code class="descname">m_get_orbit</code><span class="sig-paren">(</span><em>t</em>, <em>a</em>, <em>e</em>, <em>inc</em>, <em>raan</em>, <em>aop</em>, <em>mu0=0.0</em>, <em>C_D=0.0</em>, <em>A=0.0</em>, <em>m=0.0</em>, <em>mjd0=57084</em>, <em>n_kaula=20</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_simple.html#m_get_orbit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_simple.m_get_orbit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="keplerian_simple.plot_alt">
+<code class="descclassname">keplerian_simple.</code><code class="descname">plot_alt</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_simple.html#plot_alt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_simple.plot_alt" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="keplerian_simple.plot_orbits">
+<code class="descclassname">keplerian_simple.</code><code class="descname">plot_orbits</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_simple.html#plot_orbits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_simple.plot_orbits" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="keplerian_simple.simple_propagator">
+<em class="property">class </em><code class="descclassname">keplerian_simple.</code><code class="descname">simple_propagator</code><a class="reference internal" href="../_modules/keplerian_simple.html#simple_propagator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_simple.simple_propagator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="base_propagator.html#base_propagator.base_propagator" title="base_propagator.base_propagator"><code class="xref py py-class docutils literal notranslate"><span class="pre">base_propagator.base_propagator</span></code></a></p>
+<dl class="method">
+<dt id="keplerian_simple.simple_propagator.get_orbit">
+<code class="descname">get_orbit</code><span class="sig-paren">(</span><em>t</em>, <em>a</em>, <em>e</em>, <em>inc</em>, <em>raan</em>, <em>aop</em>, <em>mu0</em>, <em>mjd0=2457126.2729</em>, <em>A=1</em>, <em>m=1000.0</em>, <em>C_D=2.3</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_simple.html#simple_propagator.get_orbit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_simple.simple_propagator.get_orbit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="keplerian_simple.test_diffs">
+<code class="descclassname">keplerian_simple.</code><code class="descname">test_diffs</code><span class="sig-paren">(</span><em>da=0.001</em>, <em>de=-0.0006</em>, <em>di=0.001</em>, <em>dOm=0.001</em>, <em>dom=0.001</em>, <em>dmu=1e-05</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_simple.html#test_diffs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_simple.test_diffs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="keplerian_simple.test_kaula">
+<code class="descclassname">keplerian_simple.</code><code class="descname">test_kaula</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/keplerian_simple.html#test_kaula"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#keplerian_simple.test_kaula" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/modules/keplerian_simple.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 2.4.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

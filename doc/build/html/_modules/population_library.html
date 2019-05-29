@@ -1,0 +1,1259 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>population_library &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for population_library</h1><div class="highlight"><pre>
+<span></span><span class="sd">&#39;&#39;&#39;Library of population instances.</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;TZ&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;GMT&#39;</span>
+<span class="n">time</span><span class="o">.</span><span class="n">tzset</span><span class="p">()</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.constants</span> <span class="k">as</span> <span class="nn">consts</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+
+<span class="kn">from</span> <span class="nn">population</span> <span class="k">import</span> <span class="n">Population</span>
+<span class="kn">import</span> <span class="nn">population_filter</span> <span class="k">as</span> <span class="nn">pf</span>
+<span class="kn">import</span> <span class="nn">TLE_tools</span> <span class="k">as</span> <span class="nn">tle</span>
+<span class="kn">import</span> <span class="nn">dpt_tools</span> <span class="k">as</span> <span class="nn">dpt</span>
+<span class="kn">from</span> <span class="nn">mpi4py</span> <span class="k">import</span> <span class="n">MPI</span>
+
+<span class="kn">import</span> <span class="nn">debris</span>
+
+<span class="n">comm</span> <span class="o">=</span> <span class="n">MPI</span><span class="o">.</span><span class="n">COMM_WORLD</span>
+
+<span class="kn">from</span> <span class="nn">sorts_config</span> <span class="k">import</span> <span class="n">p</span> <span class="k">as</span> <span class="n">default_propagator</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">propagator_sgp4</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">propagator_sgp4</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">propagator_orekit</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">propagator_orekit</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="master_catalog"><a class="viewcode-back" href="../modules/population_library.html#population_library.master_catalog">[docs]</a><span class="k">def</span> <span class="nf">master_catalog</span><span class="p">(</span>
+        <span class="n">input_file</span> <span class="o">=</span> <span class="s2">&quot;./master/celn_20090501_00.sim&quot;</span><span class="p">,</span>
+        <span class="n">mjd0</span> <span class="o">=</span> <span class="mf">54952.0</span><span class="p">,</span>
+        <span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">propagator</span> <span class="o">=</span> <span class="n">default_propagator</span><span class="p">,</span>
+        <span class="n">propagator_options</span> <span class="o">=</span> <span class="p">{},</span>
+    <span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Return the master catalog specified in the input file as a population instance. The catalog only contains the master sampling objects and not an actual realization of the population using the factor.</span>
+
+<span class="sd">    The format of the input master files is:</span>
+
+<span class="sd">        0. ID</span>
+<span class="sd">        1. Factor</span>
+<span class="sd">        2. Mass [kg]</span>
+<span class="sd">        3. Diameter [m]</span>
+<span class="sd">        4. m/A [kg/m2]</span>
+<span class="sd">        5. a [km]</span>
+<span class="sd">        6. e</span>
+<span class="sd">        7. i [deg]</span>
+<span class="sd">        8. RAAN [deg]</span>
+<span class="sd">        9. AoP [deg]</span>
+<span class="sd">        10. M [deg]</span>
+
+
+<span class="sd">    :param str input_file: Path to the input MASTER file.</span>
+<span class="sd">    :param bool sort: If :code:`True` sort according to diameters in descending order.</span>
+<span class="sd">    :param float mjd0: The epoch of the catalog file in Modified Julian Days.</span>
+<span class="sd">    :param PropagatorBase propagator: Propagator class pointer used for :class:`space_object.SpaceObject`.</span>
+<span class="sd">    :param dict propagator_options: Propagator initialization keyword arguments.</span>
+<span class="sd">    </span>
+
+<span class="sd">    :return: Master catalog</span>
+<span class="sd">    :rtype: population.Population</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">master_raw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="n">input_file</span><span class="p">);</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">7</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">9</span><span class="p">,</span><span class="mi">10</span><span class="p">]</span>
+
+    <span class="n">master</span> <span class="o">=</span> <span class="n">Population</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s1">&#39;MASTER-2009&#39;</span><span class="p">,</span>
+        <span class="n">extra_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;m&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;C_D&#39;</span><span class="p">,</span> <span class="s1">&#39;C_R&#39;</span><span class="p">,</span> <span class="s1">&#39;Factor&#39;</span><span class="p">],</span>
+        <span class="n">space_object_uses</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span>
+        <span class="n">propagator</span> <span class="o">=</span> <span class="n">propagator</span><span class="p">,</span>
+        <span class="n">propagator_options</span> <span class="o">=</span> <span class="n">propagator_options</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">master</span><span class="o">.</span><span class="n">allocate</span><span class="p">(</span><span class="n">master_raw</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="n">master</span><span class="p">[:,:</span><span class="mi">7</span><span class="p">]</span> <span class="o">=</span> <span class="n">master_raw</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span>
+    <span class="n">master</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="s1">&#39;mjd0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mjd0</span>
+    <span class="n">master</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">master_raw</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">master_raw</span><span class="p">[:,</span> <span class="mi">4</span><span class="p">])</span>
+    <span class="n">master</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="s1">&#39;m&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">master_raw</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span>
+    <span class="n">master</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="s1">&#39;d&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">master_raw</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">]</span>
+    <span class="n">master</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="s1">&#39;C_D&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.3</span>
+    <span class="n">master</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="s1">&#39;C_R&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">master</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="s1">&#39;Factor&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">master_raw</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">diams</span> <span class="o">=</span> <span class="n">master_raw</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">sort</span><span class="p">:</span>
+        <span class="n">idxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">diams</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">idxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">diams</span><span class="p">))</span>
+
+    <span class="n">master</span><span class="o">.</span><span class="n">objs</span> <span class="o">=</span> <span class="n">master</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">idxs</span><span class="p">]</span>
+    
+    <span class="k">return</span> <span class="n">master</span></div>
+
+<div class="viewcode-block" id="master_catalog_factor"><a class="viewcode-back" href="../modules/population_library.html#population_library.master_catalog_factor">[docs]</a><span class="k">def</span> <span class="nf">master_catalog_factor</span><span class="p">(</span>
+            <span class="n">input_file</span> <span class="o">=</span> <span class="s2">&quot;./master/celn_20090501_00.sim&quot;</span><span class="p">,</span>
+            <span class="n">mjd0</span> <span class="o">=</span> <span class="mf">54952.0</span><span class="p">,</span>
+            <span class="n">master_base</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">treshhold</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span>
+            <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">propagator</span> <span class="o">=</span> <span class="n">default_propagator</span><span class="p">,</span>
+            <span class="n">propagator_options</span> <span class="o">=</span> <span class="p">{},</span>
+        <span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Returns a random realization of the master population specified by the input file/population. In other words, each sampling object in the catalog is sampled a &quot;factor&quot; number of times with random mean anomalies to create the population.</span>
+
+<span class="sd">    :param str input_file: Path to the input MASTER file. Is not used if :code:`master_base` is given.</span>
+<span class="sd">    :param float mjd0: The epoch of the catalog file in Modified Julian Days. Is not used if :code:`master_base` is given.</span>
+<span class="sd">    :param population.Population master_base: A master catalog consisting only of sampling objects. This catalog will be modified and the pointer to it returned.</span>
+<span class="sd">    :param bool sort: If :code:`True` sort according to diameters in ascending order.</span>
+<span class="sd">    :param float treshhold: Diameter limit in meters below witch sampling objects are not included. Can be :code:`None` to skip filtering.</span>
+<span class="sd">    :param int seed: Random number generator seed given to :code:`numpy.random.seed` to allow for consisted generation of a random realization of the population. If seed is :code:`None` a random seed from high-entropy data is used.</span>
+<span class="sd">    :param PropagatorBase propagator: Propagator class pointer used for :class:`space_object.SpaceObject`. Is not used if :code:`master_base` is given.</span>
+<span class="sd">    :param dict propagator_options: Propagator initialization keyword arguments. Is not used if :code:`master_base` is given.</span>
+<span class="sd">    </span>
+
+<span class="sd">    :return: Master population</span>
+<span class="sd">    :rtype: population.Population</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">master_base</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">master_base</span> <span class="o">=</span> <span class="n">master_catalog</span><span class="p">(</span>
+            <span class="n">input_file</span> <span class="o">=</span> <span class="n">input_file</span><span class="p">,</span>
+            <span class="n">mjd0</span> <span class="o">=</span> <span class="n">mjd0</span><span class="p">,</span>
+            <span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">propagator</span> <span class="o">=</span> <span class="n">propagator</span><span class="p">,</span>
+            <span class="n">propagator_options</span> <span class="o">=</span> <span class="n">propagator_options</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">master_base</span><span class="o">.</span><span class="n">name</span> <span class="o">+=</span> <span class="s1">&#39;-Factor&#39;</span>
+    
+    <span class="k">if</span> <span class="n">treshhold</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">master_base</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">d</span><span class="p">:</span> <span class="n">d</span> <span class="o">&gt;=</span> <span class="n">treshhold</span><span class="p">)</span>
+
+    <span class="n">full_objs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">master_base</span><span class="p">[</span><span class="s1">&#39;Factor&#39;</span><span class="p">]))),</span><span class="n">master_base</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+    
+    <span class="n">max_oid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">master_base</span><span class="p">[</span><span class="s1">&#39;oid&#39;</span><span class="p">])</span>
+    <span class="n">max_factor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">master_base</span><span class="p">[</span><span class="s1">&#39;Factor&#39;</span><span class="p">])))</span>
+    <span class="n">oid_extend</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">max_oid</span><span class="p">))</span><span class="o">+</span><span class="n">max_factor</span><span class="o">+</span><span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">oid_mag</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">max_oid</span><span class="p">)))</span>
+
+    <span class="n">i</span><span class="o">=</span><span class="mi">0</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">master_base</span><span class="o">.</span><span class="n">objs</span><span class="p">:</span>
+        <span class="n">f_int</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">13</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="n">f_int</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">ip</span> <span class="o">=</span> <span class="n">i</span><span class="o">+</span><span class="n">f_int</span>
+            <span class="k">for</span> <span class="n">coli</span><span class="p">,</span> <span class="n">head</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">master_base</span><span class="o">.</span><span class="n">header</span><span class="p">):</span>
+                <span class="n">full_objs</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">ip</span><span class="p">,</span><span class="n">coli</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="n">head</span><span class="p">]</span>
+
+            <span class="n">id_str</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;1</span><span class="si">{:03d}{:09d}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">ind</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">f_int</span><span class="p">)]</span>
+            <span class="n">id_str</span> <span class="o">=</span> <span class="p">[</span> <span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">id_str</span><span class="p">]</span>
+
+            <span class="n">full_objs</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">ip</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">id_str</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+            <span class="n">full_objs</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">ip</span><span class="p">,</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">f_int</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="mf">2.0</span>
+            <span class="n">i</span><span class="o">=</span><span class="n">ip</span>
+
+    <span class="n">master_base</span><span class="o">.</span><span class="n">allocate</span><span class="p">(</span><span class="n">full_objs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="n">master_base</span><span class="p">[:,:]</span> <span class="o">=</span> <span class="n">full_objs</span>
+
+
+    <span class="k">return</span> <span class="n">master_base</span></div>
+
+<div class="viewcode-block" id="filtered_master_catalog_factor"><a class="viewcode-back" href="../modules/population_library.html#population_library.filtered_master_catalog_factor">[docs]</a><span class="k">def</span> <span class="nf">filtered_master_catalog_factor</span><span class="p">(</span>
+            <span class="n">radar</span><span class="p">,</span>
+            <span class="n">input_file</span><span class="o">=</span><span class="s2">&quot;./master/celn_20090501_00.sim&quot;</span><span class="p">,</span>
+            <span class="n">detectability_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">mjd0</span><span class="o">=</span><span class="mf">54952.0</span><span class="p">,</span>
+            <span class="n">treshhold</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span>
+            <span class="n">min_inc</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+            <span class="n">seed</span><span class="o">=</span><span class="mi">65487945</span><span class="p">,</span>
+            <span class="n">prop_time</span><span class="o">=</span><span class="mf">24.0</span><span class="p">,</span>
+            <span class="n">propagator</span> <span class="o">=</span> <span class="n">default_propagator</span><span class="p">,</span>
+            <span class="n">propagator_options</span> <span class="o">=</span> <span class="p">{},</span>
+        <span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Returns a random realization of the master population specified by the input file/population but filtered according detectability from a :class:`radar_config.RadarSystem`.</span>
+
+<span class="sd">    Filter results are saved in the same folder as the :code:`input_file` variable specifies the Master catalog file location.</span>
+<span class="sd">    </span>
+<span class="sd">    :param RadarSystem radar: The radar configuration used for the detectability filtering.</span>
+<span class="sd">    :param str input_file: Path to the input MASTER file. Is not used if :code:`master_base` is given.</span>
+<span class="sd">    :param str detectability_file: Path to the output-definition file so that a cached file can be used to load population instead of re-calculating every time.</span>
+<span class="sd">    :param bool sort: If :code:`True` sort according to diameters in ascending order.</span>
+<span class="sd">    :param float treshhold: Diameter limit in meters below witch sampling objects are not included. Can be :code:`None` to skip filtering.</span>
+<span class="sd">    :param float min_inc: Inclination limit in degrees below witch sampling objects are not included. Can be :code:`None` to skip filtering.</span>
+<span class="sd">    :param int seed: Random number generator seed given to :code:`numpy.random.seed` to allow for consisted generation of a random realization of the population. If seed is :code:`None` a random seed from high-entropy data is used.</span>
+<span class="sd">    :param float prop_time: Propagation time used to check if object is detectable.</span>
+<span class="sd">    :param PropagatorBase propagator: Propagator class pointer used for :class:`space_object.SpaceObject`.</span>
+<span class="sd">    :param dict propagator_options: Propagator initialization keyword arguments.</span>
+
+<span class="sd">    :return: Filtered master population</span>
+<span class="sd">    :rtype: population.Population</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">mc</span> <span class="o">=</span> <span class="n">master_catalog</span><span class="p">(</span>
+            <span class="n">input_file</span> <span class="o">=</span> <span class="n">input_file</span><span class="p">,</span>
+            <span class="n">mjd0</span> <span class="o">=</span> <span class="n">mjd0</span><span class="p">,</span>
+            <span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">propagator</span> <span class="o">=</span> <span class="n">propagator</span><span class="p">,</span>
+            <span class="n">propagator_options</span> <span class="o">=</span> <span class="n">propagator_options</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">detectability_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">output_file</span> <span class="o">=</span> <span class="n">input_file</span><span class="p">[:</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span>\
+            <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="n">radar</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="s1">&#39;_&#39;</span><span class="p">)</span>\
+            <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="n">propagator</span><span class="o">.</span><span class="vm">__name__</span>\
+            <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">min_SNRdb</span><span class="p">)))</span> <span class="o">+</span> <span class="s1">&#39;SNRdB&#39;</span>\
+            <span class="o">+</span> <span class="s1">&#39;.h5&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">output_file</span> <span class="o">=</span> <span class="n">detectability_file</span>
+    <span class="n">mc</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;Detectable &#39;</span> <span class="o">+</span> <span class="n">mc</span><span class="o">.</span><span class="n">name</span>
+    
+    <span class="k">if</span> <span class="n">treshhold</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">mc</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="n">treshhold</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">min_inc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">mc</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="n">min_inc</span><span class="p">)</span>
+
+    <span class="c1">#FOR DEBUG</span>
+    <span class="c1">#mc._objs = mc._objs[:20,]</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">output_file</span><span class="p">):</span>
+        <span class="n">pf</span><span class="o">.</span><span class="n">filter_objects</span><span class="p">(</span><span class="n">radar</span><span class="p">,</span> <span class="n">mc</span><span class="p">,</span> <span class="n">ofname</span><span class="o">=</span><span class="n">output_file</span><span class="p">,</span> <span class="n">prop_time</span><span class="o">=</span><span class="n">prop_time</span><span class="p">)</span>
+
+    <span class="n">h</span><span class="o">=</span><span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">output_file</span><span class="p">,</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+    <span class="n">detectable</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">h</span><span class="p">[</span><span class="s2">&quot;detectable&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+    <span class="n">h</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="n">mc</span><span class="o">.</span><span class="n">objs</span> <span class="o">=</span> <span class="n">mc</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">detectable</span><span class="p">]</span>
+    <span class="n">mc</span> <span class="o">=</span> <span class="n">master_catalog_factor</span><span class="p">(</span><span class="n">master_base</span> <span class="o">=</span> <span class="n">mc</span><span class="p">,</span> <span class="n">treshhold</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">seed</span> <span class="o">=</span> <span class="n">seed</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">mc</span></div>
+
+<span class="k">def</span> <span class="nf">_find_range_for_snr</span><span class="p">(</span><span class="n">radar</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">start_r</span> <span class="p">,</span><span class="n">SNR</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">snr_func</span><span class="p">(</span><span class="n">rang</span><span class="p">):</span>
+        <span class="n">snrs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">txi</span><span class="p">,</span> <span class="n">tx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_tx</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">rxi</span><span class="p">,</span> <span class="n">rx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">radar</span><span class="o">.</span><span class="n">_rx</span><span class="p">):</span>
+                <span class="n">snr_tmp</span> <span class="o">=</span> <span class="n">debris</span><span class="o">.</span><span class="n">hard_target_enr</span><span class="p">(</span>
+                    <span class="n">tx</span><span class="o">.</span><span class="n">beam</span><span class="o">.</span><span class="n">I_0</span><span class="p">,</span>
+                    <span class="n">tx</span><span class="o">.</span><span class="n">beam</span><span class="o">.</span><span class="n">I_0</span><span class="p">,</span>
+                    <span class="n">rx</span><span class="o">.</span><span class="n">wavelength</span><span class="p">,</span>
+                    <span class="n">tx</span><span class="o">.</span><span class="n">tx_power</span><span class="p">,</span>
+                    <span class="n">rang</span><span class="p">,</span>
+                    <span class="n">rang</span><span class="p">,</span>
+                    <span class="n">diameter_m</span> <span class="o">=</span> <span class="n">d</span><span class="p">,</span>
+                    <span class="n">bandwidth</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">coh_int_bandwidth</span><span class="p">,</span>
+                    <span class="n">rx_noise_temp</span> <span class="o">=</span> <span class="n">rx</span><span class="o">.</span><span class="n">rx_noise</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">snrs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">snr_tmp</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">snrs</span><span class="p">))</span>
+
+    <span class="n">max_snr</span> <span class="o">=</span> <span class="n">snr_func</span><span class="p">(</span><span class="n">start_r</span><span class="p">)</span>
+    <span class="n">rn</span> <span class="o">=</span> <span class="n">start_r</span>
+    <span class="n">delta_rn_base</span> <span class="o">=</span> <span class="mf">10000e3</span>
+    <span class="n">delta_rn</span> <span class="o">=</span> <span class="n">delta_rn_base</span>
+    <span class="k">while</span> <span class="n">max_snr</span> <span class="o">&lt;</span> <span class="n">SNR</span><span class="p">:</span>
+        <span class="n">rn</span> <span class="o">-=</span> <span class="n">delta_rn</span>
+        <span class="n">max_snr</span> <span class="o">=</span> <span class="n">snr_func</span><span class="p">(</span><span class="n">rn</span><span class="p">)</span>
+        
+        <span class="n">delta_rn</span> <span class="o">=</span> <span class="n">delta_rn_base</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">max_snr</span><span class="o">/</span><span class="n">SNR</span> <span class="o">+</span> <span class="mf">0.0001</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">rn</span><span class="p">,</span> <span class="n">max_snr</span>
+        
+
+
+<div class="viewcode-block" id="NESCv9_mini_moons"><a class="viewcode-back" href="../modules/population_library.html#population_library.NESCv9_mini_moons">[docs]</a><span class="k">def</span> <span class="nf">NESCv9_mini_moons</span><span class="p">(</span><span class="n">albedo</span><span class="p">,</span> <span class="n">propagate_SNR</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">radar</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">truncate</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">propagator_rebound</span> <span class="k">import</span> <span class="n">PropagatorRebound</span>
+
+    <span class="n">_opts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">in_frame</span> <span class="o">=</span> <span class="s1">&#39;HeliocentricECLIPJ2000&#39;</span><span class="p">,</span>
+        <span class="n">out_frame</span> <span class="o">=</span> <span class="s1">&#39;ITRF&#39;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1">#fname = &#39;./data/NESCv9reintv1.TCO.withoutH.kep.des&#39;</span>
+    <span class="n">fname</span> <span class="o">=</span> <span class="s1">&#39;./data/NESCv9reintv1.TCO.withH.kep.des&#39;</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">truncate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">_trunc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],),</span> <span class="kc">True</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
+        <span class="n">_trunc</span><span class="p">[</span><span class="n">truncate</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">_trunc</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Data truncated to: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+    <span class="n">AU</span> <span class="o">=</span> <span class="mf">149597871.0</span> <span class="c1">#km</span>
+
+    <span class="n">max_check</span> <span class="o">=</span> <span class="mf">365.0</span><span class="o">*</span><span class="mf">3600.0</span><span class="o">*</span><span class="mf">24.0</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    1. synthetic orbit designation</span>
+<span class="sd">    2. orbital element type (KEP for heliocentric Keplerian)</span>
+<span class="sd">    3. semimajor axis (au)</span>
+<span class="sd">    4. eccentricity</span>
+<span class="sd">    5. inclination (deg)</span>
+<span class="sd">    6. longitude of ascending node (deg)</span>
+<span class="sd">    7. argument of perihelion (deg)</span>
+<span class="sd">    8. mean anomaly (deg)</span>
+<span class="sd">    9. H-magnitude (filler value)</span>
+<span class="sd">    10. epoch for which the input orbit is valid (modified Julian date)</span>
+<span class="sd">    11. index (1)</span>
+<span class="sd">    12. number of parameters (6)</span>
+<span class="sd">    13. MOID (filler value)</span>
+<span class="sd">    14. Code with which created (OPENORB)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">pop</span> <span class="o">=</span> <span class="n">Population</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s1">&#39;NESCv9&#39;</span><span class="p">,</span>
+        <span class="n">extra_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;d&#39;</span><span class="p">],</span>
+        <span class="n">space_object_uses</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">],</span>
+        <span class="n">propagator</span> <span class="o">=</span> <span class="n">PropagatorRebound</span><span class="p">,</span>
+        <span class="n">propagator_options</span> <span class="o">=</span> <span class="n">_opts</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">pop</span><span class="o">.</span><span class="n">allocate</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="n">pop</span><span class="p">[</span><span class="s1">&#39;oid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pop</span><span class="p">))</span>
+    <span class="n">pop</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">AU</span>
+    <span class="n">pop</span><span class="p">[</span><span class="s1">&#39;e&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">3</span><span class="p">]</span>
+    <span class="n">pop</span><span class="p">[</span><span class="s1">&#39;i&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">4</span><span class="p">]</span>
+    <span class="n">pop</span><span class="p">[</span><span class="s1">&#39;raan&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">5</span><span class="p">]</span>
+    <span class="n">pop</span><span class="p">[</span><span class="s1">&#39;aop&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">6</span><span class="p">]</span>
+    <span class="n">pop</span><span class="p">[</span><span class="s1">&#39;mu0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">7</span><span class="p">]</span>
+    <span class="n">pop</span><span class="p">[</span><span class="s1">&#39;mjd0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">9</span><span class="p">]</span>
+    <span class="n">pop</span><span class="p">[</span><span class="s1">&#39;d&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">10.0</span><span class="o">**</span><span class="p">(</span><span class="mf">3.1236</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">albedo</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.2</span><span class="o">*</span><span class="n">data</span><span class="p">[:,</span><span class="mi">8</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">propagate_SNR</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">my_iter</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">comm</span><span class="o">.</span><span class="n">rank</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">pop</span><span class="p">),</span> <span class="n">comm</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+
+        <span class="n">ranges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">pop</span><span class="p">),),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">_d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pop</span><span class="p">[</span><span class="s1">&#39;d&#39;</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="n">ind</span> <span class="ow">in</span> <span class="n">my_iter</span><span class="p">:</span>
+                <span class="n">ranges</span><span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="n">_snr</span> <span class="o">=</span> <span class="n">_find_range_for_snr</span><span class="p">(</span><span class="n">radar</span><span class="p">,</span> <span class="n">_d</span><span class="p">,</span> <span class="n">AU</span><span class="o">*</span><span class="mf">1e3</span> <span class="p">,</span><span class="n">propagate_SNR</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Object </span><span class="si">{}</span><span class="s1"> found range </span><span class="si">{:.3f}</span><span class="s1"> LD @ </span><span class="si">{:.2f}</span><span class="s1"> SNR&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span> <span class="n">ranges</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span><span class="o">/</span><span class="mf">384400e3</span><span class="p">,</span> <span class="n">_snr</span><span class="p">))</span>
+
+        <span class="n">t_at_dist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">pop</span><span class="p">),),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        
+        <span class="n">new_elements</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">6</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">pop</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">prop_ok</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">pop</span><span class="p">),),</span> <span class="kc">True</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
+
+        <span class="n">obj_gen</span> <span class="o">=</span> <span class="n">pop</span><span class="o">.</span><span class="n">object_generator</span><span class="p">()</span>
+
+        <span class="n">t_v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">max_check</span><span class="p">,</span> <span class="mf">3600.0</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">obj_gen</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">ind</span> <span class="ow">in</span> <span class="n">my_iter</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Checking object </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ind</span><span class="p">))</span>
+                <span class="n">states</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">get_orbit</span><span class="p">(</span><span class="n">t_v</span><span class="p">)</span>
+                <span class="n">dists</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">states</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                <span class="n">_check</span> <span class="o">=</span> <span class="n">dists</span> <span class="o">&lt;</span> <span class="n">ranges</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">_check</span><span class="p">):</span>
+                    <span class="n">t_at_dist</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">t_v</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">_check</span><span class="p">)]</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;|- Passed @ </span><span class="si">{:.2f}</span><span class="s1"> days&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">t_at_dist</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mf">24.0</span><span class="o">*</span><span class="mf">3600.0</span><span class="p">)))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">prop_ok</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        
+        <span class="k">if</span> <span class="s1">&#39;out_frame&#39;</span> <span class="ow">in</span> <span class="n">pop</span><span class="o">.</span><span class="n">propagator_options</span><span class="p">:</span>
+            <span class="n">out_f</span> <span class="o">=</span> <span class="n">pop</span><span class="o">.</span><span class="n">propagator_options</span><span class="p">[</span><span class="s1">&#39;out_frame&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">out_f</span> <span class="o">=</span> <span class="s1">&#39;ITRF&#39;</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">propagator_options</span><span class="p">[</span><span class="s1">&#39;out_frame&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_opts</span><span class="p">[</span><span class="s1">&#39;in_frame&#39;</span><span class="p">]</span>
+
+        <span class="n">obj_gen</span> <span class="o">=</span> <span class="n">pop</span><span class="o">.</span><span class="n">object_generator</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">obj_gen</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">ind</span> <span class="ow">in</span> <span class="n">my_iter</span> <span class="ow">and</span> <span class="n">prop_ok</span><span class="p">[</span><span class="n">ind</span><span class="p">]:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;PID</span><span class="si">{}</span><span class="s1">: propagating obj </span><span class="si">{}</span><span class="s1"> </span><span class="si">{:.2f}</span><span class="s1"> h&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">comm</span><span class="o">.</span><span class="n">rank</span><span class="p">,</span> <span class="n">ind</span><span class="p">,</span> <span class="n">t_at_dist</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span><span class="o">/</span><span class="mf">3600.0</span><span class="p">))</span>
+
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">state</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">get_state</span><span class="p">(</span><span class="n">t_at_dist</span><span class="p">[</span><span class="n">ind</span><span class="p">])</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="n">prop_ok</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">continue</span>
+
+                <span class="n">kep</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">cart2kep</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">m</span><span class="p">,</span> <span class="n">M_cent</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">M_cent</span><span class="p">,</span> <span class="n">radians</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">kep</span><span class="p">)):</span>
+                    <span class="n">prop_ok</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">continue</span>
+
+                <span class="n">new_elements</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="mf">1e-3</span>
+                <span class="n">new_elements</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">new_elements</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+                <span class="n">new_elements</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+                <span class="n">new_elements</span><span class="p">[</span><span class="mi">4</span><span class="p">,</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+                <span class="n">new_elements</span><span class="p">[</span><span class="mi">5</span><span class="p">,</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">true2mean</span><span class="p">(</span><span class="n">kep</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">kep</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">radians</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">pid</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">comm</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">pop</span><span class="p">),</span> <span class="n">comm</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+                <span class="n">new_elements</span><span class="p">[:,</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">bcast</span><span class="p">(</span><span class="n">new_elements</span><span class="p">[:,</span><span class="n">ind</span><span class="p">],</span> <span class="n">root</span><span class="o">=</span><span class="n">pid</span><span class="p">)</span>
+                <span class="n">prop_ok</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">bcast</span><span class="p">(</span><span class="n">prop_ok</span><span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="n">root</span><span class="o">=</span><span class="n">pid</span><span class="p">)</span>
+                <span class="n">t_at_dist</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">bcast</span><span class="p">(</span><span class="n">t_at_dist</span><span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="n">root</span><span class="o">=</span><span class="n">pid</span><span class="p">)</span>
+
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_elements</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="s1">&#39;e&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_elements</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="s1">&#39;i&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_elements</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="s1">&#39;raan&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_elements</span><span class="p">[</span><span class="mi">3</span><span class="p">,:]</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="s1">&#39;aop&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_elements</span><span class="p">[</span><span class="mi">4</span><span class="p">,:]</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="s1">&#39;mu0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_elements</span><span class="p">[</span><span class="mi">5</span><span class="p">,:]</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="s1">&#39;mjd0&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">t_at_dist</span><span class="o">/</span><span class="p">(</span><span class="mf">3600.0</span><span class="o">*</span><span class="mf">24.0</span><span class="p">)</span>
+
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span> <span class="o">=</span> <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">prop_ok</span><span class="p">]</span>
+
+        <span class="n">pop</span><span class="o">.</span><span class="n">propagator_options</span><span class="p">[</span><span class="s1">&#39;out_frame&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">out_f</span>
+
+
+    <span class="k">return</span> <span class="n">pop</span></div>
+
+
+<div class="viewcode-block" id="tle_snapshot"><a class="viewcode-back" href="../modules/population_library.html#population_library.tle_snapshot">[docs]</a><span class="k">def</span> <span class="nf">tle_snapshot</span><span class="p">(</span><span class="n">tle_file</span><span class="p">,</span> <span class="n">sgp4_propagation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">propagator</span> <span class="o">=</span> <span class="n">default_propagator</span><span class="p">,</span> <span class="n">propagator_options</span> <span class="o">=</span> <span class="p">{}):</span>
+    <span class="sd">&#39;&#39;&#39;Reads a TLE-snapshot file and converts the TLE&#39;s to orbits in a TEME frame and creates a population file. The BSTAR parameter is saved in column BSTAR (or :code:`_objs[:,12`). A snapshot generally contains several TLE&#39;s for the same object thus will this population also contain duplicate objects.</span>
+<span class="sd">    </span>
+<span class="sd">    *Numerical propagator assumptions:*</span>
+<span class="sd">    To propagate with a numerical propagator one needs to make assumptions.</span>
+<span class="sd">       * Density is :math:`5\cdot 10^3 \;\frac{kg}{m^3}`.</span>
+<span class="sd">       * Object is a sphere</span>
+<span class="sd">       * Drag coefficient is 2.3.</span>
+
+
+<span class="sd">    :param str/list tle_file: Path to the input TLE snapshot file. Or the TLE-set can be given directly as a list of two lines that can be unpacked in a loop, e.g. :code:`[(tle1_l1, tle1_l2), (tle2_l1, tle2_l2)]`.</span>
+<span class="sd">    :param bool sgp4_propagation: If :code:`False` then the population is specifically constructed to be propagated with :class:`propagator_orekit.PropagatorOrekit` and assumptions are made on mass, density and shape of objects. Otherwise the :class:`space_object.SpaceObject` is configured to use SGP4 propagation.</span>
+
+<span class="sd">    :return: TLE snapshot as a population with numerical propagator</span>
+<span class="sd">    :rtype: population.Population</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tle_file</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">tle_raw</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">open</span><span class="p">(</span><span class="n">tle_file</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tle_raw</span><span class="p">)</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Not even number of lines [not TLE compatible]&#39;</span><span class="p">)</span>
+
+        <span class="n">TLEs</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">tle_raw</span><span class="p">[</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">],</span> <span class="n">tle_raw</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">pop_name</span> <span class="o">=</span> <span class="n">tle_file</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">TLEs</span> <span class="o">=</span> <span class="n">tle_file</span>
+        <span class="n">pop_name</span> <span class="o">=</span> <span class="s1">&#39;TLE database&#39;</span>
+
+    <span class="n">M_earth</span> <span class="o">=</span> <span class="n">propagator_sgp4</span><span class="o">.</span><span class="n">SGP4</span><span class="o">.</span><span class="n">GM</span><span class="o">*</span><span class="mf">1e9</span><span class="o">/</span><span class="n">consts</span><span class="o">.</span><span class="n">G</span>
+
+    <span class="k">if</span> <span class="n">sgp4_propagation</span><span class="p">:</span>
+        <span class="n">pop</span> <span class="o">=</span> <span class="n">Population</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">pop_name</span><span class="p">,</span>
+            <span class="n">extra_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;m&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;C_D&#39;</span><span class="p">,</span> <span class="s1">&#39;C_R&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="s1">&#39;line1&#39;</span><span class="p">,</span> <span class="s1">&#39;line2&#39;</span><span class="p">],</span>
+            <span class="n">dtypes</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;float64&#39;</span><span class="p">]</span><span class="o">*</span><span class="mi">5</span> <span class="o">+</span> <span class="p">[</span><span class="s1">&#39;U70&#39;</span><span class="p">,</span> <span class="s1">&#39;U70&#39;</span><span class="p">],</span>
+            <span class="n">space_object_uses</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+            <span class="n">propagator</span> <span class="o">=</span> <span class="n">propagator_sgp4</span><span class="o">.</span><span class="n">PropagatorTLE</span><span class="p">,</span>
+            <span class="n">propagator_options</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;out_frame&#39;</span><span class="p">:</span> <span class="s1">&#39;ITRF&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;polar_motion&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">pop</span> <span class="o">=</span> <span class="n">Population</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">pop_name</span><span class="p">,</span>
+            <span class="n">extra_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;m&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;C_D&#39;</span><span class="p">,</span> <span class="s1">&#39;C_R&#39;</span><span class="p">],</span>
+            <span class="n">space_object_uses</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+            <span class="n">propagator</span> <span class="o">=</span> <span class="n">propagator</span><span class="p">,</span>
+            <span class="n">propagator_options</span> <span class="o">=</span> <span class="n">propagator_options</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">pop</span><span class="o">.</span><span class="n">allocate</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">TLEs</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">line_id</span><span class="p">,</span> <span class="n">lines</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">TLEs</span><span class="p">):</span>
+        <span class="n">line1</span><span class="p">,</span> <span class="n">line2</span> <span class="o">=</span> <span class="n">lines</span>
+
+        <span class="n">sat_id</span> <span class="o">=</span> <span class="n">tle</span><span class="o">.</span><span class="n">tle_id</span><span class="p">(</span><span class="n">line1</span><span class="p">)</span>
+        <span class="n">jd0</span> <span class="o">=</span> <span class="n">tle</span><span class="o">.</span><span class="n">tle_jd</span><span class="p">(</span><span class="n">line1</span><span class="p">)</span>
+        <span class="n">mjd0</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">jd_to_mjd</span><span class="p">(</span><span class="n">jd0</span><span class="p">)</span>
+
+        <span class="n">state_TEME</span><span class="p">,</span> <span class="n">epoch</span> <span class="o">=</span> <span class="n">tle</span><span class="o">.</span><span class="n">TLE_to_TEME</span><span class="p">(</span><span class="n">line1</span><span class="p">,</span><span class="n">line2</span><span class="p">)</span>
+        <span class="n">kep</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">cart2kep</span><span class="p">(</span><span class="n">state_TEME</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">M_cent</span><span class="o">=</span><span class="n">M_earth</span><span class="p">,</span> <span class="n">radians</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">line_id</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="mf">1e-3</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">line_id</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">line_id</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">line_id</span><span class="p">][</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">line_id</span><span class="p">][</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">line_id</span><span class="p">][</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">true2mean</span><span class="p">(</span><span class="n">kep</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">kep</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">radians</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">line_id</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">sat_id</span><span class="p">)</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">line_id</span><span class="p">][</span><span class="mi">7</span><span class="p">]</span> <span class="o">=</span> <span class="n">mjd0</span>
+
+    <span class="k">if</span> <span class="n">sgp4_propagation</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">line_id</span><span class="p">,</span> <span class="n">lines</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">TLEs</span><span class="p">):</span>
+            <span class="n">line1</span><span class="p">,</span> <span class="n">line2</span> <span class="o">=</span> <span class="n">lines</span>
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">line_id</span><span class="p">][</span><span class="mi">13</span><span class="p">]</span> <span class="o">=</span> <span class="n">line1</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">line_id</span><span class="p">][</span><span class="mi">14</span><span class="p">]</span> <span class="o">=</span> <span class="n">line2</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    
+    <span class="k">for</span> <span class="n">line_id</span><span class="p">,</span> <span class="n">lines</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">TLEs</span><span class="p">):</span>
+        <span class="n">line1</span><span class="p">,</span> <span class="n">line2</span> <span class="o">=</span> <span class="n">lines</span>
+
+        <span class="n">bstar</span> <span class="o">=</span> <span class="n">tle</span><span class="o">.</span><span class="n">tle_bstar</span><span class="p">(</span><span class="n">line1</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">propagator_sgp4</span><span class="o">.</span><span class="n">SGP4</span><span class="o">.</span><span class="n">R_EARTH</span><span class="o">*</span><span class="mf">1000.0</span><span class="p">)</span>
+        <span class="n">B</span> <span class="o">=</span> <span class="n">bstar</span><span class="o">*</span><span class="mf">2.0</span><span class="o">/</span><span class="n">propagator_sgp4</span><span class="o">.</span><span class="n">SGP4</span><span class="o">.</span><span class="n">RHO0</span>
+        <span class="k">if</span> <span class="n">B</span> <span class="o">&lt;</span> <span class="mf">1e-9</span><span class="p">:</span>
+            <span class="n">rho</span> <span class="o">=</span> <span class="mf">500.0</span>
+            <span class="n">C_D</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="mf">0.1</span>
+            <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">r</span><span class="o">**</span><span class="mi">2</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="n">rho</span><span class="o">*</span><span class="mf">4.0</span><span class="o">/</span><span class="mf">3.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">r</span><span class="o">**</span><span class="mi">3</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">C_D</span> <span class="o">=</span> <span class="mf">2.3</span>
+            <span class="n">rho</span> <span class="o">=</span> <span class="mf">5.0</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="p">(</span><span class="mf">3.0</span><span class="o">*</span><span class="n">C_D</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">B</span><span class="o">*</span><span class="n">rho</span><span class="p">)</span>
+            <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">r</span><span class="o">**</span><span class="mi">2</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="n">rho</span><span class="o">*</span><span class="mf">4.0</span><span class="o">/</span><span class="mf">3.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">r</span><span class="o">**</span><span class="mi">3</span>
+
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">line_id</span><span class="p">][</span><span class="mi">8</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">line_id</span><span class="p">][</span><span class="mi">9</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">line_id</span><span class="p">][</span><span class="mi">10</span><span class="p">]</span> <span class="o">=</span> <span class="n">r</span><span class="o">*</span><span class="mf">2.0</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">line_id</span><span class="p">][</span><span class="mi">11</span><span class="p">]</span> <span class="o">=</span> <span class="n">C_D</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">line_id</span><span class="p">][</span><span class="mi">12</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+    <span class="k">return</span> <span class="n">pop</span></div>
+
+
+<div class="viewcode-block" id="propagate_population"><a class="viewcode-back" href="../modules/population_library.html#population_library.propagate_population">[docs]</a><span class="k">def</span> <span class="nf">propagate_population</span><span class="p">(</span><span class="n">population</span><span class="p">,</span> <span class="n">mjd</span><span class="p">):</span>
+
+    <span class="n">obj_gen</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">object_generator</span><span class="p">()</span>
+
+    <span class="n">new_elements</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">6</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">population</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">prop_ok</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">population</span><span class="p">),),</span> <span class="kc">True</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
+
+    <span class="n">my_iter</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">comm</span><span class="o">.</span><span class="n">rank</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">population</span><span class="p">),</span> <span class="n">comm</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">obj_gen</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">ind</span> <span class="ow">in</span> <span class="n">my_iter</span><span class="p">:</span>
+            <span class="n">tt</span> <span class="o">=</span> <span class="p">(</span><span class="n">mjd</span> <span class="o">-</span> <span class="n">obj</span><span class="o">.</span><span class="n">mjd0</span><span class="p">)</span><span class="o">*</span><span class="mf">3600.0</span><span class="o">*</span><span class="mf">24.0</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;PID</span><span class="si">{}</span><span class="s1">: propagating obj </span><span class="si">{}</span><span class="s1"> </span><span class="si">{:.2f}</span><span class="s1"> h&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">comm</span><span class="o">.</span><span class="n">rank</span><span class="p">,</span> <span class="n">ind</span><span class="p">,</span> <span class="n">tt</span><span class="o">/</span><span class="mf">3600.0</span><span class="p">))</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">state</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">get_state</span><span class="p">(</span><span class="n">tt</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">prop_ok</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">continue</span>
+
+            <span class="n">kep</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">cart2kep</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">m</span><span class="p">,</span> <span class="n">M_cent</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">M_cent</span><span class="p">,</span> <span class="n">radians</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">kep</span><span class="p">))</span>\
+             <span class="ow">or</span> <span class="n">kep</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">1.0</span><span class="p">:</span>
+                <span class="n">prop_ok</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">continue</span>
+
+            <span class="n">new_elements</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="mf">1e-3</span>
+            <span class="n">new_elements</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">new_elements</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+            <span class="n">new_elements</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+            <span class="n">new_elements</span><span class="p">[</span><span class="mi">4</span><span class="p">,</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+            <span class="n">new_elements</span><span class="p">[</span><span class="mi">5</span><span class="p">,</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">true2mean</span><span class="p">(</span><span class="n">kep</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">kep</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">radians</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">pid</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">comm</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">population</span><span class="p">),</span> <span class="n">comm</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+            <span class="n">new_elements</span><span class="p">[:,</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">bcast</span><span class="p">(</span><span class="n">new_elements</span><span class="p">[:,</span><span class="n">ind</span><span class="p">],</span> <span class="n">root</span><span class="o">=</span><span class="n">pid</span><span class="p">)</span>
+            <span class="n">prop_ok</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">bcast</span><span class="p">(</span><span class="n">prop_ok</span><span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="n">root</span><span class="o">=</span><span class="n">pid</span><span class="p">)</span>
+
+    <span class="n">population</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_elements</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span>
+    <span class="n">population</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="s1">&#39;e&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_elements</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span>
+    <span class="n">population</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="s1">&#39;i&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_elements</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span>
+    <span class="n">population</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="s1">&#39;raan&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_elements</span><span class="p">[</span><span class="mi">3</span><span class="p">,:]</span>
+    <span class="n">population</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="s1">&#39;aop&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_elements</span><span class="p">[</span><span class="mi">4</span><span class="p">,:]</span>
+    <span class="n">population</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="s1">&#39;mu0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_elements</span><span class="p">[</span><span class="mi">5</span><span class="p">,:]</span>
+    <span class="n">population</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="s1">&#39;mjd0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mjd</span>
+
+    <span class="n">population</span><span class="o">.</span><span class="n">objs</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">prop_ok</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">population</span></div>
+
+<span class="k">def</span> <span class="nf">_rand_sph</span><span class="p">(</span><span class="n">num</span><span class="p">):</span>
+
+    <span class="n">vecs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">vecs</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">num</span><span class="p">:</span>
+        <span class="n">on_sph</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="n">on_sph</span><span class="p">:</span>
+            <span class="n">xi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">*</span><span class="mf">2.0</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="n">xin</span> <span class="o">=</span> <span class="n">xi</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">xi</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">xin</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">:</span>
+                <span class="n">on_sph</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="mf">2.0</span><span class="o">*</span><span class="p">(</span><span class="n">xi</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">xi</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="n">xi</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">xi</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span><span class="o">/</span><span class="n">xin</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="mf">2.0</span><span class="o">*</span><span class="p">(</span><span class="n">xi</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">xi</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">xi</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">xi</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="n">xin</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">(</span><span class="n">xi</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">xi</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">xi</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">xi</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="n">xin</span>
+
+        <span class="n">vecs</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">vecs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="simulate_Microsat_R_debris"><a class="viewcode-back" href="../modules/population_library.html#population_library.simulate_Microsat_R_debris">[docs]</a><span class="k">def</span> <span class="nf">simulate_Microsat_R_debris</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">max_dv</span><span class="p">,</span> <span class="n">radii_range</span><span class="p">,</span> <span class="n">mass_range</span><span class="p">,</span> <span class="n">C_D_range</span><span class="p">,</span> <span class="n">seed</span><span class="p">,</span> <span class="n">propagator</span><span class="p">,</span> <span class="n">propagator_options</span><span class="p">,</span> <span class="n">mjd</span><span class="p">):</span>
+
+    <span class="n">tle_raw</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;1 43947U 19006A   19069.62495353  .00222140  22344-4  39735-3 0  9995</span>
+<span class="s1">    2 43947  96.6263 343.1609 0026772 226.5664 224.4731 16.01032328  7176</span>
+<span class="s1">    1 43947U 19006A   19069.68634861  .00217235  21442-4  38851-3 0  9995</span>
+<span class="s1">    2 43947  96.6282 343.2231 0026267 227.5469 217.1086 16.01062873  7183</span>
+<span class="s1">    1 43947U 19006A   19069.81093322  .00066734  37128-5  12017-3 0  9992</span>
+<span class="s1">    2 43947  96.6282 343.3467 0026246 227.0726 215.1493 16.01048534  7204</span>
+<span class="s1">    1 43947U 19006A   19070.54563657  .00111882  69857-5  20248-3 0  9991</span>
+<span class="s1">    2 43947  96.6271 344.0664 0025783 228.7058 125.4384 16.00925959  7318</span>
+<span class="s1">    1 43947U 19006A   19070.80923755  .00013653  19858-5  25403-4 0  9991</span>
+<span class="s1">    2 43947  96.6268 344.3320 0024927 225.1848 207.3499 16.01142181  7364</span>
+<span class="s1">    1 43947U 19006A   19071.12831853  .00154965  11740-4  27719-3 0  9998</span>
+<span class="s1">    2 43947  96.6279 344.6467 0025572 226.6832 243.5148 16.01113233  7412</span>
+<span class="s1">    1 43947U 19006A   19071.80921646  .00118874  76545-5  21379-3 0  9993</span>
+<span class="s1">    2 43947  96.6279 345.3224 0025491 224.0468 208.0149 16.01043615  7523</span>
+<span class="s1">    1 43947U 19006A   19072.44153689  .00037015  24665-5  66863-4 0  9999</span>
+<span class="s1">    2 43947  96.6279 345.9498 0025442 221.6016 252.7257 16.01159223  7620</span>
+<span class="s1">    1 43947U 19006A   19072.74405995  .00022228  21113-5  40609-4 0  9997</span>
+<span class="s1">    2 43947  96.6279 346.2500 0025432 220.3955 196.4626 16.01147542  7675</span>
+<span class="s1">    1 43947U 19006A   19073.12825718  .00008242  19370-5  15873-4 0  9996</span>
+<span class="s1">    2 43947  96.6304 346.6133 0023002 223.0617 246.6563 16.01114545  7738</span>
+<span class="s1">    1 43947U 19006A   19073.44154376  .00035052  24102-5  63784-4 0  9998</span>
+<span class="s1">    2 43947  96.6300 346.9244 0022588 225.2511 249.1037 16.01188227  7782</span>
+<span class="s1">    1 43947U 19006A   19073.80920446 -.00023017  21041-5 -40417-4 0  9994</span>
+<span class="s1">    2 43947  96.6337 347.2908 0022039 223.4278 208.5467 16.01076766  7841</span>
+<span class="s1">    1 43947U 19006A   19074.74408622  .00119327  76982-5  21614-3 0  9994</span>
+<span class="s1">    2 43947  96.6289 348.2321 0022856 222.6623 194.1149 16.01049775  7992</span>
+<span class="s1">    1 43947U 19006A   19075.01672454  .00167822  13470-4  30180-3 0  9994</span>
+<span class="s1">    2 43947  96.6290 348.5015 0022778 221.4659 325.7020 16.01154108  8039</span>
+<span class="s1">    1 43947U 19006A   19075.54702546  .00026769  22010-5  48973-4 0  9993</span>
+<span class="s1">    2 43947  96.6290 349.0278 0022754 219.3583 142.5100 16.01177853  8128</span>
+<span class="s1">    1 43947U 19006A   19075.74902949  .00160298  12418-4  29196-3 0  9995</span>
+<span class="s1">    2 43947  96.6301 349.2308 0021693 223.2409 221.9908 16.00986874  8150</span>
+<span class="s1">    1 43947U 19006A   19075.80608134  .00151204  11245-4  27527-3 0  9991</span>
+<span class="s1">    2 43947  96.6283 349.2862 0021642 222.7701 191.0541 16.01000711  8166</span>
+<span class="s1">    1 43947U 19006A   19075.80608134  .00152613  11422-4  27780-3 0  9994</span>
+<span class="s1">    2 43947  96.6283 349.2862 0021642 222.7701 191.0553 16.01002279  8160</span>
+<span class="s1">    1 43947U 19006A   19076.04950662  .00212767  20643-4  38419-3 0  9990</span>
+<span class="s1">    2 43947  96.6283 349.5277 0021615 221.8443 154.0766 16.01125308  8205</span>
+<span class="s1">    1 43947U 19006A   19076.38314227  .00228397  23614-4  40852-3 0  9999</span>
+<span class="s1">    2 43947  96.6283 349.8588 0021611 220.6464 277.1313 16.01285801  8254</span>
+<span class="s1">    1 43947U 19006A   19076.56965602  .00375665  62286-4  68387-3 0  9990</span>
+<span class="s1">    2 43947  96.6317 350.0396 0020897 222.9971 269.0493 16.01007118  8281</span>
+<span class="s1">    1 43947U 19006A   19076.62489356  .00301460  40170-4  54811-3 0  9991</span>
+<span class="s1">    2 43947  96.6317 350.0945 0020879 222.7479 227.4454 16.01029701  8290</span>
+<span class="s1">    1 43947U 19006A   19076.74888822  .00206456  19517-4  37455-3 0  9990</span>
+<span class="s1">    2 43947  96.6317 350.2206 0020779 222.3519 222.0257 16.01081824  8311</span>
+<span class="s1">    1 43947U 19006A   19076.80334391  .00189842  16753-4  34417-3 0  9997</span>
+<span class="s1">    2 43947  96.6317 350.2747 0020760 222.1378 175.8977 16.01098177  8326</span>
+<span class="s1">    1 43947U 19006A   19077.25548485  .00042586  26475-5  77957-4 0  9991</span>
+<span class="s1">    2 43947  96.6337 350.7139 0018680 228.2848 254.2224 16.01199217  8396</span>
+<span class="s1">    1 43947U 19006A   19077.49923692  .00048049  28483-5  87602-4 0  9993</span>
+<span class="s1">    2 43947  96.6337 350.9559 0018675 227.3154 219.3457 16.01241589  8433</span>
+<span class="s1">    1 43947U 19006A   19077.73867148  .00176479  14671-4  32436-3 0  9999</span>
+<span class="s1">    2 43947  96.6324 351.1992 0019599 225.2817 160.3011 16.00913438  8475</span>
+<span class="s1">    1 43947U 19006A   19078.62402633  .00193781  17362-4  35487-3 0  9996</span>
+<span class="s1">    2 43947  96.6337 352.0814 0019337 224.7610 220.1468 16.00981700  8611</span>
+<span class="s1">    1 43947U 19006A   19079.44446882  .00056887  32197-5  10424-3 0  9994</span>
+<span class="s1">    2 43947  96.6318 352.8859 0017932 222.6020 267.9762 16.01149860  8742</span>
+<span class="s1">    1 43947U 19006A   19079.56114259  .00331197  48376-4  60603-3 0  9996</span>
+<span class="s1">    2 43947  96.6357 353.0133 0018767 223.2624 219.3325 16.01004143  8769</span>
+<span class="s1">    1 43947U 19006A   19079.87121502  .00017670  20377-5  33169-4 0  9996</span>
+<span class="s1">    2 43947  96.6348 353.3097 0018626 221.5456 207.0221 16.01103300  8819</span>
+<span class="s1">    1 43947U 19006A   19080.12837572  .00018161  20446-5  34105-4 0  9991</span>
+<span class="s1">    2 43947  96.6342 353.5628 0017856 223.7454 246.0274 16.01109643  8852</span>
+<span class="s1">    1 43947U 19006A   19080.25184005  .00021666  21015-5  40443-4 0  9990</span>
+<span class="s1">    2 43947  96.6342 353.6854 0017855 223.2528 237.6932 16.01123784  8871</span>
+<span class="s1">    1 43947U 19006A   19080.56838169  .00007182  19289-5  14116-4 0  9996</span>
+<span class="s1">    2 43947  96.6323 353.9969 0018497 223.3308 260.9364 16.01125965  8927</span>
+<span class="s1">    1 43947U 19006A   19080.80934521 -.00010028  19397-5 -17132-4 0  9998</span>
+<span class="s1">    2 43947  96.6323 354.2362 0018496 222.3649 209.7823 16.01086764  8962</span>
+<span class="s1">    1 43947U 19006A   19081.01817130 -.00000602  19026-5  00000+0 0  9994</span>
+<span class="s1">    2 43947  96.6305 354.4520 0018602 217.7557 337.0831 16.00999357  8992</span>
+<span class="s1">    1 43947U 19006A   19081.19970958  .00192780  17239-4  35047-3 0  9995</span>
+<span class="s1">    2 43947  96.6332 354.6387 0017808 222.1497 298.3751 16.01166044  9020</span>
+<span class="s1">    1 43947U 19006A   19081.44288380  .00132357  90623-5  24030-3 0  9997</span>
+<span class="s1">    2 43947  96.6332 354.8802 0017799 221.2143 260.0465 16.01211967  9068</span>
+<span class="s1">    1 43947U 19006A   19081.68209472  .00185493  16056-4  34001-3 0  9993</span>
+<span class="s1">    2 43947  96.6354 355.1161 0017576 220.8387 198.1644 16.01033820  9107</span>
+<span class="s1">    1 43947U 19006A   19081.80977756  .00126608  84347-5  23219-3 0  9995</span>
+<span class="s1">    2 43947  96.6356 355.2444 0017575 222.5408 211.8678 16.01049036  9124</span>
+<span class="s1">    1 43947U 19006A   19082.19785193  .00009851  19489-5  19026-4 0  9997</span>
+<span class="s1">    2 43947  96.6356 355.6299 0017571 221.0666 288.6619 16.01097025  9186</span>
+<span class="s1">    1 43947U 19006A   19082.25710510  .00009887  19472-5  19026-4 0  9996</span>
+<span class="s1">    2 43947  96.6318 355.6880 0017118 220.4674 270.5748 16.01171238  9192</span>
+<span class="s1">    1 43947U 19006A   19082.38407701  .00138221  97199-5  25077-3 0  9994</span>
+<span class="s1">    2 43947  96.6325 355.8124 0017241 219.6702 282.7837 16.01240682  9219</span>
+<span class="s1">    1 43947U 19006A   19082.68646591  .00149753  11067-4  27555-3 0  9993</span>
+<span class="s1">    2 43947  96.6363 356.1139 0016876 222.4115 221.6813 16.01004284  9261</span>
+<span class="s1">    1 43947U 19006A   19082.81114447  .00088395  50732-5  16304-3 0  9995</span>
+<span class="s1">    2 43947  96.6363 356.2377 0016873 221.9425 220.2429 16.01009980  9289</span>
+<span class="s1">    1 43947U 19006A   19083.00642146  .00143972  10375-4  26369-3 0  9992</span>
+<span class="s1">    2 43947  96.6358 356.4314 0016878 221.0757 265.8708 16.01087252  9317</span>
+<span class="s1">    1 43947U 19006A   19083.49288397 -.03265362  32488-2 -61588-2 0  9990</span>
+<span class="s1">    2 43947  96.6406 356.9162 0017256 219.6745 189.3161 16.00630469  9392</span>
+<span class="s1">    1 43947U 19006A   19083.74911125  .00084825  48174-5  15749-3 0  9999</span>
+<span class="s1">    2 43947  96.6345 357.1709 0015989 224.4362 220.2191 16.00930159  9436</span>
+<span class="s1">    1 43947U 19006A   19083.81116759  .00103815  62739-5  19235-3 0  9995</span>
+<span class="s1">    2 43947  96.6324 357.2279 0015947 223.4735 218.5865 16.00945210  9446</span>
+<span class="s1">    1 43947U 19006A   19083.93495759  .00147725  10814-4  27243-3 0  9990</span>
+<span class="s1">    2 43947  96.6324 357.3507 0015945 222.9977 212.0347 16.00998010  9463</span>
+<span class="s1">    1 43947U 19006A   19084.04992207  .00154144  11623-4  28342-3 0  9996</span>
+<span class="s1">    2 43947  96.6354 357.4673 0016254 222.4775 154.7117 16.01036332  9486</span>
+<span class="s1">    1 43947U 19006A   19084.56994306 -.00389064  56746-4 -71643-3 0  9995</span>
+<span class="s1">    2 43947  96.6360 357.9786 0015819 222.1151 270.2904 16.00942425  9569</span>
+<span class="s1">    1 43947U 19006A   19084.68712708  .00107795  66250-5  19877-3 0  9992</span>
+<span class="s1">    2 43947  96.6366 358.0976 0015957 221.7662 225.5779 16.01024149  9583</span>
+<span class="s1">    1 43947U 19006A   19084.74556389  .00097765  57838-5  18034-3 0  9991</span>
+<span class="s1">    2 43947  96.6363 358.1566 0015910 221.6645 202.2537 16.01028963  9598</span>
+<span class="s1">    1 43947U 19006A   19084.98720666  .00152043  11367-4  27860-3 0  9992</span>
+<span class="s1">    2 43947  96.6362 358.3958 0015832 220.6056 155.1371 16.01110841  9636</span>
+<span class="s1">    1 43947U 19006A   19085.19976117  .00022830  21215-5  42802-4 0  9998</span>
+<span class="s1">    2 43947  96.6349 358.6073 0016094 221.4560 298.5857 16.01085713  9665</span>
+<span class="s1">    1 43947U 19006A   19085.49952644  .00052661  30351-5  96803-4 0  9996</span>
+<span class="s1">    2 43947  96.6377 358.9036 0016197 221.8414 224.9544 16.01169686  9718</span>
+<span class="s1">    1 43947U 19006A   19085.56842683  .00054526  31167-5  10000-3 0  9997</span>
+<span class="s1">    2 43947  96.6377 358.9720 0016198 221.5803 262.1287 16.01202917  9722</span>
+<span class="s1">    1 43947U 19006A   19085.80962006  .00050945  29637-5  93510-4 0  9994</span>
+<span class="s1">    2 43947  96.6379 359.2115 0016283 220.5574 212.4511 16.01198803  9765&#39;&#39;&#39;</span>
+
+    <span class="n">mass</span> <span class="o">=</span> <span class="mi">740</span>
+
+    <span class="n">tle_raw</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">tle_raw</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tle_raw</span><span class="p">)</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Not even number of lines [not TLE compatible]&#39;</span><span class="p">)</span>
+    <span class="n">TLEs</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">tle_raw</span><span class="p">[</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">],</span> <span class="n">tle_raw</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">])</span>
+
+    <span class="n">event_date</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">(</span><span class="s1">&#39;2019-03-27T05:40&#39;</span><span class="p">)</span>
+    <span class="n">event_mjd</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">npdt2mjd</span><span class="p">(</span><span class="n">event_date</span><span class="p">)</span>
+
+    <span class="n">M_earth</span> <span class="o">=</span> <span class="n">propagator_sgp4</span><span class="o">.</span><span class="n">SGP4</span><span class="o">.</span><span class="n">GM</span><span class="o">*</span><span class="mf">1e9</span><span class="o">/</span><span class="n">consts</span><span class="o">.</span><span class="n">G</span>
+
+    <span class="n">pop</span> <span class="o">=</span> <span class="n">Population</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Simulated Microsat R debris&#39;</span><span class="p">,</span>
+        <span class="n">extra_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;m&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;C_D&#39;</span><span class="p">,</span> <span class="s1">&#39;C_R&#39;</span><span class="p">],</span>
+        <span class="n">space_object_uses</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="n">propagator</span> <span class="o">=</span> <span class="n">propagator</span><span class="p">,</span>
+        <span class="n">propagator_options</span> <span class="o">=</span> <span class="n">propagator_options</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">pop</span><span class="o">.</span><span class="n">allocate</span><span class="p">(</span><span class="n">num</span><span class="p">)</span>
+
+
+    <span class="n">tle_mjds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">TLEs</span><span class="p">),),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">line_id</span><span class="p">,</span> <span class="n">lines</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">TLEs</span><span class="p">):</span>
+        <span class="n">line1</span><span class="p">,</span> <span class="n">line2</span> <span class="o">=</span> <span class="n">lines</span>
+        <span class="n">jd0</span> <span class="o">=</span> <span class="n">tle</span><span class="o">.</span><span class="n">tle_jd</span><span class="p">(</span><span class="n">line1</span><span class="p">)</span>
+        <span class="n">mjd0</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">jd_to_mjd</span><span class="p">(</span><span class="n">jd0</span><span class="p">)</span>
+        <span class="n">tle_mjds</span><span class="p">[</span><span class="n">line_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">mjd0</span>
+
+    <span class="n">best_tle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">tle_mjds</span> <span class="o">-</span> <span class="n">event_mjd</span><span class="p">))</span>
+
+
+    <span class="n">line1</span><span class="p">,</span> <span class="n">line2</span> <span class="o">=</span> <span class="n">TLEs</span><span class="p">[</span><span class="n">best_tle</span><span class="p">]</span>
+    <span class="n">sat_id</span> <span class="o">=</span> <span class="n">tle</span><span class="o">.</span><span class="n">tle_id</span><span class="p">(</span><span class="n">line1</span><span class="p">)</span>
+    <span class="n">jd0</span> <span class="o">=</span> <span class="n">tle</span><span class="o">.</span><span class="n">tle_jd</span><span class="p">(</span><span class="n">line1</span><span class="p">)</span>
+    <span class="n">mjd0</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">jd_to_mjd</span><span class="p">(</span><span class="n">jd0</span><span class="p">)</span>
+
+    <span class="n">state_TEME</span> <span class="o">=</span> <span class="n">tle</span><span class="o">.</span><span class="n">TLE_propagation_TEME</span><span class="p">(</span><span class="n">line1</span><span class="p">,</span> <span class="n">line2</span><span class="p">,</span> <span class="n">dpt</span><span class="o">.</span><span class="n">mjd_to_jd</span><span class="p">(</span><span class="n">event_mjd</span><span class="p">))</span>
+
+    <span class="c1">#first has no pert</span>
+
+    <span class="n">states</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">state_TEME</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+
+    <span class="n">kep</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">cart2kep</span><span class="p">(</span><span class="n">state_TEME</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">mass</span><span class="p">,</span> <span class="n">M_cent</span><span class="o">=</span><span class="n">M_earth</span><span class="p">,</span> <span class="n">radians</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="mf">1e-3</span>
+    <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+    <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+    <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">true2mean</span><span class="p">(</span><span class="n">kep</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">kep</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">radians</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        
+    <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">sat_id</span><span class="p">)</span>
+    <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">7</span><span class="p">]</span> <span class="o">=</span> <span class="n">mjd0</span>
+
+    <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">8</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="mf">1.0</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">9</span><span class="p">]</span> <span class="o">=</span> <span class="n">mass</span>
+    <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">10</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.0</span>
+    <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">11</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.3</span>
+    <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">12</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+    <span class="n">ind</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">while</span> <span class="n">ind</span> <span class="o">&lt;</span> <span class="n">num</span><span class="p">:</span>
+        <span class="n">C_D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">C_D_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">C_D_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="n">C_D_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">rho</span> <span class="o">=</span> <span class="mf">11e3</span>
+        <span class="k">while</span> <span class="n">rho</span> <span class="o">&gt;</span> <span class="mf">10e3</span><span class="p">:</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">radii_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">radii_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="n">radii_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">r</span><span class="o">**</span><span class="mi">2</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">mass_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">mass_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="n">mass_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">vol</span> <span class="o">=</span> <span class="mf">4.0</span><span class="o">/</span><span class="mf">3.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">r</span><span class="o">**</span><span class="mi">3</span>
+            <span class="n">rho</span> <span class="o">=</span> <span class="n">m</span><span class="o">/</span><span class="n">vol</span>
+
+        <span class="n">pert_state</span> <span class="o">=</span> <span class="n">states</span><span class="p">[:,</span><span class="n">ind</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="n">dv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">max_dv</span>
+        <span class="n">ddir</span> <span class="o">=</span> <span class="n">_rand_sph</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="n">pert_state</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span> <span class="o">+=</span> <span class="n">ddir</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">dv</span>
+
+        <span class="n">kep</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">cart2kep</span><span class="p">(</span><span class="n">pert_state</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">mass</span><span class="p">,</span> <span class="n">M_cent</span><span class="o">=</span><span class="n">M_earth</span><span class="p">,</span> <span class="n">radians</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">kep</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">kep</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mf">6353.0e3</span><span class="o">+</span><span class="mf">100e3</span><span class="p">:</span>
+
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="mf">1e-3</span>
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">true2mean</span><span class="p">(</span><span class="n">kep</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">kep</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">radians</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                    
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">sat_id</span><span class="p">)</span> <span class="o">+</span> <span class="n">num</span>
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="mi">7</span><span class="p">]</span> <span class="o">=</span> <span class="n">mjd0</span>
+
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="mi">8</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span>
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="mi">9</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span>
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="mi">10</span><span class="p">]</span> <span class="o">=</span> <span class="n">r</span><span class="o">*</span><span class="mf">2.0</span>
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="mi">11</span><span class="p">]</span> <span class="o">=</span> <span class="n">C_D</span>
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="mi">12</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+            <span class="n">ind</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="k">if</span> <span class="s1">&#39;out_frame&#39;</span> <span class="ow">in</span> <span class="n">pop</span><span class="o">.</span><span class="n">propagator_options</span><span class="p">:</span>
+        <span class="n">out_f</span> <span class="o">=</span> <span class="n">pop</span><span class="o">.</span><span class="n">propagator_options</span><span class="p">[</span><span class="s1">&#39;out_frame&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">out_f</span> <span class="o">=</span> <span class="s1">&#39;ITRF&#39;</span>
+    <span class="n">pop</span><span class="o">.</span><span class="n">propagator_options</span><span class="p">[</span><span class="s1">&#39;out_frame&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;TEME&#39;</span>
+    <span class="n">pop</span> <span class="o">=</span> <span class="n">propagate_population</span><span class="p">(</span><span class="n">pop</span><span class="p">,</span> <span class="n">mjd</span><span class="p">)</span>
+    <span class="n">pop</span><span class="o">.</span><span class="n">propagator_options</span><span class="p">[</span><span class="s1">&#39;out_frame&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">out_f</span>
+
+    <span class="k">return</span> <span class="n">pop</span></div>
+
+
+<span class="k">def</span> <span class="nf">_get_MicrosatR_state</span><span class="p">(</span><span class="n">mjd</span><span class="p">):</span>
+    <span class="n">tle_raw</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;1 43947U 19006A   19085.80962006  .00050945  29637-5  93510-4 0  9994</span>
+<span class="s1">    2 43947  96.6379 359.2115 0016283 220.5574 212.4511 16.01198803  9765&#39;&#39;&#39;</span>
+
+    <span class="n">tle_raw</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">tle_raw</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tle_raw</span><span class="p">)</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Not even number of lines [not TLE compatible]&#39;</span><span class="p">)</span>
+    <span class="n">line1</span><span class="p">,</span> <span class="n">line2</span> <span class="o">=</span> <span class="n">tle_raw</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">tle_raw</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+
+    <span class="n">jd0</span> <span class="o">=</span> <span class="n">tle</span><span class="o">.</span><span class="n">tle_jd</span><span class="p">(</span><span class="n">line1</span><span class="p">)</span>
+    <span class="n">mjd0</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">jd_to_mjd</span><span class="p">(</span><span class="n">jd0</span><span class="p">)</span>
+    <span class="n">sat_id</span> <span class="o">=</span> <span class="n">tle</span><span class="o">.</span><span class="n">tle_id</span><span class="p">(</span><span class="n">line1</span><span class="p">)</span>
+
+    <span class="n">state_TEME</span> <span class="o">=</span> <span class="n">tle</span><span class="o">.</span><span class="n">TLE_propagation_TEME</span><span class="p">(</span><span class="n">line1</span><span class="p">,</span> <span class="n">line2</span><span class="p">,</span> <span class="n">dpt</span><span class="o">.</span><span class="n">mjd_to_jd</span><span class="p">(</span><span class="n">mjd</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">state_TEME</span><span class="p">,</span> <span class="n">sat_id</span>
+
+<div class="viewcode-block" id="simulate_Microsat_R_debris_v2"><a class="viewcode-back" href="../modules/population_library.html#population_library.simulate_Microsat_R_debris_v2">[docs]</a><span class="k">def</span> <span class="nf">simulate_Microsat_R_debris_v2</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">max_dv</span><span class="p">,</span> <span class="n">rho_range</span><span class="p">,</span> <span class="n">mass_range</span><span class="p">,</span> <span class="n">seed</span><span class="p">,</span> <span class="n">propagator</span><span class="p">,</span> <span class="n">propagator_options</span><span class="p">,</span> <span class="n">mjd</span><span class="p">):</span>
+
+
+    <span class="n">mass</span> <span class="o">=</span> <span class="mi">740</span>
+
+    <span class="n">event_date</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">(</span><span class="s1">&#39;2019-03-27T05:40&#39;</span><span class="p">)</span>
+    <span class="n">event_mjd</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">npdt2mjd</span><span class="p">(</span><span class="n">event_date</span><span class="p">)</span>
+
+    <span class="n">M_earth</span> <span class="o">=</span> <span class="n">propagator_sgp4</span><span class="o">.</span><span class="n">SGP4</span><span class="o">.</span><span class="n">GM</span><span class="o">*</span><span class="mf">1e9</span><span class="o">/</span><span class="n">consts</span><span class="o">.</span><span class="n">G</span>
+
+    <span class="n">pop</span> <span class="o">=</span> <span class="n">Population</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Simulated Microsat-R debris&#39;</span><span class="p">,</span>
+        <span class="n">extra_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;m&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;C_D&#39;</span><span class="p">,</span> <span class="s1">&#39;C_R&#39;</span><span class="p">,</span> <span class="s1">&#39;dV&#39;</span><span class="p">,</span> <span class="s1">&#39;dx&#39;</span><span class="p">,</span> <span class="s1">&#39;dy&#39;</span><span class="p">,</span> <span class="s1">&#39;dz&#39;</span><span class="p">],</span>
+        <span class="n">space_object_uses</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span>
+        <span class="n">propagator</span> <span class="o">=</span> <span class="n">propagator</span><span class="p">,</span>
+        <span class="n">propagator_options</span> <span class="o">=</span> <span class="n">propagator_options</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">pop</span><span class="o">.</span><span class="n">allocate</span><span class="p">(</span><span class="n">num</span><span class="p">)</span>
+
+    <span class="n">state_TEME</span><span class="p">,</span> <span class="n">sat_id</span> <span class="o">=</span> <span class="n">_get_MicrosatR_state</span><span class="p">(</span><span class="n">event_mjd</span><span class="p">)</span>
+
+    <span class="c1">#first has no pert</span>
+
+    <span class="n">states</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">state_TEME</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">popts</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">propagator_options</span><span class="p">)</span>
+    <span class="n">popts</span><span class="p">[</span><span class="s1">&#39;out_frame&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">propagator_options</span><span class="p">[</span><span class="s1">&#39;in_frame&#39;</span><span class="p">]</span>
+
+    <span class="n">prop</span> <span class="o">=</span> <span class="n">propagator</span><span class="p">(</span><span class="o">**</span><span class="n">popts</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">mrho2d</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">rho</span><span class="p">):</span>
+        <span class="n">V</span> <span class="o">=</span> <span class="n">m</span><span class="o">/</span><span class="n">rho</span>
+        <span class="k">return</span> <span class="mf">2.0</span><span class="o">*</span><span class="p">(</span><span class="n">V</span><span class="o">*</span><span class="mf">3.0</span><span class="o">/</span><span class="p">(</span><span class="mf">4.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span><span class="o">**</span><span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="mf">3.0</span><span class="p">)</span>
+
+    <span class="n">prop_data</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="n">ind</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">trys</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">ind</span> <span class="o">&lt;</span> <span class="n">num</span><span class="p">:</span>
+        <span class="n">trys</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;try number </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">trys</span><span class="p">))</span>
+
+        <span class="n">prop_data</span><span class="p">[</span><span class="s1">&#39;C_D&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.3</span>
+        <span class="n">prop_data</span><span class="p">[</span><span class="s1">&#39;C_R&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="n">prop_data</span><span class="p">[</span><span class="s1">&#39;mjd0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">event_mjd</span>
+
+        <span class="n">rho_v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">rho_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">rho_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="n">rho_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">m_v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">mass_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">mass_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="n">mass_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">d_v</span> <span class="o">=</span> <span class="n">mrho2d</span><span class="p">(</span><span class="n">m_v</span><span class="p">,</span> <span class="n">rho_v</span><span class="p">)</span>
+
+        <span class="n">prop_data</span><span class="p">[</span><span class="s1">&#39;m&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">m_v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">prop_data</span><span class="p">[</span><span class="s1">&#39;d&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">d_v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">prop_data</span><span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">d_v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="mf">4.0</span>
+
+        <span class="n">pert_state</span> <span class="o">=</span> <span class="n">state_TEME</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="n">dv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">max_dv</span>
+        <span class="n">ddir</span> <span class="o">=</span> <span class="n">_rand_sph</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="n">pert_state</span><span class="p">[</span><span class="mi">3</span><span class="p">:]</span> <span class="o">+=</span> <span class="n">ddir</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">dv</span>
+
+        <span class="n">prop_data</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">prop_data</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">prop_data</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pert_state</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">prop_data</span><span class="p">[</span><span class="s1">&#39;vx&#39;</span><span class="p">],</span> <span class="n">prop_data</span><span class="p">[</span><span class="s1">&#39;vy&#39;</span><span class="p">],</span> <span class="n">prop_data</span><span class="p">[</span><span class="s1">&#39;vz&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pert_state</span><span class="p">[</span><span class="mi">3</span><span class="p">:]</span>
+        <span class="n">prop_data</span><span class="p">[</span><span class="s1">&#39;t&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">mjd</span> <span class="o">-</span> <span class="n">event_mjd</span><span class="p">)</span><span class="o">*</span><span class="mf">3600.0</span><span class="o">*</span><span class="mf">24.0</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">prop_pert_state</span> <span class="o">=</span> <span class="n">prop</span><span class="o">.</span><span class="n">get_orbit_cart</span><span class="p">(</span><span class="o">**</span><span class="n">prop_data</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1">#print(e)</span>
+            <span class="k">continue</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;object added - </span><span class="si">{}</span><span class="s1"> of </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span> <span class="n">num</span><span class="p">))</span>
+        <span class="n">kep</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">cart2kep</span><span class="p">(</span><span class="n">prop_pert_state</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">m</span><span class="o">=</span><span class="n">mass</span><span class="p">,</span> <span class="n">M_cent</span><span class="o">=</span><span class="n">M_earth</span><span class="p">,</span> <span class="n">radians</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="mf">1e-3</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">true2mean</span><span class="p">(</span><span class="n">kep</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">kep</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">radians</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">sat_id</span><span class="p">)</span> <span class="o">+</span> <span class="n">num</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="mi">7</span><span class="p">]</span> <span class="o">=</span> <span class="n">mjd</span>
+
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="s1">&#39;A&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop_data</span><span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">]</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="s1">&#39;d&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop_data</span><span class="p">[</span><span class="s1">&#39;d&#39;</span><span class="p">]</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="s1">&#39;m&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop_data</span><span class="p">[</span><span class="s1">&#39;m&#39;</span><span class="p">]</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="s1">&#39;C_D&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop_data</span><span class="p">[</span><span class="s1">&#39;C_D&#39;</span><span class="p">]</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="s1">&#39;C_R&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop_data</span><span class="p">[</span><span class="s1">&#39;C_R&#39;</span><span class="p">]</span>
+
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="s1">&#39;dV&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dv</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="s1">&#39;dx&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ddir</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="s1">&#39;dy&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ddir</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="s1">&#39;dz&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ddir</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">ind</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="k">return</span> <span class="n">pop</span></div>
+
+
+
+
+<span class="n">Microsat_R_debris_raw_tle</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;1 44117U 19006C   19094.64070647  .00455742  26153-4  80334-2 0  9998</span>
+<span class="s1">2 44117  95.3237   4.1062 0861779 350.0688   8.4347 13.95892635  1153</span>
+<span class="s1">1 44118U 19006D   19094.46329163  .03050626  31109-2  24862-1 0  9992</span>
+<span class="s1">2 44118  96.1629   6.2262 0272847 356.3910   3.5361 15.35582568  1229</span>
+<span class="s1">1 44119U 19006E   19094.46646588  .06439739  12728-5  97304-2 0  9996</span>
+<span class="s1">2 44119  94.9178   4.6437 0181254  28.4691 332.6337 15.80679644  1248</span>
+<span class="s1">1 44120U 19006F   19095.00036339  .00527918  52265-4  56871-2 0  9990</span>
+<span class="s1">2 44120  95.5094   5.4447 0422033 357.9318   2.0147 14.99373378  1301</span>
+<span class="s1">1 44121U 19006G   19095.01964115  .01508404  50846-3  14651-1 0  9995</span>
+<span class="s1">2 44121  95.5844   5.6491 0360459 355.4980   4.3038 15.14169030  1318</span>
+<span class="s1">1 44122U 19006H   19094.75258187  .01086181  27867-3  91501-2 0  9991</span>
+<span class="s1">2 44122  95.6006   5.5919 0297801 357.2150   2.7421 15.29557898  1264</span>
+<span class="s1">1 44123U 19006J   19095.06527372  .00842597  15862-3  65277-2 0  9995</span>
+<span class="s1">2 44123  96.9468   7.8798 0329609 328.4083  29.7731 15.24689115  1321</span>
+<span class="s1">1 44124U 19006K   19095.01748409  .02829797  25262-2  22519-1 0  9991</span>
+<span class="s1">2 44124  95.5327   5.6875 0284095 357.7110   2.2814 15.33730995  1318</span>
+<span class="s1">1 44125U 19006L   19094.82916466  .01599065  62368-3  14033-1 0  9992</span>
+<span class="s1">2 44125  95.4484   5.4059 0316221 356.8319   3.0912 15.25133571  1273</span>
+<span class="s1">1 44126U 19006M   19094.58326523  .03116733  28646-2  27747-1 0  9990</span>
+<span class="s1">2 44126  95.4679   5.2200 0335316 358.4564   3.3570 15.21318838  1238</span>
+<span class="s1">1 44127U 19006N   19095.03666368  .02187619  17695-2  13453-1 0  9997</span>
+<span class="s1">2 44127  96.0706   6.8319 0171368 349.2468  10.5144 15.59755513  1133</span>
+<span class="s1">1 44128U 19006P   19095.07940328  .00382116  42589-4  23241-2 0  9999</span>
+<span class="s1">2 44128  96.2830   7.3605 0146784 354.4416   5.5208 15.63728289  1155</span>
+<span class="s1">1 44129U 19006Q   19094.99492147  .01670420  99478-3  93211-2 0  9992</span>
+<span class="s1">2 44129  96.2485   7.1558 0148156 351.6408   8.2387 15.65407990  1133</span>
+<span class="s1">1 44130U 19006R   19095.00058036  .00153632  65541-5  14379-2 0  9996</span>
+<span class="s1">2 44130  96.3346   7.0172 0280946 346.9670  12.4412 15.30818108  1129</span>
+<span class="s1">1 44131U 19006S   19094.06316062  .00600230  47213-4  10182-1 0  9991</span>
+<span class="s1">2 44131  95.4882   4.0634 0798088 353.5981   5.5555 14.10377672   757</span>
+<span class="s1">1 44132U 19006T   19094.73963079  .12979788  19429-5  11454-1 0  9994</span>
+<span class="s1">2 44132  96.4009   7.4170 0027412 339.9728  20.0480 16.12094571   954</span>
+<span class="s1">1 44133U 19006U   19095.04008018  .00142556  57788-5  12170-2 0  9992</span>
+<span class="s1">2 44133  96.4939   7.2182 0324841 329.5554  28.7166 15.23879318   964</span>
+<span class="s1">1 44134U 19006V   19094.98522109  .00061942  16890-5  96352-3 0  9990</span>
+<span class="s1">2 44134  96.0918   5.7448 0663376 349.5401   9.2536 14.41154034   907</span>
+<span class="s1">1 44135U 19006W   19094.87046930  .02680902  37410-2  12244-1 0  9991</span>
+<span class="s1">2 44135  96.2107   7.1091 0112268 355.6726   4.3559 15.75469894   954</span>
+<span class="s1">1 44136U 19006X   19095.04109403  .00809162  14876-3  71821-2 0  9995</span>
+<span class="s1">2 44136  94.5750   4.3171 0296364 354.3855   5.4088 15.28815365   963</span>
+<span class="s1">1 44137U 19006Y   19094.80053007  .03433409  10222-1  12967-1 0  9991</span>
+<span class="s1">2 44137  96.1784   7.0131 0082221 347.2816  12.6380 15.84654719   958</span>
+<span class="s1">1 44138U 19006Z   19095.04584499  .01687024  20239-5  42295-3 0  9997</span>
+<span class="s1">2 44138  96.6639   8.4300 0125246 256.7733 101.9558 16.11801396  1016</span>
+<span class="s1">1 44139U 19006AA  19095.01018649  .01863761  14334-2  76060-2 0  9990</span>
+<span class="s1">2 44139  95.4641   6.0314 0132951 316.5326  42.5520 15.73941483   983</span>
+<span class="s1">1 44140U 19006AB  19094.99401962  .00937025  14528-3  10253-1 0  9993</span>
+<span class="s1">2 44140  95.6393   5.3278 0564445   4.3929 356.1942 14.68800488  1288</span>
+<span class="s1">1 44141U 19006AC  19095.05118892  .00929759  13751-3  12486-1 0  9991</span>
+<span class="s1">2 44141  96.1001   5.9232 0590442 356.3473   3.3508 14.59478967  1289</span>
+<span class="s1">1 44142U 19006AD  19095.08823010  .00450387  29805-4  67642-2 0  9999</span>
+<span class="s1">2 44142  96.5890   6.4539 0677192 345.9062  12.4022 14.38737046  1276</span>
+<span class="s1">1 44143U 19006AE  19095.05197432  .09474171  20938-5  60107-2 0  9993</span>
+<span class="s1">2 44143  96.7877   8.4977 0027864 281.4570  78.3589 16.16667874  1307</span>
+<span class="s1">1 44144U 19006AF  19095.07438984  .00377444  46376-4  18035-2 0  9998</span>
+<span class="s1">2 44144  95.6350   6.4585 0094274 347.7575  12.1403 15.76217231   645</span>
+<span class="s1">1 44145U 19006AG  19095.04888338  .01607578  46803-3  17450-1 0  9996</span>
+<span class="s1">2 44145  95.6463   5.3980 0532778   2.6283 357.7536 14.75786071   597</span>
+<span class="s1">1 44146U 19006AH  19095.02837073  .00089273  19163-5  14515-3 0  9992</span>
+<span class="s1">2 44146  96.5911   8.1980 0103814 264.0180  94.9258 15.93838830   630</span>
+<span class="s1">1 44147U 19006AJ  19095.06147560  .00157958  41062-5  23269-2 0  9996</span>
+<span class="s1">2 44147  95.7673   5.1413 0774807   1.8709 358.5090 14.17974235   565</span>
+<span class="s1">1 44148U 19006AK  19095.05278179  .00260163  23632-4  10121-2 0  9995</span>
+<span class="s1">2 44148  96.6499   8.1178 0099791 308.5716  50.6643 15.79515068   625</span>
+<span class="s1">1 44149U 19006AL  19095.04985371  .00138584  63554-5  90991-3 0  9997</span>
+<span class="s1">2 44149  96.1023   6.9822 0182961   3.3819 356.8627 15.56156057   618</span>
+<span class="s1">1 44150U 19006AM  19094.24965542  .03380564  82179-2  13716-1 0  9997</span>
+<span class="s1">2 44150  96.1314   6.4062 0109734 347.4104  13.2096 15.79057773   490</span>
+<span class="s1">1 44151U 19006AN  19095.07776720  .01139469  39308-3  70293-2 0  9993</span>
+<span class="s1">2 44151  96.1917   7.1013 0175670 351.4915   8.3374 15.58677746   614</span>
+<span class="s1">1 44152U 19006AP  19095.00425471  .00274120  17165-4  25192-2 0  9990</span>
+<span class="s1">2 44152  95.0640   5.0844 0281536 351.5372   8.1175 15.31038960   596</span>
+<span class="s1">1 44153U 19006AQ  19095.10037387  .00335950  24673-4  29766-2 0  9999</span>
+<span class="s1">2 44153  95.0683   5.1111 0309678 359.8179   0.2901 15.26184379   608</span>
+<span class="s1">1 44154U 19006AR  19095.03166584  .00440937  19896-4  10013-1 0  9991</span>
+<span class="s1">2 44154  96.7141   5.2587 1287411 353.6687   4.9420 12.99476955   508</span>
+<span class="s1">1 44155U 19006AS  19095.04684293  .00311061  27074-4  21063-2 0  9995</span>
+<span class="s1">2 44155  96.0164   6.8512 0167909 345.7280  13.9264 15.58091161   608</span>
+<span class="s1">1 44156U 19006AT  19094.69707226  .05553740  38015-1  26327-1 0  9996</span>
+<span class="s1">2 44156  96.2572   7.0051 0089971 352.8442   7.1537 15.81344557   554</span>
+<span class="s1">1 44157U 19006AU  19094.99880469  .00367995  17112-4  47305-2 0  9999</span>
+<span class="s1">2 44157  95.4389   4.4696 0889261   7.5858 353.7787 13.95328540   535</span>
+<span class="s1">1 44158U 19006AV  19095.06474477  .00180650  98283-5  13018-2 0  9991</span>
+<span class="s1">2 44158  96.3276   7.3180 0184890 339.8510  19.5511 15.53942281   603</span>
+<span class="s1">1 44159U 19006AW  19094.21895253  .16047287  19078-5  10135-1 0  9993</span>
+<span class="s1">2 44159  96.3834   6.9600 0020619 341.3096  18.7434 16.17187137   484</span>
+<span class="s1">1 44160U 19006AX  19095.08101037  .00234973  69896-5  43180-2 0  9994</span>
+<span class="s1">2 44160  95.3215   4.1745 0976328 347.1157  10.6586 13.70329689   538</span>
+<span class="s1">1 44161U 19006AY  19095.04864178  .00114018  53545-5  36847-3 0  9997</span>
+<span class="s1">2 44161  96.2750   7.3879 0190135 296.2142  61.9683 15.67668399   605</span>
+<span class="s1">1 44162U 19006AZ  19095.07873983  .00836557  10839-3  11532-1 0  9993</span>
+<span class="s1">2 44162  96.0404   5.8159 0611774 356.4193   3.2724 14.54410367   561</span>
+<span class="s1">1 44163U 19006BA  19095.07356566  .01011177  21458-3  99281-2 0  9998</span>
+<span class="s1">2 44163  95.5073   5.5907 0365152 357.0211   2.8845 15.12958148   434</span>
+<span class="s1">1 44164U 19006BB  19095.09553700  .00177287  73485-5  19099-2 0  9992</span>
+<span class="s1">2 44164  96.6780   7.3048 0403399 338.2118  20.2360 15.03284262   436</span>
+<span class="s1">1 44165U 19006BC  19095.07242078  .00225857  14659-4  14543-2 0  9997</span>
+<span class="s1">2 44165  96.7326   7.9452 0202955 324.2145  34.5647 15.52942310   445</span>
+<span class="s1">1 44166U 19006BD  19095.04140141  .00362798  15115-4  72119-2 0  9990</span>
+<span class="s1">2 44166  95.7142   4.5173 1043123 357.1107   2.4300 13.54482014   381</span>
+<span class="s1">1 44167U 19006BE  19095.05516230  .01576780  86773-3  88344-2 0  9991</span>
+<span class="s1">2 44167  95.7015   6.3580 0149222 336.5257  22.9240 15.65131666   441</span>
+<span class="s1">1 44168U 19006BF  19095.04961209  .00527696  86952-4  28336-2 0  9997</span>
+<span class="s1">2 44168  96.3473   7.5037 0118347 350.9074   9.0046 15.70583958   449</span>
+<span class="s1">1 44169U 19006BG  19095.04600491  .00244967  21667-4  83571-3 0  9993</span>
+<span class="s1">2 44169  97.2645   9.1181 0110262 298.8316  60.1918 15.80462905   294</span>
+<span class="s1">1 44170U 19006BH  19094.29776842  .01477004  51465-3  13916-1 0  9998</span>
+<span class="s1">2 44170  94.7415   4.0349 0321201 354.4045   5.3637 15.22743226   167</span>
+<span class="s1">1 44171U 19006BJ  19095.07665140  .00743869  12904-3  63401-2 0  9998</span>
+<span class="s1">2 44171  95.6686   6.0475 0278790 356.6778   3.2606 15.33067039   280</span>
+<span class="s1">1 44172U 19006BK  19093.24832937  .06491989  10561-5  62839-2 0  9998</span>
+<span class="s1">2 44172  94.5693   3.5604 0110923  40.5090 320.5757 15.99896821    05</span>
+<span class="s1">1 44173U 19006BL  19093.25107377  .00092895  25285-5  10000-2 0  9992</span>
+<span class="s1">2 44173  95.4100   4.1032 0410196   3.5176 356.9078 15.01902668    09&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="Microsat_R_debris_TLE"><a class="viewcode-back" href="../modules/population_library.html#population_library.Microsat_R_debris_TLE">[docs]</a><span class="k">def</span> <span class="nf">Microsat_R_debris_TLE</span><span class="p">(</span><span class="n">mjd</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">tle_raw</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">Microsat_R_debris_raw_tle</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tle_raw</span><span class="p">)</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Not even number of lines [not TLE compatible]&#39;</span><span class="p">)</span>
+
+    <span class="n">TLEs</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">tle_raw</span><span class="p">[</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">],</span> <span class="n">tle_raw</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">])</span>
+    <span class="n">pop</span> <span class="o">=</span> <span class="n">tle_snapshot</span><span class="p">(</span><span class="n">TLEs</span><span class="p">,</span> <span class="n">sgp4_propagation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">mjd</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">pop</span>
+
+    <span class="n">pop</span><span class="o">.</span><span class="n">propagator_options</span><span class="p">[</span><span class="s1">&#39;out_frame&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;TEME&#39;</span>
+    <span class="n">pop</span> <span class="o">=</span> <span class="n">propagate_population</span><span class="p">(</span><span class="n">pop</span><span class="p">,</span> <span class="n">mjd</span><span class="p">)</span>
+    <span class="n">pop</span><span class="o">.</span><span class="n">propagator_options</span><span class="p">[</span><span class="s1">&#39;out_frame&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;ITRF&#39;</span>
+    <span class="n">pop</span><span class="o">.</span><span class="n">propagator</span> <span class="o">=</span> <span class="n">propagator_sgp4</span><span class="o">.</span><span class="n">PropagatorSGP4</span>
+
+    <span class="n">rem_cols</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;m&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;C_D&#39;</span><span class="p">,</span> <span class="s1">&#39;C_R&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="s1">&#39;line1&#39;</span><span class="p">,</span> <span class="s1">&#39;line2&#39;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">rem_cols</span><span class="p">:</span>
+        <span class="n">pop</span><span class="o">.</span><span class="n">space_object_uses</span><span class="p">[</span><span class="n">pop</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">col</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="n">pop</span><span class="o">.</span><span class="n">add_column</span><span class="p">(</span>
+        <span class="s1">&#39;B&#39;</span><span class="p">,</span>
+        <span class="n">space_object_uses</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">pop</span><span class="p">[</span><span class="s1">&#39;d&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.1</span>
+
+    <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pop</span><span class="p">)):</span>
+
+        <span class="n">bstar</span> <span class="o">=</span> <span class="n">tle</span><span class="o">.</span><span class="n">tle_bstar</span><span class="p">(</span><span class="n">pop</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="s1">&#39;line1&#39;</span><span class="p">])</span>
+        <span class="n">bstar</span> <span class="o">=</span> <span class="n">bstar</span><span class="o">/</span><span class="p">(</span><span class="n">propagator_sgp4</span><span class="o">.</span><span class="n">SGP4</span><span class="o">.</span><span class="n">R_EARTH</span><span class="o">*</span><span class="mf">1000.0</span><span class="p">)</span>
+        <span class="n">B</span> <span class="o">=</span> <span class="n">bstar</span><span class="o">/</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="n">propagator_sgp4</span><span class="o">.</span><span class="n">SGP4</span><span class="o">.</span><span class="n">RHO0</span><span class="p">)</span>
+
+        <span class="n">pop</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="s1">&#39;B&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">B</span>
+
+    <span class="k">return</span> <span class="n">pop</span></div>
+
+<div class="viewcode-block" id="Microsat_R_debris"><a class="viewcode-back" href="../modules/population_library.html#population_library.Microsat_R_debris">[docs]</a><span class="k">def</span> <span class="nf">Microsat_R_debris</span><span class="p">(</span><span class="n">mjd</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">radii_range</span><span class="p">,</span> <span class="n">mass_range</span><span class="p">,</span> <span class="n">propagator</span><span class="p">,</span> <span class="n">propagator_options</span><span class="p">):</span>
+
+    <span class="n">tle_raw</span> <span class="o">=</span> <span class="n">Microsat_R_debris_raw_tle</span>
+
+    <span class="n">tle_raw</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">tle_raw</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tle_raw</span><span class="p">)</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Not even number of lines [not TLE compatible]&#39;</span><span class="p">)</span>
+    <span class="n">TLEs</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">tle_raw</span><span class="p">[</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">],</span> <span class="n">tle_raw</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">])</span>
+
+    <span class="n">M_earth</span> <span class="o">=</span> <span class="n">propagator_sgp4</span><span class="o">.</span><span class="n">SGP4</span><span class="o">.</span><span class="n">GM</span><span class="o">*</span><span class="mf">1e9</span><span class="o">/</span><span class="n">consts</span><span class="o">.</span><span class="n">G</span>
+
+    <span class="n">pop</span> <span class="o">=</span> <span class="n">Population</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Microsat R debris&#39;</span><span class="p">,</span>
+        <span class="n">extra_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;m&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;C_D&#39;</span><span class="p">,</span> <span class="s1">&#39;C_R&#39;</span><span class="p">],</span>
+        <span class="n">space_object_uses</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="n">propagator</span> <span class="o">=</span> <span class="n">propagator</span><span class="p">,</span>
+        <span class="n">propagator_options</span> <span class="o">=</span> <span class="n">propagator_options</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">pop</span><span class="o">.</span><span class="n">allocate</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">TLEs</span><span class="p">)</span><span class="o">*</span><span class="n">num</span><span class="p">)</span>
+
+    <span class="n">delete_inds</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">cnt</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">line_id</span><span class="p">,</span> <span class="n">lines</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">TLEs</span><span class="p">):</span>
+            <span class="n">line1</span><span class="p">,</span> <span class="n">line2</span> <span class="o">=</span> <span class="n">lines</span>
+
+            <span class="n">sat_id</span> <span class="o">=</span> <span class="n">tle</span><span class="o">.</span><span class="n">tle_id</span><span class="p">(</span><span class="n">line1</span><span class="p">)</span>
+            <span class="n">jd0</span> <span class="o">=</span> <span class="n">tle</span><span class="o">.</span><span class="n">tle_jd</span><span class="p">(</span><span class="n">line1</span><span class="p">)</span>
+            <span class="n">mjd0</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">jd_to_mjd</span><span class="p">(</span><span class="n">jd0</span><span class="p">)</span>
+
+            <span class="n">state_TEME</span> <span class="o">=</span> <span class="n">tle</span><span class="o">.</span><span class="n">TLE_propagation_TEME</span><span class="p">(</span><span class="n">line1</span><span class="p">,</span> <span class="n">line2</span><span class="p">,</span> <span class="n">dpt</span><span class="o">.</span><span class="n">mjd_to_jd</span><span class="p">(</span><span class="n">mjd</span><span class="p">))</span>
+            <span class="n">kep</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">cart2kep</span><span class="p">(</span><span class="n">state_TEME</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">M_cent</span><span class="o">=</span><span class="n">M_earth</span><span class="p">,</span> <span class="n">radians</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">kep</span><span class="p">)):</span>
+                <span class="n">delete_inds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cnt</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">cnt</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="mf">1e-3</span>
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">cnt</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">cnt</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">cnt</span><span class="p">][</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">cnt</span><span class="p">][</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="n">kep</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">cnt</span><span class="p">][</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">true2mean</span><span class="p">(</span><span class="n">kep</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">kep</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">radians</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">cnt</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">sat_id</span><span class="p">)</span>
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">cnt</span><span class="p">][</span><span class="mi">7</span><span class="p">]</span> <span class="o">=</span> <span class="n">mjd</span>
+
+            <span class="n">rho</span> <span class="o">=</span> <span class="mf">1.1e4</span>
+            <span class="k">while</span> <span class="n">rho</span> <span class="o">&gt;</span> <span class="mf">1e4</span> <span class="ow">or</span> <span class="n">rho</span> <span class="o">&lt;</span> <span class="mf">1e2</span><span class="p">:</span>
+                <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">radii_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">radii_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="n">radii_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">r</span><span class="o">**</span><span class="mi">2</span>
+                <span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">mass_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">mass_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="n">mass_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">vol</span> <span class="o">=</span> <span class="mf">4.0</span><span class="o">/</span><span class="mf">3.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">r</span><span class="o">**</span><span class="mi">3</span>
+                <span class="n">rho</span> <span class="o">=</span> <span class="n">m</span><span class="o">/</span><span class="n">vol</span>
+
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">cnt</span><span class="p">][</span><span class="mi">8</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span>
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">cnt</span><span class="p">][</span><span class="mi">9</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span>
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">cnt</span><span class="p">][</span><span class="mi">10</span><span class="p">]</span> <span class="o">=</span> <span class="n">r</span><span class="o">*</span><span class="mf">2.0</span>
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">cnt</span><span class="p">][</span><span class="mi">11</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.3</span>
+            <span class="n">pop</span><span class="o">.</span><span class="n">objs</span><span class="p">[</span><span class="n">cnt</span><span class="p">][</span><span class="mi">12</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+            <span class="n">cnt</span> <span class="o">+=</span> <span class="mi">1</span>
+        
+    <span class="n">pop</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">delete_inds</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">pop</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/doc.html">Documentation</a></li>
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

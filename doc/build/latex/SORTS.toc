@@ -1,0 +1,84 @@
+\select@language {english}
+\contentsline {chapter}{\numberline {1}Introduction}{1}{chapter.1}
+\contentsline {section}{\numberline {1.1}What is SORTS++}{1}{section.1.1}
+\contentsline {section}{\numberline {1.2}Install}{1}{section.1.2}
+\contentsline {subsection}{\numberline {1.2.1}System requirements}{1}{subsection.1.2.1}
+\contentsline {subsection}{\numberline {1.2.2}Dependencies}{1}{subsection.1.2.2}
+\contentsline {section}{\numberline {1.3}\IeC {\textquotedblleft }I\IeC {\textquoteright }m feeling lucky\IeC {\textquotedblright } Install}{1}{section.1.3}
+\contentsline {section}{\numberline {1.4}Test installation}{2}{section.1.4}
+\contentsline {subsection}{\numberline {1.4.1}Modules}{2}{subsection.1.4.1}
+\contentsline {subsection}{\numberline {1.4.2}Simulation}{2}{subsection.1.4.2}
+\contentsline {section}{\numberline {1.5}General simulation}{2}{section.1.5}
+\contentsline {section}{\numberline {1.6}License}{3}{section.1.6}
+\contentsline {chapter}{\numberline {2}Coordinate conventions}{5}{chapter.2}
+\contentsline {section}{\numberline {2.1}Orbit conventions}{5}{section.2.1}
+\contentsline {section}{\numberline {2.2}Coordinate transformation guide}{5}{section.2.2}
+\contentsline {chapter}{\numberline {3}Optional dependencies}{9}{chapter.3}
+\contentsline {section}{\numberline {3.1}Basemap}{9}{section.3.1}
+\contentsline {section}{\numberline {3.2}Pyglow}{9}{section.3.2}
+\contentsline {chapter}{\numberline {4}Installing propagators}{11}{chapter.4}
+\contentsline {section}{\numberline {4.1}Orekit}{11}{section.4.1}
+\contentsline {section}{\numberline {4.2}SGP4}{14}{section.4.2}
+\contentsline {chapter}{\numberline {5}Step by step guides}{15}{chapter.5}
+\contentsline {section}{\numberline {5.1}Step by step: fresh Ubuntu 16.04 LTS}{15}{section.5.1}
+\contentsline {chapter}{\numberline {6}Usage examples}{17}{chapter.6}
+\contentsline {section}{\numberline {6.1}Module level usage}{17}{section.6.1}
+\contentsline {subsection}{\numberline {6.1.1}Scanning for a single space object}{17}{subsection.6.1.1}
+\contentsline {subsection}{\numberline {6.1.2}Tracking a single space object}{17}{subsection.6.1.2}
+\contentsline {subsection}{\numberline {6.1.3}Filtering out detectable population}{17}{subsection.6.1.3}
+\contentsline {section}{\numberline {6.2}Expanding on libraries}{17}{section.6.2}
+\contentsline {subsection}{\numberline {6.2.1}Adding radar systems}{17}{subsection.6.2.1}
+\contentsline {section}{\numberline {6.3}Full simulation usage}{18}{section.6.3}
+\contentsline {subsection}{\numberline {6.3.1}Parsing output files}{18}{subsection.6.3.1}
+\contentsline {section}{\numberline {6.4}Not documented yet}{18}{section.6.4}
+\contentsline {section}{\numberline {6.5}test sims}{18}{section.6.5}
+\contentsline {chapter}{\numberline {7}Documentation}{19}{chapter.7}
+\contentsline {section}{\numberline {7.1}Simulation handler}{19}{section.7.1}
+\contentsline {subsection}{\numberline {7.1.1}simulation}{19}{subsection.7.1.1}
+\contentsline {section}{\numberline {7.2}Class modules}{22}{section.7.2}
+\contentsline {subsection}{\numberline {7.2.1}radar\_config}{22}{subsection.7.2.1}
+\contentsline {subsection}{\numberline {7.2.2}antenna}{24}{subsection.7.2.2}
+\contentsline {subsection}{\numberline {7.2.3}base\_propagator}{30}{subsection.7.2.3}
+\contentsline {subsection}{\numberline {7.2.4}population}{31}{subsection.7.2.4}
+\contentsline {subsection}{\numberline {7.2.5}radar\_scans}{34}{subsection.7.2.5}
+\contentsline {subsection}{\numberline {7.2.6}space\_object}{37}{subsection.7.2.6}
+\contentsline {subsection}{\numberline {7.2.7}catalogue}{42}{subsection.7.2.7}
+\contentsline {section}{\numberline {7.3}Function modules}{43}{section.7.3}
+\contentsline {subsection}{\numberline {7.3.1}debris}{43}{subsection.7.3.1}
+\contentsline {subsection}{\numberline {7.3.2}ccsds\_write}{45}{subsection.7.3.2}
+\contentsline {subsection}{\numberline {7.3.3}coord}{47}{subsection.7.3.3}
+\contentsline {subsection}{\numberline {7.3.4}dpt\_tools}{47}{subsection.7.3.4}
+\contentsline {subsection}{\numberline {7.3.5}TLE\_tools}{62}{subsection.7.3.5}
+\contentsline {subsection}{\numberline {7.3.6}population\_filter}{65}{subsection.7.3.6}
+\contentsline {subsection}{\numberline {7.3.7}ray\_trace}{66}{subsection.7.3.7}
+\contentsline {subsection}{\numberline {7.3.8}simulate\_scan}{66}{subsection.7.3.8}
+\contentsline {subsection}{\numberline {7.3.9}simulate\_tracking}{67}{subsection.7.3.9}
+\contentsline {subsection}{\numberline {7.3.10}simulate\_tracklet}{70}{subsection.7.3.10}
+\contentsline {subsection}{\numberline {7.3.11}simulate\_scaning\_snr}{71}{subsection.7.3.11}
+\contentsline {subsection}{\numberline {7.3.12}logging\_setup}{71}{subsection.7.3.12}
+\contentsline {subsection}{\numberline {7.3.13}orbit\_accuracy}{72}{subsection.7.3.13}
+\contentsline {subsection}{\numberline {7.3.14}orbital\_estimation}{73}{subsection.7.3.14}
+\contentsline {subsection}{\numberline {7.3.15}plothelp}{73}{subsection.7.3.15}
+\contentsline {subsection}{\numberline {7.3.16}lgeom}{74}{subsection.7.3.16}
+\contentsline {subsection}{\numberline {7.3.17}correlator}{74}{subsection.7.3.17}
+\contentsline {section}{\numberline {7.4}Instance libraries}{75}{section.7.4}
+\contentsline {subsection}{\numberline {7.4.1}radar\_library}{75}{subsection.7.4.1}
+\contentsline {subsection}{\numberline {7.4.2}population\_library}{76}{subsection.7.4.2}
+\contentsline {subsection}{\numberline {7.4.3}antenna\_library}{79}{subsection.7.4.3}
+\contentsline {subsection}{\numberline {7.4.4}radar\_scan\_library}{81}{subsection.7.4.4}
+\contentsline {subsection}{\numberline {7.4.5}scheduler\_library}{83}{subsection.7.4.5}
+\contentsline {subsection}{\numberline {7.4.6}rewardf\_library}{83}{subsection.7.4.6}
+\contentsline {section}{\numberline {7.5}Integrator interfaces}{83}{section.7.5}
+\contentsline {subsection}{\numberline {7.5.1}propagator\_sgp4}{83}{subsection.7.5.1}
+\contentsline {subsection}{\numberline {7.5.2}propagator\_orekit}{87}{subsection.7.5.2}
+\contentsline {subsection}{\numberline {7.5.3}propagator\_kepler}{94}{subsection.7.5.3}
+\contentsline {subsection}{\numberline {7.5.4}propagator\_neptune}{95}{subsection.7.5.4}
+\contentsline {section}{\numberline {7.6}Tests}{95}{section.7.6}
+\contentsline {subsection}{\numberline {7.6.1}unit-tests}{95}{subsection.7.6.1}
+\contentsline {subsubsection}{List of tests}{95}{subsubsection*.381}
+\contentsline {subsection}{\numberline {7.6.2}Visual-tests}{98}{subsection.7.6.2}
+\contentsline {subsubsection}{Test propagator}{98}{subsubsection*.382}
+\contentsline {subsection}{\numberline {7.6.3}Simulation-tests}{100}{subsection.7.6.3}
+\contentsline {chapter}{\numberline {8}Indices and tables}{101}{chapter.8}
+\contentsline {chapter}{Python Module Index}{103}{section*.383}
+\contentsline {chapter}{Index}{105}{section*.384}

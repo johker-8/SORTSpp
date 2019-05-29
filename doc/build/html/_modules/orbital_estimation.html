@@ -1,0 +1,522 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>orbital_estimation &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for orbital_estimation</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Estimates a space objects state vector from a set of ranges and range-rates.</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">scipy.optimize</span> <span class="k">as</span> <span class="nn">so</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">n</span>
+
+<span class="kn">import</span> <span class="nn">glob</span>
+
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="n">debug_low</span><span class="o">=</span><span class="kc">False</span>
+
+<span class="c1"># simple ecef tri-static position estimate </span>
+<span class="c1"># using fmin search</span>
+<span class="c1"># p_rx is receiver locations</span>
+<div class="viewcode-block" id="meas2pos"><a class="viewcode-back" href="../modules/orbital_estimation.html#orbital_estimation.meas2pos">[docs]</a><span class="k">def</span> <span class="nf">meas2pos</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">p_rx</span><span class="p">):</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">ss</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="c1"># try position</span>
+        <span class="n">p</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="c1"># distance from tx to target</span>
+        <span class="n">tx2p</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">p</span><span class="o">-</span><span class="n">p_rx</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="c1"># distance from tx to target and rx 1 tx-target-tx</span>
+        <span class="n">model</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">=</span><span class="n">tx2p</span><span class="o">*</span><span class="mf">2.0</span>
+        <span class="c1"># distance from tx to target and to rx 2</span>
+        <span class="n">model</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="n">tx2p</span><span class="o">+</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">p</span><span class="o">-</span><span class="n">p_rx</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])</span>
+        <span class="c1"># distance from tx to target and to rx 3        </span>
+        <span class="n">model</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">=</span><span class="n">tx2p</span><span class="o">+</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">p</span><span class="o">-</span><span class="n">p_rx</span><span class="p">[:,</span><span class="mi">2</span><span class="p">])</span>
+        
+        <span class="n">alt</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="o">-</span><span class="mf">6370.0</span>
+
+        <span class="k">if</span> <span class="n">alt</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">return</span><span class="p">(</span><span class="mf">1e99</span><span class="p">)</span>
+        <span class="n">ssq</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">model</span><span class="o">-</span><span class="n">m</span><span class="p">)</span><span class="o">**</span><span class="mf">2.0</span><span class="p">)</span>
+        <span class="k">return</span><span class="p">(</span><span class="n">ssq</span><span class="p">)</span>
+    
+    <span class="n">xhat</span><span class="o">=</span><span class="n">so</span><span class="o">.</span><span class="n">fmin</span><span class="p">(</span><span class="n">ss</span><span class="p">,</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">10000</span><span class="p">,</span><span class="mi">10000</span><span class="p">,</span><span class="mi">10000</span><span class="p">]),</span><span class="n">full_output</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">disp</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">debug_low</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;residual </span><span class="si">%1.2f</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">ss</span><span class="p">(</span><span class="n">xhat</span><span class="p">)))</span>
+    <span class="k">return</span><span class="p">(</span><span class="n">xhat</span><span class="p">)</span></div>
+
+<span class="c1"># simple ecef tri-static velocity vector estimate </span>
+<span class="c1"># using fmin search</span>
+<span class="c1"># p_rx is receiver locations</span>
+<span class="c1"># dt is numerical derivative length</span>
+<div class="viewcode-block" id="meas2vel"><a class="viewcode-back" href="../modules/orbital_estimation.html#orbital_estimation.meas2vel">[docs]</a><span class="k">def</span> <span class="nf">meas2vel</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="n">m</span><span class="p">,</span><span class="n">p_rx</span><span class="p">,</span><span class="n">dt</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">ss</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="n">v</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+        <span class="c1"># delay between pos and rx 0</span>
+        <span class="n">delay0</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">p</span><span class="o">-</span><span class="n">p_rx</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
+        <span class="c1"># delay between pos and rx 1        </span>
+        <span class="n">delay1</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">p</span><span class="o">-</span><span class="n">p_rx</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])</span>
+        <span class="c1"># delay between pos and rx 2                </span>
+        <span class="n">delay2</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">p</span><span class="o">-</span><span class="n">p_rx</span><span class="p">[:,</span><span class="mi">2</span><span class="p">])</span>
+        
+        <span class="c1"># target-rx0 delay after dt</span>
+        <span class="n">delay0_dt</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">p</span><span class="o">+</span><span class="n">v</span><span class="o">*</span><span class="n">dt</span><span class="o">-</span><span class="n">p_rx</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span> 
+        <span class="n">model</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">delay0_dt</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">delay0</span><span class="p">)</span><span class="o">/</span><span class="n">dt</span>
+
+        <span class="c1"># target-rx1 delay after dt</span>
+        <span class="n">delay1_dt</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">p</span><span class="o">+</span><span class="n">v</span><span class="o">*</span><span class="n">dt</span><span class="o">-</span><span class="n">p_rx</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])</span> 
+        <span class="n">model</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="p">(</span> <span class="p">(</span><span class="n">delay0_dt</span><span class="o">+</span><span class="n">delay1_dt</span><span class="p">)</span><span class="o">-</span><span class="p">(</span><span class="n">delay0</span><span class="o">+</span><span class="n">delay1</span><span class="p">)</span> <span class="p">)</span><span class="o">/</span><span class="n">dt</span>
+
+        <span class="c1"># target-rx2 delay after dt</span>
+        <span class="n">delay2_dt</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">p</span><span class="o">+</span><span class="n">v</span><span class="o">*</span><span class="n">dt</span><span class="o">-</span><span class="n">p_rx</span><span class="p">[:,</span><span class="mi">2</span><span class="p">])</span>         
+        <span class="n">model</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">=</span><span class="p">(</span> <span class="p">(</span><span class="n">delay0_dt</span><span class="o">+</span><span class="n">delay2_dt</span><span class="p">)</span><span class="o">-</span><span class="p">(</span><span class="n">delay0</span><span class="o">+</span><span class="n">delay2</span><span class="p">)</span> <span class="p">)</span><span class="o">/</span><span class="n">dt</span>
+        
+        <span class="n">ssq</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">model</span><span class="o">-</span><span class="n">m</span><span class="p">)</span><span class="o">**</span><span class="mf">2.0</span><span class="p">)</span>
+        <span class="k">return</span><span class="p">(</span><span class="n">ssq</span><span class="p">)</span>
+    
+    <span class="n">xhat</span><span class="o">=</span><span class="n">so</span><span class="o">.</span><span class="n">fmin</span><span class="p">(</span><span class="n">ss</span><span class="p">,</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]),</span><span class="n">full_output</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">disp</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">debug_low</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;residual </span><span class="si">%1.2f</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">ss</span><span class="p">(</span><span class="n">xhat</span><span class="p">)))</span>    
+    <span class="k">return</span><span class="p">(</span><span class="n">xhat</span><span class="p">)</span></div>
+
+<span class="c1"># estimate full state vector using range and range-rate measurements</span>
+<span class="c1"># p_rx is receiver locations. first one is transmit position in ecef</span>
+<div class="viewcode-block" id="estimate_state"><a class="viewcode-back" href="../modules/orbital_estimation.html#orbital_estimation.estimate_state">[docs]</a><span class="k">def</span> <span class="nf">estimate_state</span><span class="p">(</span><span class="n">r_meas</span><span class="p">,</span><span class="n">rr_meas</span><span class="p">,</span><span class="n">p_rx</span><span class="p">):</span>
+    <span class="n">pos</span><span class="o">=</span><span class="n">meas2pos</span><span class="p">(</span><span class="n">r_meas</span><span class="p">,</span><span class="n">p_rx</span><span class="p">)</span>
+    <span class="n">vel</span><span class="o">=</span><span class="n">meas2vel</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span><span class="n">rr_meas</span><span class="p">,</span><span class="n">p_rx</span><span class="p">)</span>
+    <span class="n">ecef_state</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>
+    <span class="n">ecef_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span><span class="o">=</span><span class="n">pos</span>
+    <span class="n">ecef_state</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span><span class="o">=</span><span class="n">vel</span>
+    <span class="k">return</span><span class="p">(</span><span class="n">ecef_state</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="state_estimation"><a class="viewcode-back" href="../modules/orbital_estimation.html#orbital_estimation.state_estimation">[docs]</a><span class="k">def</span> <span class="nf">state_estimation</span><span class="p">(</span><span class="n">tracklet_list</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+
+    <span class="n">ecef_states</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tracklet_list</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ERROR, non tri-static tracklets, skipping&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ecef_states</span><span class="p">,</span><span class="n">t</span>
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="n">tracklet_list</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Track </span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="n">fname</span><span class="p">)</span>
+    <span class="c1">#h5_tr_list = [ h5py.File(fname,&quot;r&quot;) for fname in tracklet_list ]</span>
+    <span class="n">h0</span><span class="o">=</span><span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">tracklet_list</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+    <span class="n">h1</span><span class="o">=</span><span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">tracklet_list</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+    <span class="n">h2</span><span class="o">=</span><span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">tracklet_list</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="s2">&quot;r&quot;</span><span class="p">)</span> 
+
+    <span class="n">t_means0</span><span class="o">=</span><span class="n">h0</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="n">r_meas0</span><span class="o">=</span><span class="n">h0</span><span class="p">[</span><span class="s2">&quot;m_range&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+    <span class="n">rr_meas0</span><span class="o">=</span><span class="n">h0</span><span class="p">[</span><span class="s2">&quot;m_range_rate&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>    
+    <span class="n">r_meas1</span><span class="o">=</span><span class="n">h1</span><span class="p">[</span><span class="s2">&quot;m_range&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+    <span class="n">rr_meas1</span><span class="o">=</span><span class="n">h1</span><span class="p">[</span><span class="s2">&quot;m_range_rate&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+    <span class="n">r_meas2</span><span class="o">=</span><span class="n">h2</span><span class="p">[</span><span class="s2">&quot;m_range&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+    <span class="n">rr_meas2</span><span class="o">=</span><span class="n">h2</span><span class="p">[</span><span class="s2">&quot;m_range_rate&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="n">n_t</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">r_meas0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">r_meas1</span><span class="p">)</span> <span class="o">!=</span> <span class="n">n_t</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">r_meas2</span><span class="p">)</span> <span class="o">!=</span> <span class="n">n_t</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;non-overlapping measurements, tbd, align measurement&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ecef_states</span><span class="p">,</span><span class="n">t</span>
+    
+    <span class="n">p_rx</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span>
+    <span class="n">p_rx</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">=</span><span class="n">h0</span><span class="p">[</span><span class="s2">&quot;rx_loc&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="o">/</span><span class="mf">1e3</span>
+    <span class="n">p_rx</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="n">h1</span><span class="p">[</span><span class="s2">&quot;rx_loc&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="o">/</span><span class="mf">1e3</span>
+    <span class="n">p_rx</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span><span class="o">=</span><span class="n">h2</span><span class="p">[</span><span class="s2">&quot;rx_loc&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="o">/</span><span class="mf">1e3</span>    
+
+    <span class="n">ecef_states</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">6</span><span class="p">,</span><span class="n">n_t</span><span class="p">)))</span>
+    <span class="n">t</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="n">n_t</span><span class="p">)))</span>
+    <span class="k">for</span> <span class="n">ti</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_t</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">h0</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">][</span><span class="n">ti</span><span class="p">]</span> <span class="o">!=</span> <span class="n">h1</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">][</span><span class="n">ti</span><span class="p">]</span> <span class="ow">or</span> <span class="n">h2</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">][</span><span class="n">ti</span><span class="p">]</span> <span class="o">!=</span> <span class="n">h0</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">][</span><span class="n">ti</span><span class="p">]:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;non-aligned measurement&quot;</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="n">m_r</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">r_meas0</span><span class="p">[</span><span class="n">ti</span><span class="p">],</span><span class="n">r_meas1</span><span class="p">[</span><span class="n">ti</span><span class="p">],</span><span class="n">r_meas2</span><span class="p">[</span><span class="n">ti</span><span class="p">]])</span>
+        <span class="n">m_rr</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">rr_meas0</span><span class="p">[</span><span class="n">ti</span><span class="p">],</span><span class="n">rr_meas1</span><span class="p">[</span><span class="n">ti</span><span class="p">],</span><span class="n">rr_meas2</span><span class="p">[</span><span class="n">ti</span><span class="p">]])</span>
+        <span class="n">ecef_state</span><span class="o">=</span><span class="n">estimate_state</span><span class="p">(</span><span class="n">m_r</span><span class="p">,</span><span class="n">m_rr</span><span class="p">,</span><span class="n">p_rx</span><span class="p">)</span>
+        <span class="n">true_state</span><span class="o">=</span><span class="n">h0</span><span class="p">[</span><span class="s2">&quot;true_state&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="n">ti</span><span class="p">,:]</span>
+        
+        <span class="n">ecef_states</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][:,</span><span class="n">ti</span><span class="p">]</span> <span class="o">=</span> <span class="n">ecef_state</span>
+        <span class="n">t</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">,</span><span class="n">ti</span><span class="p">]</span> <span class="o">=</span> <span class="n">t_means0</span><span class="p">[</span><span class="n">ti</span><span class="p">]</span>
+        
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;mean pos error </span><span class="si">%1.2f</span><span class="s2"> (km) mean vel error </span><span class="si">%1.2f</span><span class="s2"> (km)&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ecef_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span><span class="o">-</span><span class="n">true_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]),</span><span class="n">n</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ecef_state</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span><span class="o">-</span><span class="n">true_state</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">])))</span>
+    <span class="n">h0</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">h1</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">h2</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">ecef_states</span><span class="p">,</span><span class="n">t</span></div>
+
+
+<div class="viewcode-block" id="state_estimation_v2"><a class="viewcode-back" href="../modules/orbital_estimation.html#orbital_estimation.state_estimation_v2">[docs]</a><span class="k">def</span> <span class="nf">state_estimation_v2</span><span class="p">(</span><span class="n">tracklet_folder</span><span class="p">,</span> <span class="n">track_id</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+    <span class="n">fl2</span><span class="o">=</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/*.h5&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">tracklet_folder</span><span class="p">))</span>
+    <span class="n">fl2</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+    
+    <span class="c1">#parse files</span>
+    <span class="n">file_id_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">n_base_tracks</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">n_track_file_start</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">current_track</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fl2</span><span class="p">)):</span>
+        <span class="n">file_id_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fl2</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="o">-</span><span class="mi">26</span><span class="p">:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">current_track</span> <span class="o">==</span> <span class="n">file_id_list</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">!=</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">n_base_tracks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">current_track</span> <span class="o">=</span> <span class="n">file_id_list</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">n</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">n_base_tracks</span><span class="p">)</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span>
+                <span class="n">n_track_file_start</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">n_track_file_start</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">0</span> <span class="o">+</span> <span class="n">n</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">n_base_tracks</span><span class="p">))</span>
+            <span class="n">n_base_tracks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="mi">1</span> <span class="p">)</span> <span class="c1">#track id at pos, contains number of track baselines</span>
+    <span class="n">n_tracks</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">n_base_tracks</span><span class="p">)</span>
+
+    <span class="n">ecef_states</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1">#print(n_track_file_start)</span>
+
+    <span class="k">if</span> <span class="n">track_id</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">track_id</span> <span class="o">&lt;</span> <span class="n">n_tracks</span><span class="p">:</span>
+            <span class="n">compute_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">track_id</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;ERROR, track id does not exist&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">ecef_states</span><span class="p">,</span><span class="n">t</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">compute_list</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_tracks</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">compute_list</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">n_base_tracks</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ERROR, non tri-static tracklets, skipping&quot;</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Track </span><span class="si">%d</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">fl2</span><span class="p">[</span><span class="mi">0</span> <span class="o">+</span> <span class="n">n_track_file_start</span><span class="p">[</span><span class="n">i</span><span class="p">]])</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">fl2</span><span class="p">[</span><span class="mi">1</span> <span class="o">+</span> <span class="n">n_track_file_start</span><span class="p">[</span><span class="n">i</span><span class="p">]])</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">fl2</span><span class="p">[</span><span class="mi">2</span> <span class="o">+</span> <span class="n">n_track_file_start</span><span class="p">[</span><span class="n">i</span><span class="p">]])</span>            
+        <span class="n">h0</span><span class="o">=</span><span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">fl2</span><span class="p">[</span><span class="mi">0</span> <span class="o">+</span> <span class="n">n_track_file_start</span><span class="p">[</span><span class="n">i</span><span class="p">]],</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+        <span class="n">h1</span><span class="o">=</span><span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">fl2</span><span class="p">[</span><span class="mi">1</span> <span class="o">+</span> <span class="n">n_track_file_start</span><span class="p">[</span><span class="n">i</span><span class="p">]],</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+        <span class="n">h2</span><span class="o">=</span><span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">fl2</span><span class="p">[</span><span class="mi">2</span> <span class="o">+</span> <span class="n">n_track_file_start</span><span class="p">[</span><span class="n">i</span><span class="p">]],</span><span class="s2">&quot;r&quot;</span><span class="p">)</span> 
+
+        <span class="n">t_means0</span><span class="o">=</span><span class="n">h0</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="n">r_meas0</span><span class="o">=</span><span class="n">h0</span><span class="p">[</span><span class="s2">&quot;m_range&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">rr_meas0</span><span class="o">=</span><span class="n">h0</span><span class="p">[</span><span class="s2">&quot;m_range_rate&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>    
+        <span class="n">r_meas1</span><span class="o">=</span><span class="n">h1</span><span class="p">[</span><span class="s2">&quot;m_range&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">rr_meas1</span><span class="o">=</span><span class="n">h1</span><span class="p">[</span><span class="s2">&quot;m_range_rate&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">r_meas2</span><span class="o">=</span><span class="n">h2</span><span class="p">[</span><span class="s2">&quot;m_range&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">rr_meas2</span><span class="o">=</span><span class="n">h2</span><span class="p">[</span><span class="s2">&quot;m_range_rate&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="n">n_t</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">r_meas0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">r_meas1</span><span class="p">)</span> <span class="o">!=</span> <span class="n">n_t</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">r_meas2</span><span class="p">)</span> <span class="o">!=</span> <span class="n">n_t</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;non-overlapping measurements, tbd, align measurement&quot;</span><span class="p">)</span>
+            <span class="k">continue</span>
+        
+        <span class="n">p_rx</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span>
+        <span class="n">p_rx</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">=</span><span class="n">h0</span><span class="p">[</span><span class="s2">&quot;rx_loc&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="o">/</span><span class="mf">1e3</span>
+        <span class="n">p_rx</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="n">h1</span><span class="p">[</span><span class="s2">&quot;rx_loc&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="o">/</span><span class="mf">1e3</span>
+        <span class="n">p_rx</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span><span class="o">=</span><span class="n">h2</span><span class="p">[</span><span class="s2">&quot;rx_loc&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="o">/</span><span class="mf">1e3</span>    
+
+        <span class="n">ecef_states</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">6</span><span class="p">,</span><span class="n">n_t</span><span class="p">)))</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="n">n_t</span><span class="p">)))</span>
+        <span class="k">for</span> <span class="n">ti</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_t</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">h0</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">][</span><span class="n">ti</span><span class="p">]</span> <span class="o">!=</span> <span class="n">h1</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">][</span><span class="n">ti</span><span class="p">]</span> <span class="ow">or</span> <span class="n">h2</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">][</span><span class="n">ti</span><span class="p">]</span> <span class="o">!=</span> <span class="n">h0</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">][</span><span class="n">ti</span><span class="p">]:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;non-aligned measurement&quot;</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="n">m_r</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">r_meas0</span><span class="p">[</span><span class="n">ti</span><span class="p">],</span><span class="n">r_meas1</span><span class="p">[</span><span class="n">ti</span><span class="p">],</span><span class="n">r_meas2</span><span class="p">[</span><span class="n">ti</span><span class="p">]])</span>
+            <span class="n">m_rr</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">rr_meas0</span><span class="p">[</span><span class="n">ti</span><span class="p">],</span><span class="n">rr_meas1</span><span class="p">[</span><span class="n">ti</span><span class="p">],</span><span class="n">rr_meas2</span><span class="p">[</span><span class="n">ti</span><span class="p">]])</span>
+            <span class="n">ecef_state</span><span class="o">=</span><span class="n">estimate_state</span><span class="p">(</span><span class="n">m_r</span><span class="p">,</span><span class="n">m_rr</span><span class="p">,</span><span class="n">p_rx</span><span class="p">)</span>
+            <span class="n">true_state</span><span class="o">=</span><span class="n">h0</span><span class="p">[</span><span class="s2">&quot;true_state&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="n">ti</span><span class="p">,:]</span>
+            
+            <span class="n">ecef_states</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][:,</span><span class="n">ti</span><span class="p">]</span> <span class="o">=</span> <span class="n">ecef_state</span>
+            <span class="n">t</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">,</span><span class="n">ti</span><span class="p">]</span> <span class="o">=</span> <span class="n">t_means0</span><span class="p">[</span><span class="n">ti</span><span class="p">]</span>
+            
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;mean pos error </span><span class="si">%1.2f</span><span class="s2"> (km) mean vel error </span><span class="si">%1.2f</span><span class="s2"> (km)&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ecef_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span><span class="o">-</span><span class="n">true_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]),</span><span class="n">n</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ecef_state</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span><span class="o">-</span><span class="n">true_state</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">])))</span>
+        <span class="n">h0</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">h1</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">h2</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">ecef_states</span><span class="p">,</span><span class="n">t</span></div>
+
+
+<div class="viewcode-block" id="test_tracklets"><a class="viewcode-back" href="../modules/orbital_estimation.html#orbital_estimation.test_tracklets">[docs]</a><span class="k">def</span> <span class="nf">test_tracklets</span><span class="p">():</span>
+    <span class="c1"># Unit test</span>
+    <span class="c1">#</span>
+    <span class="c1"># Create tracklets and perform orbit determination</span>
+    <span class="c1">#</span>
+    <span class="kn">import</span> <span class="nn">population_library</span> <span class="k">as</span> <span class="nn">plib</span>
+    <span class="kn">import</span> <span class="nn">radar_library</span> <span class="k">as</span> <span class="nn">rlib</span>
+    <span class="kn">import</span> <span class="nn">simulate_tracking</span>
+    <span class="kn">import</span> <span class="nn">simulate_tracklet</span> <span class="k">as</span> <span class="nn">st</span>
+    <span class="kn">import</span> <span class="nn">os</span>
+
+    <span class="kn">from</span> <span class="nn">propagator_neptune</span> <span class="k">import</span> <span class="n">PropagatorNeptune</span>
+    <span class="kn">from</span> <span class="nn">propagator_sgp4</span> <span class="k">import</span> <span class="n">PropagatorSGP4</span>
+    <span class="kn">from</span> <span class="nn">propagator_orekit</span> <span class="k">import</span> <span class="n">PropagatorOrekit</span>
+
+    <span class="n">opts_sgp4</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">polar_motion</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">out_frame</span> <span class="o">=</span> <span class="s1">&#39;ITRF&#39;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">opts_nept</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="n">opts_orekit</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">in_frame</span><span class="o">=</span><span class="s1">&#39;TEME&#39;</span><span class="p">,</span>
+        <span class="n">out_frame</span><span class="o">=</span><span class="s1">&#39;ITRF&#39;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+    <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s2">&quot;rm -Rf /tmp/test_tracklets&quot;</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s2">&quot;mkdir /tmp/test_tracklets&quot;</span><span class="p">)</span>    
+    <span class="n">m</span> <span class="o">=</span> <span class="n">plib</span><span class="o">.</span><span class="n">master_catalog</span><span class="p">(</span>
+        <span class="n">sort</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">propagator</span> <span class="o">=</span> <span class="n">PropagatorNeptune</span><span class="p">,</span>
+        <span class="n">propagator_options</span> <span class="o">=</span> <span class="n">opts_nept</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Envisat</span>
+    <span class="n">o</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">get_object</span><span class="p">(</span><span class="mi">145128</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+
+    <span class="n">e3d</span> <span class="o">=</span> <span class="n">rlib</span><span class="o">.</span><span class="n">eiscat_3d</span><span class="p">(</span><span class="n">beam</span><span class="o">=</span><span class="s1">&#39;gauss&#39;</span><span class="p">)</span>
+
+    <span class="c1"># time in seconds after mjd0</span>
+    <span class="n">t_all</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">24</span><span class="o">*</span><span class="mi">3600</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+    
+    <span class="n">passes</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">simulate_tracking</span><span class="o">.</span><span class="n">find_pass_interval</span><span class="p">(</span><span class="n">t_all</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">e3d</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">passes</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">passes</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="c1"># 100 observations of each pass</span>
+        <span class="n">mean_t</span><span class="o">=</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;duration </span><span class="si">%1.2f</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">10.0</span><span class="p">:</span>
+            <span class="n">t_obs</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">mean_t</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span><span class="n">mean_t</span><span class="o">+</span><span class="mi">10</span><span class="p">,</span><span class="n">num</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">t_obs</span><span class="p">)</span>
+            <span class="n">meas</span><span class="p">,</span> <span class="n">fnames</span><span class="p">,</span> <span class="n">ecef_stdevs</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">create_tracklet</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">e3d</span><span class="p">,</span> <span class="n">t_obs</span><span class="p">,</span> <span class="n">hdf5_out</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ccsds_out</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dname</span><span class="o">=</span><span class="s2">&quot;/tmp/test_tracklets&quot;</span><span class="p">)</span>
+    
+    <span class="n">fl</span><span class="o">=</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;/tmp/test_tracklets/*&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fl</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="n">fl2</span><span class="o">=</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/*.h5&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">fl2</span><span class="p">)</span>
+        <span class="n">fl2</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        <span class="n">start_times</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">f2</span> <span class="ow">in</span> <span class="n">fl2</span><span class="p">:</span>
+            <span class="n">start_times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;(.*/track-.*)-._..h5&quot;</span><span class="p">,</span><span class="n">f2</span><span class="p">)</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">start_times</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">start_times</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;n_tracks </span><span class="si">%d</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">start_times</span><span class="p">)))</span>
+        
+        <span class="k">for</span> <span class="n">t_pref</span> <span class="ow">in</span> <span class="n">start_times</span><span class="p">:</span>
+            <span class="n">fl2</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">*.h5&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">t_pref</span><span class="p">))</span>
+            <span class="n">n_static</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">fl2</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">n_static</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Fitting track </span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">t_pref</span><span class="p">))</span>
+
+                <span class="n">f0</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">-0_0.h5&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">t_pref</span><span class="p">)</span>
+                <span class="n">f1</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">-0_1.h5&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">t_pref</span><span class="p">)</span>
+                <span class="n">f2</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">-0_2.h5&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">t_pref</span><span class="p">)</span>                
+
+                <span class="nb">print</span><span class="p">(</span><span class="n">f0</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">f1</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">f2</span><span class="p">)</span>                
+                
+                <span class="n">h0</span><span class="o">=</span><span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">f0</span><span class="p">,</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+                <span class="n">h1</span><span class="o">=</span><span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">f1</span><span class="p">,</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+                <span class="n">h2</span><span class="o">=</span><span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">f2</span><span class="p">,</span><span class="s2">&quot;r&quot;</span><span class="p">)</span> 
+                
+                <span class="n">r_meas0</span><span class="o">=</span><span class="n">h0</span><span class="p">[</span><span class="s2">&quot;m_range&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+                <span class="n">rr_meas0</span><span class="o">=</span><span class="n">h0</span><span class="p">[</span><span class="s2">&quot;m_range_rate&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>    
+                <span class="n">r_meas1</span><span class="o">=</span><span class="n">h1</span><span class="p">[</span><span class="s2">&quot;m_range&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+                <span class="n">rr_meas1</span><span class="o">=</span><span class="n">h1</span><span class="p">[</span><span class="s2">&quot;m_range_rate&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>    
+                <span class="n">r_meas2</span><span class="o">=</span><span class="n">h2</span><span class="p">[</span><span class="s2">&quot;m_range&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+                <span class="n">rr_meas2</span><span class="o">=</span><span class="n">h2</span><span class="p">[</span><span class="s2">&quot;m_range_rate&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+
+                <span class="n">n_t</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">r_meas0</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">r_meas1</span><span class="p">)</span> <span class="o">!=</span> <span class="n">n_t</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">r_meas2</span><span class="p">)</span> <span class="o">!=</span> <span class="n">n_t</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;non-overlapping measurements, tbd, align measurement&quot;</span><span class="p">)</span>
+                    <span class="k">continue</span>
+            
+                <span class="n">p_rx</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span>
+                <span class="n">p_rx</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">=</span><span class="n">h0</span><span class="p">[</span><span class="s2">&quot;rx_loc&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="o">/</span><span class="mf">1e3</span>
+                <span class="n">p_rx</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="n">h1</span><span class="p">[</span><span class="s2">&quot;rx_loc&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="o">/</span><span class="mf">1e3</span>
+                <span class="n">p_rx</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span><span class="o">=</span><span class="n">h2</span><span class="p">[</span><span class="s2">&quot;rx_loc&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="o">/</span><span class="mf">1e3</span>    
+    
+                <span class="k">for</span> <span class="n">ti</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_t</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">h0</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">][</span><span class="n">ti</span><span class="p">]</span> <span class="o">!=</span> <span class="n">h1</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">][</span><span class="n">ti</span><span class="p">]</span> <span class="ow">or</span> <span class="n">h2</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">][</span><span class="n">ti</span><span class="p">]</span> <span class="o">!=</span> <span class="n">h0</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">][</span><span class="n">ti</span><span class="p">]:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;non-aligned measurement&quot;</span><span class="p">)</span>
+                        <span class="k">continue</span>
+                    <span class="n">m_r</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">r_meas0</span><span class="p">[</span><span class="n">ti</span><span class="p">],</span><span class="n">r_meas1</span><span class="p">[</span><span class="n">ti</span><span class="p">],</span><span class="n">r_meas2</span><span class="p">[</span><span class="n">ti</span><span class="p">]])</span>
+                    <span class="n">m_rr</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">rr_meas0</span><span class="p">[</span><span class="n">ti</span><span class="p">],</span><span class="n">rr_meas1</span><span class="p">[</span><span class="n">ti</span><span class="p">],</span><span class="n">rr_meas2</span><span class="p">[</span><span class="n">ti</span><span class="p">]])</span>
+                    <span class="n">ecef_state</span><span class="o">=</span><span class="n">estimate_state</span><span class="p">(</span><span class="n">m_r</span><span class="p">,</span><span class="n">m_rr</span><span class="p">,</span><span class="n">p_rx</span><span class="p">)</span>
+                    <span class="n">true_state</span><span class="o">=</span><span class="n">h0</span><span class="p">[</span><span class="s2">&quot;true_state&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="n">ti</span><span class="p">,:]</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;pos error </span><span class="si">%1.3f</span><span class="s2"> (m) vel error </span><span class="si">%1.3f</span><span class="s2"> (m/s)&quot;</span><span class="o">%</span><span class="p">(</span><span class="mf">1e3</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">ecef_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span><span class="o">-</span><span class="n">true_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]),</span><span class="mf">1e3</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">ecef_state</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span><span class="o">-</span><span class="n">true_state</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">])))</span>
+                <span class="n">h0</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="n">h1</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="n">h2</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="neptune_state_est"><a class="viewcode-back" href="../modules/orbital_estimation.html#orbital_estimation.neptune_state_est">[docs]</a><span class="k">def</span> <span class="nf">neptune_state_est</span><span class="p">(</span><span class="n">dname</span><span class="o">=</span><span class="s2">&quot;./neptune_tracklets/E3D_neptune/scheduler_2d/tracklets/1001240430178&quot;</span><span class="p">):</span>
+    
+    
+    <span class="c1"># find measurement triplets and analyze them</span>
+    <span class="n">fl</span><span class="o">=</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">dname</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fl</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="n">fl2</span><span class="o">=</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/*.h5&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">fl2</span><span class="p">)</span>
+        <span class="n">fl2</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        <span class="n">start_times</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">f2</span> <span class="ow">in</span> <span class="n">fl2</span><span class="p">:</span>
+            <span class="n">start_times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;(.*/track-.*)-._..h5&quot;</span><span class="p">,</span><span class="n">f2</span><span class="p">)</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">start_times</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">start_times</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;n_tracks </span><span class="si">%d</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">start_times</span><span class="p">)))</span>
+        
+        <span class="k">for</span> <span class="n">t_pref</span> <span class="ow">in</span> <span class="n">start_times</span><span class="p">:</span>
+            <span class="n">fl2</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">*.h5&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">t_pref</span><span class="p">))</span>
+            <span class="n">n_static</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">fl2</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">n_static</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Fitting track </span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">t_pref</span><span class="p">))</span>
+
+                <span class="n">f0</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">-0_0.h5&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">t_pref</span><span class="p">)</span>
+                <span class="n">f1</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">-0_1.h5&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">t_pref</span><span class="p">)</span>
+                <span class="n">f2</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">-0_2.h5&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">t_pref</span><span class="p">)</span>                
+
+                <span class="nb">print</span><span class="p">(</span><span class="n">f0</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">f1</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">f2</span><span class="p">)</span>                
+                
+                <span class="n">h0</span><span class="o">=</span><span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">f0</span><span class="p">,</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+                <span class="n">h1</span><span class="o">=</span><span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">f1</span><span class="p">,</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+                <span class="n">h2</span><span class="o">=</span><span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">f2</span><span class="p">,</span><span class="s2">&quot;r&quot;</span><span class="p">)</span> 
+                
+                <span class="n">r_meas0</span><span class="o">=</span><span class="n">h0</span><span class="p">[</span><span class="s2">&quot;m_range&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+                <span class="n">rr_meas0</span><span class="o">=</span><span class="n">h0</span><span class="p">[</span><span class="s2">&quot;m_range_rate&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>    
+                <span class="n">r_meas1</span><span class="o">=</span><span class="n">h1</span><span class="p">[</span><span class="s2">&quot;m_range&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+                <span class="n">rr_meas1</span><span class="o">=</span><span class="n">h1</span><span class="p">[</span><span class="s2">&quot;m_range_rate&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>    
+                <span class="n">r_meas2</span><span class="o">=</span><span class="n">h2</span><span class="p">[</span><span class="s2">&quot;m_range&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+                <span class="n">rr_meas2</span><span class="o">=</span><span class="n">h2</span><span class="p">[</span><span class="s2">&quot;m_range_rate&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+
+                <span class="n">n_t</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">r_meas0</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">r_meas1</span><span class="p">)</span> <span class="o">!=</span> <span class="n">n_t</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">r_meas2</span><span class="p">)</span> <span class="o">!=</span> <span class="n">n_t</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;non-overlapping measurements, tbd, align measurement&quot;</span><span class="p">)</span>
+                    <span class="k">continue</span>
+            
+                <span class="n">p_rx</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span>
+                <span class="n">p_rx</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">=</span><span class="n">h0</span><span class="p">[</span><span class="s2">&quot;rx_loc&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="o">/</span><span class="mf">1e3</span>
+                <span class="n">p_rx</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="n">h1</span><span class="p">[</span><span class="s2">&quot;rx_loc&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="o">/</span><span class="mf">1e3</span>
+                <span class="n">p_rx</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span><span class="o">=</span><span class="n">h2</span><span class="p">[</span><span class="s2">&quot;rx_loc&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="o">/</span><span class="mf">1e3</span>    
+    
+                <span class="k">for</span> <span class="n">ti</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_t</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">h0</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">][</span><span class="n">ti</span><span class="p">]</span> <span class="o">!=</span> <span class="n">h1</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">][</span><span class="n">ti</span><span class="p">]</span> <span class="ow">or</span> <span class="n">h2</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">][</span><span class="n">ti</span><span class="p">]</span> <span class="o">!=</span> <span class="n">h0</span><span class="p">[</span><span class="s2">&quot;m_time&quot;</span><span class="p">][</span><span class="n">ti</span><span class="p">]:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;non-aligned measurement&quot;</span><span class="p">)</span>
+                        <span class="k">continue</span>
+                    <span class="n">m_r</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">r_meas0</span><span class="p">[</span><span class="n">ti</span><span class="p">],</span><span class="n">r_meas1</span><span class="p">[</span><span class="n">ti</span><span class="p">],</span><span class="n">r_meas2</span><span class="p">[</span><span class="n">ti</span><span class="p">]])</span>
+                    <span class="n">m_rr</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">rr_meas0</span><span class="p">[</span><span class="n">ti</span><span class="p">],</span><span class="n">rr_meas1</span><span class="p">[</span><span class="n">ti</span><span class="p">],</span><span class="n">rr_meas2</span><span class="p">[</span><span class="n">ti</span><span class="p">]])</span>
+                    <span class="n">ecef_state</span><span class="o">=</span><span class="n">estimate_state</span><span class="p">(</span><span class="n">m_r</span><span class="p">,</span><span class="n">m_rr</span><span class="p">,</span><span class="n">p_rx</span><span class="p">)</span>
+                    <span class="n">true_state</span><span class="o">=</span><span class="n">h0</span><span class="p">[</span><span class="s2">&quot;true_state&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="n">ti</span><span class="p">,:]</span>
+
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;pos error </span><span class="si">%1.3f</span><span class="s2"> (m) vel error </span><span class="si">%1.3f</span><span class="s2"> (m/s)&quot;</span><span class="o">%</span><span class="p">(</span><span class="mf">1e3</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">ecef_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span><span class="o">-</span><span class="n">true_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]),</span><span class="mf">1e3</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">ecef_state</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span><span class="o">-</span><span class="n">true_state</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">])))</span>
+                <span class="n">h0</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="n">h1</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="n">h2</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+ 
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">test_tracklets</span><span class="p">()</span>
+<span class="c1">#    neptune_state_est(dname=&quot;./neptune_tracklets/E3D_neptune/scheduler_2d/tracklets/1001013500019&quot;)</span>
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/doc.html">Documentation</a></li>
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

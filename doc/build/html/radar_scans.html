@@ -1,0 +1,319 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>radar_scans &#8212; SORTS++ 2.8.0 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="space_object" href="space_object.html" />
+    <link rel="prev" title="population" href="population.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="space_object.html" title="space_object"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="population.html" title="population"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">SORTS++ 2.8.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" accesskey="U">Documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-radar_scans">
+<span id="radar-scans"></span><h1>radar_scans<a class="headerlink" href="#module-radar_scans" title="Permalink to this headline">¶</a></h1>
+<p>Defines what a radar observation schema is in the form of a class.</p>
+<dl class="docutils">
+<dt>A scan needs to return:</dt>
+<dd><ul class="first last simple">
+<li>radar position and radar pointing direction at any given time t (seconds since epoch)</li>
+<li>short name of scan</li>
+<li>title describing the scan</li>
+</ul>
+</dd>
+</dl>
+<dl class="class">
+<dt id="radar_scans.RadarScan">
+<em class="property">class </em><code class="descclassname">radar_scans.</code><code class="descname">RadarScan</code><span class="sig-paren">(</span><em>lat</em>, <em>lon</em>, <em>alt</em>, <em>pointing_function</em>, <em>pointing_coord='azel'</em>, <em>name='generic scan'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/radar_scans.html#RadarScan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scans.RadarScan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Encapsulates the observation schema of a radar system, i.e. its “scan”.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first simple">
+<li><strong>_lat</strong> (<em>float</em>) – Geographical latitude of radar system in decimal degrees  (North+).</li>
+<li><strong>_lon</strong> (<em>float</em>) – Geographical longitude of radar system in decimal degrees (East+).</li>
+<li><strong>_alt</strong> (<em>float</em>) – Geographical altitude above geoid surface of radar system in meter.</li>
+<li><strong>_pointing_function</strong> (<em>function</em>) – A function that takes in time as the first argument and then any number of keyword arguments and returns the pointing of the radar in a system specified by <code class="code docutils literal notranslate"><span class="pre">pointing_coord</span></code>.</li>
+<li><strong>_pointing_coord</strong> (<em>str</em>) – The coordinate system used by the <code class="code docutils literal notranslate"><span class="pre">_pointing_function</span></code>, may be ‘azel’ or ‘ned’.</li>
+<li><strong>name</strong> (<em>str</em>) – Name of the scan.</li>
+<li><strong>_function_data</strong> (<em>dict</em>) – A dictionary contaning the data to be expanded as keyword parameters to the <code class="code docutils literal notranslate"><span class="pre">_pointing_function</span></code>.</li>
+<li><strong>_info_str</strong> (<em>str</em>) – A string describing the scan.</li>
+<li><strong>_scan_time</strong> (<em>float</em>) – If the scan has a repeating deterministic sequence, it is he time it takes to complete one sequence.</li>
+<li><strong>_pulse_n</strong> (<em>float</em>) – Number of pulses in a repeating pulse sequence.</li>
+<li><strong>_min_el</strong> (<em>float</em>) – Minimum elevation of the scanning sequence.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>lat</strong> (<em>float</em>) – Geographical latitude of radar system in decimal degrees  (North+).</li>
+<li><strong>lon</strong> (<em>float</em>) – Geographical longitude of radar system in decimal degrees (East+).</li>
+<li><strong>alt</strong> (<em>float</em>) – Geographical altitude above geoid surface of radar system in meter.</li>
+<li><strong>pointing_function</strong> (<em>float</em>) – A function that takes in time as the first argument and then any number of keyword arguments and returns the pointing of the radar in a system specified by <code class="code docutils literal notranslate"><span class="pre">pointing_coord</span></code>.</li>
+<li><strong>pointing_coord</strong> (<em>str</em>) – The coordinate system used by the <code class="code docutils literal notranslate"><span class="pre">_pointing_function</span></code>, may be ‘azel’ or ‘ned’.</li>
+<li><strong>name</strong> (<em>str</em>) – Name of the scan.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Pointing function:</strong></p>
+<p>The pointing function must follow the following standard:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Take in time in seconds past reference epoch in seconds as first argument</li>
+<li>Take any number of keyword arguments, these arguments must be defined in the <code class="code docutils literal notranslate"><span class="pre">_function_data</span></code> dictionary.</li>
+<li>It must return the pointing coordinates as a object with get-item implemented (list, tuple, 1-D numpy array, ect) of 3 elements.</li>
+<li>Units are in meters or degrees.</li>
+</ul>
+</div></blockquote>
+<p>Example pointing function:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="k">def</span> <span class="nf">point_east_west_fence</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">dwell_time</span><span class="p">,</span> <span class="n">angles</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Pointing function for a east-to-west fence scan returning pointing coordinates in a NED (North-East-Down) cartesian coordinate system.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+        <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">t</span><span class="o">/</span><span class="n">dwell_time</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">angles</span><span class="p">))</span>
+        <span class="n">angle</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ind</span><span class="p">)</span>
+        <span class="n">e</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">angle</span><span class="o">/</span><span class="mf">180.0</span><span class="p">)</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">angle</span><span class="o">/</span><span class="mf">180.0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">d</span>
+</pre></div>
+</div>
+<p><strong>Coordinate systems:</strong></p>
+<blockquote>
+<div><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">azel:</th><td class="field-body">Azimuth and Elevation in degrees east of north and above horizon.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">ned:</th><td class="field-body">Cartesian coordinates in North, East, Down in meters.</td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+<dl class="method">
+<dt id="radar_scans.RadarScan.antenna_pointing">
+<code class="descname">antenna_pointing</code><span class="sig-paren">(</span><em>t</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/radar_scans.html#RadarScan.antenna_pointing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scans.RadarScan.antenna_pointing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the instantanious WGS84 ECEF pointing direction and the radar geographical location in WGS84 ECEF coordinates.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>t</strong> (<em>float</em>) – Seconds past a reference epoch to retrive the pointing at.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="radar_scans.RadarScan.check_tx_compatibility">
+<code class="descname">check_tx_compatibility</code><span class="sig-paren">(</span><em>tx</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/radar_scans.html#RadarScan.check_tx_compatibility"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scans.RadarScan.check_tx_compatibility" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if the transmitting antenna pusle pattern and coherrent integration schema is compatible with the observation schema. Raises an Exception if not.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>tx</strong> (<a class="reference internal" href="antenna.html#antenna.AntennaTX" title="antenna.AntennaTX"><em>AntennaTX</em></a>) – The antenna that should perform this scan.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="radar_scans.RadarScan.copy">
+<code class="descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/radar_scans.html#RadarScan.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scans.RadarScan.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a copy of the current instance of <a class="reference internal" href="#radar_scans.RadarScan" title="radar_scans.RadarScan"><code class="xref py py-class docutils literal notranslate"><span class="pre">radar_scans.RadarScan</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="radar_scans.RadarScan.dwell_time">
+<code class="descname">dwell_time</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/radar_scans.html#RadarScan.dwell_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scans.RadarScan.dwell_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>If dwell time is a applicable concept for this scan, return that time.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="radar_scans.RadarScan.info">
+<code class="descname">info</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/radar_scans.html#RadarScan.info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scans.RadarScan.info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a descriptive string.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="radar_scans.RadarScan.keyword_arguments">
+<code class="descname">keyword_arguments</code><span class="sig-paren">(</span><em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/radar_scans.html#RadarScan.keyword_arguments"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scans.RadarScan.keyword_arguments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds or modifies all the input keyword arguments of this call to the function data used in calling the pointing function.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="radar_scans.RadarScan.local_pointing">
+<code class="descname">local_pointing</code><span class="sig-paren">(</span><em>t</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/radar_scans.html#RadarScan.local_pointing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scans.RadarScan.local_pointing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the instantanious pointing in local coordinates.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>t</strong> (<em>float</em>) – Seconds past a reference epoch to retrive the pointing at.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="radar_scans.RadarScan.set_tx_location">
+<code class="descname">set_tx_location</code><span class="sig-paren">(</span><em>tx</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/radar_scans.html#RadarScan.set_tx_location"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scans.RadarScan.set_tx_location" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the geographic location of this scan to coencide with the input <a class="reference internal" href="antenna.html#antenna.AntennaTX" title="antenna.AntennaTX"><code class="xref py py-class docutils literal notranslate"><span class="pre">antenna.AntennaTX</span></code></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>tx</strong> (<a class="reference internal" href="antenna.html#antenna.AntennaTX" title="antenna.AntennaTX"><em>AntennaTX</em></a>) – The antenna that should perform this scan.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="radar_scans.plot_radar_scan">
+<code class="descclassname">radar_scans.</code><code class="descname">plot_radar_scan</code><span class="sig-paren">(</span><em>SC</em>, <em>earth=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/radar_scans.html#plot_radar_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scans.plot_radar_scan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a full cycle of the scan pattern based on the <code class="code docutils literal notranslate"><span class="pre">_scan_time</span></code> and the <code class="code docutils literal notranslate"><span class="pre">_function_data['dwell_time']</span></code> variable.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>SC</strong> (<a class="reference internal" href="#radar_scans.RadarScan" title="radar_scans.RadarScan"><em>RadarScan</em></a>) – Scan to plot.</li>
+<li><strong>earth</strong> (<em>bool</em>) – Plot the surface of the Earth.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="radar_scans.plot_radar_scan_movie">
+<code class="descclassname">radar_scans.</code><code class="descname">plot_radar_scan_movie</code><span class="sig-paren">(</span><em>SC</em>, <em>earth=False</em>, <em>rotate=False</em>, <em>save_str=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/radar_scans.html#plot_radar_scan_movie"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radar_scans.plot_radar_scan_movie" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a animation of the scan pattern based on the <code class="code docutils literal notranslate"><span class="pre">_scan_time</span></code> and the <code class="code docutils literal notranslate"><span class="pre">_function_data['dwell_time']</span></code> variable.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>SC</strong> (<a class="reference internal" href="#radar_scans.RadarScan" title="radar_scans.RadarScan"><em>RadarScan</em></a>) – Scan to plot.</li>
+<li><strong>earth</strong> (<em>bool</em>) – Plot the surface of the Earth.</li>
+<li><strong>save_str</strong> (<em>str</em>) – String of path to output movie file. Requers an avalible ffmpeg encoder on the system. If string is empty no movie is saved.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="doc.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="doc.html#simulation-handler">Simulation handler</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="doc.html#class-modules">Class modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#function-modules">Function modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#instance-libraries">Instance libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#integrator-interfaces">Integrator interfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#tests">Tests</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="population.html"
+                        title="previous chapter">population</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="space_object.html"
+                        title="next chapter">space_object</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="space_object.html" title="space_object"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="population.html" title="population"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">SORTS++ 2.8.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" >Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

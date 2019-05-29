@@ -1,0 +1,4 @@
+The global to-do list
+===================================
+
+.. todolist::

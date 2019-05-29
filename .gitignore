@@ -1,0 +1,23 @@
+# Compiled source #
+###################
+
+logfile
+*.pyc
+__pycache__
+*.png
+cache_error*
+*.log
+*.mp4
+.coverage
+
+.cache/
+env2.7/
+repeat_tracklets/
+tracklets/
+catalog_buildup/
+oems/
+
+tests/tmp_test_data/*
+
+data/spice/*.bsp
+data/spice/*.tls

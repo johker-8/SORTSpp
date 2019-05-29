@@ -1,0 +1,7 @@
+repeat_measurements
+===========================
+
+.. automodule:: repeat_measurements
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,801 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>keplerian_sgp4 &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for keplerian_sgp4</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="sd">&#39;&#39;&#39;SGP4 interface with SORTS++.</span>
+
+<span class="sd"># TODO: Sort out MJD and JD and JD-BC because everything is messed up here, but by lucky chance it does not cause faulty propagation...</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="c1"># SGP4 imports</span>
+<span class="kn">import</span> <span class="nn">sgp4.earth_gravity</span>
+<span class="kn">import</span> <span class="nn">sgp4.io</span>
+<span class="kn">import</span> <span class="nn">sgp4.propagation</span>
+<span class="kn">import</span> <span class="nn">sgp4.model</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">n</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">mpl_toolkits.mplot3d</span> <span class="k">import</span> <span class="n">Axes3D</span>
+
+<span class="kn">from</span> <span class="nn">base_propagator</span> <span class="k">import</span> <span class="n">base_propagator</span>
+
+<span class="n">debug</span><span class="o">=</span><span class="kc">False</span>
+
+<span class="c1"># Written in 2018 by Juha Vierinen,</span>
+<span class="c1"># based on code from Jan Siminski, ESA.</span>
+
+<span class="n">GM</span><span class="o">=</span><span class="mf">398600.4415e+9</span>
+<span class="n">t_oe</span><span class="o">=</span><span class="mf">0.0</span>
+<span class="n">om_e</span><span class="o">=</span><span class="mf">7.2921151467e-5</span>
+
+<div class="viewcode-block" id="gmst"><a class="viewcode-back" href="../keplerian_sgp4.html#keplerian_sgp4.gmst">[docs]</a><span class="k">def</span> <span class="nf">gmst</span><span class="p">(</span><span class="n">mjd_UT1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Greenwich Mean Sidereal Time (copied from Montenbruck &amp; Gill: Satellite orbits)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">frac</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">:</span> <span class="n">a</span> <span class="o">-</span> <span class="n">n</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+    
+    <span class="n">secs</span> <span class="o">=</span> <span class="mf">86400.0</span>        <span class="c1"># Seconds per day</span>
+    <span class="n">MJD_J2000</span> <span class="o">=</span> <span class="mf">51544.5</span> 
+    <span class="c1"># Mean Sidereal Time</span>
+    <span class="n">mjd_0</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">mjd_UT1</span><span class="p">)</span>
+    <span class="n">UT1</span>   <span class="o">=</span> <span class="n">secs</span><span class="o">*</span><span class="p">(</span><span class="n">mjd_UT1</span><span class="o">-</span><span class="n">mjd_0</span><span class="p">)</span>          <span class="c1"># [s]</span>
+    <span class="n">T_0</span>   <span class="o">=</span> <span class="p">(</span><span class="n">mjd_0</span>  <span class="o">-</span><span class="n">MJD_J2000</span><span class="p">)</span><span class="o">/</span><span class="mf">36525.0</span>
+    <span class="n">T</span>     <span class="o">=</span> <span class="p">(</span><span class="n">mjd_UT1</span><span class="o">-</span><span class="n">MJD_J2000</span><span class="p">)</span><span class="o">/</span><span class="mf">36525.0</span>
+    
+    <span class="c1">#added np.multiply to allow for time series</span>
+    <span class="n">gmst</span>  <span class="o">=</span> <span class="mf">24110.54841</span> <span class="o">+</span> <span class="mf">8640184.812866</span><span class="o">*</span><span class="n">T_0</span> <span class="o">+</span> \
+                <span class="mf">1.002737909350795</span><span class="o">*</span><span class="n">UT1</span> \
+                <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">((</span><span class="mf">0.093104</span><span class="o">-</span><span class="mf">6.2e-6</span><span class="o">*</span><span class="n">T</span><span class="p">),</span><span class="n">T</span><span class="p">),</span><span class="n">T</span><span class="p">)</span> <span class="c1"># [s]</span>
+                
+    <span class="k">return</span> <span class="mi">2</span><span class="o">*</span><span class="n">n</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">frac</span><span class="p">(</span><span class="n">gmst</span><span class="o">/</span><span class="n">secs</span><span class="p">)</span> <span class="c1"># [rad], 0..2pi</span></div>
+
+
+
+<span class="c1">#</span>
+<span class="c1"># ----------------------------------------------------------------------------</span>
+<span class="c1">#</span>
+<span class="c1">#                Adapted to Python, Daniel Kastinen 2018</span>
+<span class="c1"># ----------------------------------------------------------------------------</span>
+<span class="c1"># -----------------------------------------------------------------------------</span>
+<span class="c1">#</span>
+<span class="c1">#                           function gstime</span>
+<span class="c1">#</span>
+<span class="c1">#  this function finds the greenwich sidereal time (iau-82).</span>
+<span class="c1">#</span>
+<span class="c1">#  author        : david vallado                  719-573-2600    7 jun 2002</span>
+<span class="c1">#</span>
+<span class="c1">#  revisions</span>
+<span class="c1">#                -</span>
+<span class="c1">#</span>
+<span class="c1">#  inputs          description                    range / units</span>
+<span class="c1">#    jdut1       - julian date of ut1             days from 4713 bc</span>
+<span class="c1">#</span>
+<span class="c1">#  outputs       :</span>
+<span class="c1">#    gst         - greenwich sidereal time        0 to 2pi rad</span>
+<span class="c1">#</span>
+<span class="c1">#  locals        :</span>
+<span class="c1">#    temp        - temporary variable for reals   rad</span>
+<span class="c1">#    tut1        - julian centuries from the</span>
+<span class="c1">#                  jan 1, 2000 12 h epoch (ut1)</span>
+<span class="c1">#</span>
+<span class="c1">#  coupling      :</span>
+<span class="c1">#</span>
+<span class="c1">#  references    :</span>
+<span class="c1">#    vallado       2007, 193, Eq 3-43</span>
+<span class="c1">#</span>
+<span class="c1"># gst = gstime(jdut1);</span>
+<span class="c1"># -----------------------------------------------------------------------------</span>
+<div class="viewcode-block" id="gstime"><a class="viewcode-back" href="../keplerian_sgp4.html#keplerian_sgp4.gstime">[docs]</a><span class="k">def</span> <span class="nf">gstime</span><span class="p">(</span><span class="n">jdut1</span><span class="p">):</span>
+
+    <span class="n">twopi</span>      <span class="o">=</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">;</span>
+    <span class="n">deg2rad</span>    <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.0</span><span class="p">;</span>
+
+    <span class="c1"># ------------------------  implementation   ------------------</span>
+    <span class="n">tut1</span><span class="o">=</span> <span class="p">(</span> <span class="n">jdut1</span> <span class="o">-</span> <span class="mf">2451545.0</span> <span class="p">)</span> <span class="o">/</span> <span class="mf">36525.0</span>
+
+    <span class="n">temp</span> <span class="o">=</span> <span class="o">-</span> <span class="mf">6.2e-6</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">tut1</span><span class="p">,</span><span class="n">tut1</span><span class="p">),</span><span class="n">tut1</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.093104</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">tut1</span><span class="p">,</span><span class="n">tut1</span><span class="p">)</span> \
+           <span class="o">+</span> <span class="p">(</span><span class="mf">876600.0</span> <span class="o">*</span> <span class="mf">3600.0</span> <span class="o">+</span> <span class="mf">8640184.812866</span><span class="p">)</span> <span class="o">*</span> <span class="n">tut1</span> <span class="o">+</span> <span class="mf">67310.54841</span>
+
+    <span class="c1"># 360/86400 = 1/240, to deg, to rad</span>
+    <span class="n">temp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fmod</span><span class="p">(</span> <span class="n">temp</span><span class="o">*</span><span class="n">deg2rad</span><span class="o">/</span><span class="mf">240.0</span><span class="p">,</span><span class="n">twopi</span> <span class="p">)</span>
+
+    <span class="c1"># ------------------------ check quadrants --------------------</span>
+    <span class="n">temp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">temp</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">temp</span><span class="o">+</span><span class="n">twopi</span><span class="p">,</span> <span class="n">temp</span><span class="p">)</span>
+
+
+    <span class="n">gst</span> <span class="o">=</span> <span class="n">temp</span>
+    <span class="k">return</span> <span class="n">gst</span></div>
+
+
+
+
+<span class="c1">#</span>
+<span class="c1"># ----------------------------------------------------------------------------</span>
+<span class="c1">#</span>
+<span class="c1">#                Adapted to Python, Daniel Kastinen 2018</span>
+<span class="c1"># ----------------------------------------------------------------------------</span>
+<span class="c1">#                           function polarm</span>
+<span class="c1">#</span>
+<span class="c1">#  this function calulates the transformation matrix that accounts for polar</span>
+<span class="c1">#    motion. both the 1980 and 2000 theories are handled. note that the rotation </span>
+<span class="c1">#    order is different between 1980 and 2000 .</span>
+<span class="c1">#</span>
+<span class="c1">#  author        : david vallado                  719-573-2600   25 jun 2002</span>
+<span class="c1">#</span>
+<span class="c1">#  revisions</span>
+<span class="c1">#    vallado     - consolidate with iau 2000                     14 feb 2005</span>
+<span class="c1">#</span>
+<span class="c1">#  inputs          description                    range / units</span>
+<span class="c1">#    xp          - polar motion coefficient       rad</span>
+<span class="c1">#    yp          - polar motion coefficient       rad</span>
+<span class="c1">#    ttt         - julian centuries of tt (00 theory only)</span>
+<span class="c1">#    opt         - method option                  &#39;01&#39;, &#39;02&#39;, &#39;80&#39;</span>
+<span class="c1">#</span>
+<span class="c1">#  outputs       :</span>
+<span class="c1">#    pm          - transformation matrix for ecef - pef</span>
+<span class="c1">#</span>
+<span class="c1">#  locals        :</span>
+<span class="c1">#    convrt      - conversion from arcsec to rad</span>
+<span class="c1">#    sp          - s prime value</span>
+<span class="c1">#</span>
+<span class="c1">#  coupling      :</span>
+<span class="c1">#    none.</span>
+<span class="c1">#</span>
+<span class="c1">#  references    :</span>
+<span class="c1">#    vallado       2004, 207-209, 211, 223-224</span>
+<span class="c1">#</span>
+<span class="c1"># [pm] = polarm ( xp, yp, ttt, opt );</span>
+<span class="c1"># ----------------------------------------------------------------------------</span>
+<div class="viewcode-block" id="polarm"><a class="viewcode-back" href="../keplerian_sgp4.html#keplerian_sgp4.polarm">[docs]</a><span class="k">def</span> <span class="nf">polarm</span> <span class="p">(</span> <span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">ttt</span><span class="p">,</span> <span class="n">opt</span> <span class="p">):</span>
+    <span class="n">cosxp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+    <span class="n">sinxp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+    <span class="n">cosyp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">yp</span><span class="p">)</span>
+    <span class="n">sinyp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">yp</span><span class="p">)</span>
+
+    <span class="n">pm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">opt</span> <span class="o">==</span> <span class="s1">&#39;80&#39;</span><span class="p">:</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span>  <span class="n">cosxp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span>  <span class="mf">0.0</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">sinxp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span>  <span class="n">sinxp</span> <span class="o">*</span> <span class="n">sinyp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span>  <span class="n">cosyp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span>  <span class="n">cosxp</span> <span class="o">*</span> <span class="n">sinyp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span>  <span class="n">sinxp</span> <span class="o">*</span> <span class="n">cosyp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">sinyp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span>  <span class="n">cosxp</span> <span class="o">*</span> <span class="n">cosyp</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">convrt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="p">(</span><span class="mf">3600.0</span><span class="o">*</span><span class="mf">180.0</span><span class="p">)</span>
+        <span class="c1"># approximate sp value in rad</span>
+        <span class="n">sp</span> <span class="o">=</span> <span class="o">-</span><span class="mf">47.0e-6</span> <span class="o">*</span> <span class="n">ttt</span> <span class="o">*</span> <span class="n">convrt</span>
+        <span class="n">cossp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">sp</span><span class="p">)</span>
+        <span class="n">sinsp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">sp</span><span class="p">)</span>
+
+        <span class="c1"># form the matrix</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span>  <span class="n">cosxp</span> <span class="o">*</span> <span class="n">cossp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">cosyp</span> <span class="o">*</span> <span class="n">sinsp</span> <span class="o">+</span> <span class="n">sinyp</span> <span class="o">*</span> <span class="n">sinxp</span> <span class="o">*</span> <span class="n">cossp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">sinyp</span> <span class="o">*</span> <span class="n">sinsp</span> <span class="o">-</span> <span class="n">cosyp</span> <span class="o">*</span> <span class="n">sinxp</span> <span class="o">*</span> <span class="n">cossp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span>  <span class="n">cosxp</span> <span class="o">*</span> <span class="n">sinsp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span>  <span class="n">cosyp</span> <span class="o">*</span> <span class="n">cossp</span> <span class="o">+</span> <span class="n">sinyp</span> <span class="o">*</span> <span class="n">sinxp</span> <span class="o">*</span> <span class="n">sinsp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span>  <span class="n">sinyp</span> <span class="o">*</span> <span class="n">cossp</span> <span class="o">-</span> <span class="n">cosyp</span> <span class="o">*</span> <span class="n">sinxp</span> <span class="o">*</span> <span class="n">sinsp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span>  <span class="n">sinxp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">sinyp</span> <span class="o">*</span> <span class="n">cosxp</span>
+        <span class="n">pm</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span>  <span class="n">cosyp</span> <span class="o">*</span> <span class="n">cosxp</span>
+    <span class="k">return</span> <span class="n">pm</span></div>
+
+
+<span class="c1">#</span>
+<span class="c1"># ----------------------------------------------------------------------------</span>
+<span class="c1">#</span>
+<span class="c1">#                Adapted to Python, Daniel Kastinen 2018</span>
+<span class="c1">#  input: </span>
+<span class="c1">#     t    - numpy matrix row of years relative mjd0</span>
+<span class="c1">#     p    - numpy matrix of teme coordinate cartesion positions in km</span>
+<span class="c1">#            columns correspond to times in t, and rows x,y and z respectivly</span>
+<span class="c1">#     mjd0 - base modified julian date that t vector is relative to</span>
+<span class="c1">#     model- the polar motion model used in transformation, options are &#39;80&#39; or &#39;00&#39;</span>
+<span class="c1">#            see david vallado documentation for more info</span>
+<span class="c1">#  </span>
+<span class="c1"># ----------------------------------------------------------------------------</span>
+<span class="c1">#</span>
+<span class="c1">#                           function teme2ecef</span>
+<span class="c1">#</span>
+<span class="c1">#  this function trsnforms a vector from the true equator mean equniox frame</span>
+<span class="c1">#    (teme), to an earth fixed (ITRF) frame.  the results take into account</span>
+<span class="c1">#    the effects of sidereal time, and polar motion.</span>
+<span class="c1">#</span>
+<span class="c1">#  author        : david vallado                  719-573-2600   10 dec 2007</span>
+<span class="c1">#</span>
+<span class="c1">#  revisions</span>
+<span class="c1">#</span>
+<span class="c1">#  inputs          description                    range / units</span>
+<span class="c1">#    rteme       - position vector teme           km</span>
+<span class="c1">#    vteme       - velocity vector teme           km/s</span>
+<span class="c1">#    ateme       - acceleration vector teme       km/s2</span>
+<span class="c1">#    lod         - excess length of day           sec</span>
+<span class="c1">#    ttt         - julian centuries of tt         centuries</span>
+<span class="c1">#    jdut1       - julian date of ut1             days from 4713 bc</span>
+<span class="c1">#    xp          - polar motion coefficient       rad</span>
+<span class="c1">#    yp          - polar motion coefficient       rad</span>
+<span class="c1">#</span>
+<span class="c1">#  outputs       :</span>
+<span class="c1">#    recef       - position vector earth fixed    km</span>
+<span class="c1">#    vecef       - velocity vector earth fixed    km/s</span>
+<span class="c1">#    aecef       - acceleration vector earth fixedkm/s2</span>
+<span class="c1">#</span>
+<span class="c1">#  locals        :</span>
+<span class="c1">#    st          - matrix for pef - tod </span>
+<span class="c1">#    pm          - matrix for ecef - pef </span>
+<span class="c1">#</span>
+<span class="c1">#  coupling      :</span>
+<span class="c1">#   gstime       - greenwich mean sidereal time   rad</span>
+<span class="c1">#   polarm       - rotation for polar motion      pef - ecef</span>
+<span class="c1">#</span>
+<span class="c1">#  references    :</span>
+<span class="c1">#    vallado       2007, 219-228</span>
+<span class="c1">#</span>
+<span class="c1"># [recef,vecef,aecef] = teme2ecef  ( rteme,vteme,ateme,ttt,jdut1,lod,xp,yp );</span>
+<span class="c1"># ----------------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="teme2ecef"><a class="viewcode-back" href="../keplerian_sgp4.html#keplerian_sgp4.teme2ecef">[docs]</a><span class="k">def</span> <span class="nf">teme2ecef</span>  <span class="p">(</span> <span class="n">t</span><span class="p">,</span><span class="n">p</span><span class="p">,</span><span class="n">mjd0</span><span class="o">=</span><span class="mi">57084</span><span class="p">,</span><span class="n">model</span><span class="o">=</span><span class="s1">&#39;00&#39;</span> <span class="p">):</span>
+    
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="ow">is</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;t and p dimensions conflicting!&quot;</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">),</span><span class="s1">&#39;,&#39;</span><span class="p">,</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">return</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="c1">#polar motion constants taken from &quot;david vallado &quot;</span>
+    <span class="n">xp</span>   <span class="o">=</span> <span class="o">-</span><span class="mf">0.140682</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="p">(</span><span class="mf">180.0</span><span class="o">*</span><span class="mf">3600.0</span><span class="p">)</span>
+    <span class="n">yp</span>   <span class="o">=</span>  <span class="mf">0.333309</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="p">(</span><span class="mf">180.0</span><span class="o">*</span><span class="mf">3600.0</span><span class="p">)</span>
+
+    <span class="c1">#from MJD to J2000 relative JD to BC-relative JD to julian centuries, 2400000.5 - 2451545.0 = - 51544.5</span>
+    <span class="c1">#a Julian year (symbol: a) is a unit of measurement of time defined as exactly 365.25 days of 86400 SI seconds each</span>
+    <span class="n">ttt</span> <span class="o">=</span> <span class="p">(</span><span class="n">mjd0</span> <span class="o">-</span> <span class="mf">51544.5</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mf">365.25</span><span class="o">*</span><span class="mf">100.0</span><span class="p">)</span>
+
+    <span class="c1">#if year vector large times, implement this</span>
+    <span class="c1">#ttt = (mjd0 + t/86400.0 - 51544.5)/(365.25*100.0)</span>
+
+    <span class="c1">#JDUT1 is actually in days from 4713 bc</span>
+    <span class="n">jdut1</span> <span class="o">=</span> <span class="n">mjd0</span> <span class="o">+</span> <span class="n">t</span><span class="o">/</span><span class="mf">86400.0</span> <span class="o">+</span> <span class="mf">2400000.5</span>
+    
+    <span class="c1"># ------------------------ find gmst --------------------------</span>
+    <span class="c1">#theta= gmst( mjd0 + t/86400.0 );</span>
+    <span class="n">theta</span><span class="o">=</span> <span class="n">gstime</span><span class="p">(</span> <span class="n">jdut1</span> <span class="p">)</span> <span class="o">+</span> <span class="n">n</span><span class="o">.</span><span class="n">pi</span><span class="p">;</span>
+
+    <span class="n">rpef</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="c1"># direct calculation of rotation matrix with different rotation for each</span>
+    <span class="c1"># column of p</span>
+    <span class="n">rpef</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">,:])</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">,:])</span>
+    <span class="n">rpef</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span><span class="o">=-</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">,:])</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">,:])</span>
+    <span class="n">rpef</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span><span class="o">=</span><span class="n">p</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span>
+
+    <span class="n">pm</span> <span class="o">=</span> <span class="n">polarm</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span><span class="n">yp</span><span class="p">,</span><span class="n">ttt</span><span class="p">,</span><span class="n">model</span><span class="p">)</span>
+
+    <span class="n">recef</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span><span class="n">rpef</span><span class="p">);</span>
+    
+
+    <span class="k">return</span> <span class="n">recef</span></div>
+
+<div class="viewcode-block" id="teme2ecef_state"><a class="viewcode-back" href="../keplerian_sgp4.html#keplerian_sgp4.teme2ecef_state">[docs]</a><span class="k">def</span> <span class="nf">teme2ecef_state</span> <span class="p">(</span> <span class="n">t</span><span class="p">,</span><span class="n">p</span><span class="p">,</span><span class="n">v</span><span class="p">,</span><span class="n">mjd0</span><span class="o">=</span><span class="mi">57084</span><span class="p">,</span><span class="n">model</span><span class="o">=</span><span class="s1">&#39;00&#39;</span><span class="p">,</span><span class="n">lod</span> <span class="o">=</span> <span class="mf">0.0015563</span><span class="p">):</span>
+    
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="ow">is</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;t and p dimensions conflicting!&quot;</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">),</span><span class="s1">&#39;,&#39;</span><span class="p">,</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">return</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="c1">#polar motion constants taken from &quot;david vallado &quot;</span>
+    <span class="n">xp</span>   <span class="o">=</span> <span class="o">-</span><span class="mf">0.140682</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="p">(</span><span class="mf">180.0</span><span class="o">*</span><span class="mf">3600.0</span><span class="p">)</span>
+    <span class="n">yp</span>   <span class="o">=</span>  <span class="mf">0.333309</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="p">(</span><span class="mf">180.0</span><span class="o">*</span><span class="mf">3600.0</span><span class="p">)</span>
+
+    <span class="c1">#from MJD to J2000 relative JD to BC-relative JD to julian centuries, 2400000.5 - 2451545.0 = - 51544.5</span>
+    <span class="c1">#a Julian year (symbol: a) is a unit of measurement of time defined as exactly 365.25 days of 86400 SI seconds each</span>
+    <span class="n">ttt</span> <span class="o">=</span> <span class="p">(</span><span class="n">mjd0</span> <span class="o">-</span> <span class="mf">51544.5</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mf">365.25</span><span class="o">*</span><span class="mf">100.0</span><span class="p">)</span>
+
+    <span class="c1">#if year vector large times, implement this</span>
+    <span class="c1">#ttt = (mjd0 + t/86400.0 - 51544.5)/(365.25*100.0)</span>
+
+    <span class="c1">#JDUT1 is actually in days from 4713 bc</span>
+    <span class="n">jdut1</span> <span class="o">=</span> <span class="n">mjd0</span> <span class="o">+</span> <span class="n">t</span><span class="o">/</span><span class="mf">86400.0</span> <span class="o">+</span> <span class="mf">2400000.5</span>
+    
+    <span class="c1"># ------------------------ find gmst --------------------------</span>
+    <span class="c1">#theta= gmst( mjd0 + t/86400.0 );</span>
+    <span class="n">theta</span><span class="o">=</span> <span class="n">gstime</span><span class="p">(</span> <span class="n">jdut1</span> <span class="p">)</span> <span class="o">+</span> <span class="n">n</span><span class="o">.</span><span class="n">pi</span><span class="p">;</span>
+
+    <span class="n">rpef</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="c1"># direct calculation of rotation matrix with different rotation for each</span>
+    <span class="c1"># column of p</span>
+    <span class="n">rpef</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">,:])</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">,:])</span>
+    <span class="n">rpef</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span><span class="o">=-</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">,:])</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">,:])</span>
+    <span class="n">rpef</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span><span class="o">=</span><span class="n">p</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span>
+
+    <span class="n">pm</span> <span class="o">=</span> <span class="n">polarm</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span><span class="n">yp</span><span class="p">,</span><span class="n">ttt</span><span class="p">,</span><span class="n">model</span><span class="p">)</span>
+
+    <span class="n">recef</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span><span class="n">rpef</span><span class="p">);</span>
+    
+    <span class="n">thetasa</span>    <span class="o">=</span> <span class="mf">7.29211514670698e-05</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span>  <span class="o">-</span> <span class="n">lod</span><span class="o">/</span><span class="mf">86400.0</span><span class="p">)</span>
+    <span class="n">omegaearth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">thetasa</span><span class="p">])</span>
+
+    <span class="n">vpef</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="n">vpef</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">,:])</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">,:])</span>
+    <span class="n">vpef</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span><span class="o">=-</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">,:])</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">,:])</span>
+    <span class="n">vpef</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span><span class="o">=</span><span class="n">v</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span>
+
+    <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="n">vpef</span><span class="p">[:,</span><span class="n">ind</span><span class="p">]</span> <span class="o">-=</span> <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">omegaearth</span><span class="p">,</span> <span class="n">rpef</span><span class="p">[:,</span><span class="n">ind</span><span class="p">])</span>
+
+    <span class="n">vecef</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span><span class="n">vpef</span><span class="p">)</span>
+
+    <span class="n">ecef</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">6</span><span class="p">,</span><span class="n">t</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">ecef</span><span class="p">[:</span><span class="mi">3</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">recef</span>
+    <span class="n">ecef</span><span class="p">[</span><span class="mi">3</span><span class="p">:,:]</span> <span class="o">=</span> <span class="n">vecef</span>
+
+    <span class="k">return</span> <span class="n">ecef</span></div>
+
+<span class="c1"># fast array conversion TEME to ECEF</span>
+<span class="c1"># not the most accurate one, which includes motion of the pole.</span>
+<span class="c1"># for that, look into David Vallado&#39;s teme2ecef.m routine.</span>
+<span class="c1"># TODO: add drift of poles.</span>
+<div class="viewcode-block" id="eci2ecef"><a class="viewcode-back" href="../keplerian_sgp4.html#keplerian_sgp4.eci2ecef">[docs]</a><span class="k">def</span> <span class="nf">eci2ecef</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">p</span><span class="p">,</span><span class="n">mjd0</span><span class="o">=</span><span class="mi">57084</span><span class="p">):</span>
+    <span class="n">Re</span><span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">!=</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;t and p dimensions conflicting!&quot;</span><span class="p">)</span>
+        <span class="k">return</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+    <span class="c1"># Earth rotation angles</span>
+    <span class="n">theta</span><span class="o">=</span><span class="n">gmst</span><span class="p">(</span><span class="n">mjd0</span> <span class="o">+</span> <span class="n">t</span><span class="o">/</span><span class="mf">86400.0</span><span class="p">)</span>
+    
+  <span class="c1">#  Re[0,:]=n.array([n.cos(theta),n.sin(theta),0.0])</span>
+  <span class="c1">#   Re[1,:]=n.array([-n.sin(theta),n.cos(theta),0.0])</span>
+  <span class="c1">#    Re[2,:]=n.array([0.0,0.0,1.0])</span>
+
+  <span class="c1">#add velcoity transformation</span>
+
+    <span class="n">ecef</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="c1"># direct calculation of rotation matrix with different rotation for each</span>
+    <span class="c1"># column of p</span>
+    <span class="n">ecef</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span><span class="o">*</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span><span class="o">+</span><span class="n">n</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span><span class="o">*</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span>
+    <span class="n">ecef</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span><span class="o">=-</span><span class="n">n</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span><span class="o">*</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span><span class="o">+</span><span class="n">n</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span><span class="o">*</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span>
+    <span class="n">ecef</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span><span class="o">=</span><span class="n">p</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span>
+    
+    <span class="k">return</span><span class="p">(</span><span class="n">ecef</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SGP4"><a class="viewcode-back" href="../keplerian_sgp4.html#keplerian_sgp4.SGP4">[docs]</a><span class="k">class</span> <span class="nc">SGP4</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The SGP4 class acts as a wrapper around the sgp4 module </span>
+<span class="sd">    uploaded by Brandon Rhodes (http://pypi.python.org/pypi/sgp4/). </span>
+<span class="sd">        </span>
+<span class="sd">    It converts orbital elements into the TLE-like &#39;satellite&#39;-structure which</span>
+<span class="sd">    is used by the module for the propagation.</span>
+<span class="sd">    </span>
+<span class="sd">    Notes:</span>
+<span class="sd">        The class can be directly used for propagation. Alternatively, </span>
+<span class="sd">        a simple propagator function is provided below.    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Geophysical constants (WGS 72 values) for notational convinience</span>
+    
+    <span class="n">WGS</span>     <span class="o">=</span> <span class="n">sgp4</span><span class="o">.</span><span class="n">earth_gravity</span><span class="o">.</span><span class="n">wgs72</span>     <span class="c1"># Model used within SGP4</span>
+    <span class="n">R_EARTH</span> <span class="o">=</span> <span class="n">WGS</span><span class="o">.</span><span class="n">radiusearthkm</span>            <span class="c1"># Earth&#39;s radius [km]   </span>
+    <span class="n">GM</span>      <span class="o">=</span> <span class="n">WGS</span><span class="o">.</span><span class="n">mu</span>                       <span class="c1"># Grav.coeff.[km^3/s^2]   </span>
+    <span class="n">RHO0</span>    <span class="o">=</span> <span class="mf">2.461e-8</span>                     <span class="c1"># Density at q0[kg/m^3] </span>
+    <span class="n">Q0</span>      <span class="o">=</span> <span class="mf">120.0</span>                        <span class="c1"># Reference height [km] </span>
+    <span class="n">S0</span>      <span class="o">=</span> <span class="mf">78.0</span>                         <span class="c1"># Reference height [km]</span>
+    
+    <span class="c1"># Time constants</span>
+    
+    <span class="n">MJD_0</span> <span class="o">=</span> <span class="mf">2400000.5</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mjd_epoch</span><span class="p">,</span> <span class="n">mean_elements</span><span class="p">,</span> <span class="n">B</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        Initialize SGP4 object from mean orbital elements and</span>
+<span class="sd">        ballistic coefficient</span>
+
+<span class="sd">        Creates a sgp4.model.Satellite object for mean element propagation</span>
+<span class="sd">        First all units are converted to the ones used for TLEs, then </span>
+<span class="sd">        they are modified to the sgp4 module standard. </span>
+<span class="sd">        </span>
+<span class="sd">        Input</span>
+<span class="sd">        -----</span>
+<span class="sd">        mjd_epoch     : epoch as Modified Julian Date (MJD) </span>
+<span class="sd">        mean_elements : [a0,e0,i0,raan0,aop0,M0] </span>
+<span class="sd">        B             : Ballistic coefficient ( 0.5*C_D*A/m )</span>
+<span class="sd">        </span>
+<span class="sd">        Remarks</span>
+<span class="sd">        -------</span>
+<span class="sd">        </span>
+<span class="sd">        This object is not usable for TLE generation, but only for propagation </span>
+<span class="sd">        as internal variables are modified by sgp4init.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">a0</span>     <span class="o">=</span> <span class="n">mean_elements</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>         <span class="c1"># Semi-major (a&#39;) at epoch [km]</span>
+        <span class="n">e0</span>     <span class="o">=</span> <span class="n">mean_elements</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>         <span class="c1"># Eccentricity at epoch             </span>
+        <span class="n">i0</span>     <span class="o">=</span> <span class="n">mean_elements</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>         <span class="c1"># Inclination at epoch              </span>
+        <span class="n">raan0</span>  <span class="o">=</span> <span class="n">mean_elements</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>         <span class="c1"># RA of the ascending node at epoch </span>
+        <span class="n">aop0</span>   <span class="o">=</span> <span class="n">mean_elements</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>         <span class="c1"># Argument of perigee at epoch      </span>
+        <span class="n">M0</span>     <span class="o">=</span> <span class="n">mean_elements</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>         <span class="c1"># Mean anomaly at epoch             </span>
+    
+        <span class="c1"># Compute ballistic coefficient</span>
+        <span class="n">bstar</span>  <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">B</span><span class="o">*</span><span class="n">SGP4</span><span class="o">.</span><span class="n">RHO0</span> <span class="c1"># B* in [1/m] </span>
+        <span class="n">n0</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">SGP4</span><span class="o">.</span><span class="n">GM</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">a0</span><span class="o">**</span><span class="mf">1.5</span><span class="p">)</span>
+        
+        <span class="c1"># Scaling</span>
+        <span class="n">n0</span>    <span class="o">=</span> <span class="n">n0</span><span class="o">*</span><span class="p">(</span><span class="mf">86400.0</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span>          <span class="c1"># Convert to [rev/d]</span>
+        <span class="n">bstar</span> <span class="o">=</span> <span class="n">bstar</span><span class="o">*</span><span class="p">(</span><span class="n">SGP4</span><span class="o">.</span><span class="n">R_EARTH</span><span class="o">*</span><span class="mf">1000.0</span><span class="p">)</span>     <span class="c1"># Convert from [1/m] to [1/R_EARTH]</span>
+    
+        <span class="c1"># Compute year and day of year</span>
+        <span class="n">d</span>   <span class="o">=</span> <span class="n">mjd_epoch</span> <span class="o">-</span> <span class="mf">16480.0</span>               <span class="c1"># Days since 1904 Jan 1.0</span>
+        <span class="n">y</span>   <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="o">/</span> <span class="mf">365.25</span><span class="p">)</span>                <span class="c1"># Number of years since 1904</span>
+        <span class="n">doy</span> <span class="o">=</span> <span class="n">d</span> <span class="o">-</span> <span class="nb">int</span><span class="p">(</span><span class="mf">365.25</span><span class="o">*</span><span class="n">y</span><span class="p">)</span>                 <span class="c1"># Day of year </span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">y</span><span class="o">%</span><span class="mi">4</span><span class="o">==</span><span class="mi">0</span><span class="p">):</span>
+            <span class="n">doy</span><span class="o">+=</span><span class="mf">1.0</span>
+                    
+        <span class="c1"># Create Satellite object and fill member variables</span>
+        <span class="n">sat</span> <span class="o">=</span> <span class="n">sgp4</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">Satellite</span><span class="p">()</span>
+        <span class="c1">#Unique satellite number given in the TLE file.</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">satnum</span> <span class="o">=</span> <span class="mi">12345</span>    
+        <span class="c1">#Full four-digit year of this element set&#39;s epoch moment.</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">epochyr</span> <span class="o">=</span> <span class="mi">1904</span><span class="o">+</span><span class="n">y</span>
+        <span class="c1">#Fractional days into the year of the epoch moment.</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">epochdays</span> <span class="o">=</span> <span class="n">doy</span>
+        <span class="c1">#Julian date of the epoch (computed from epochyr and epochdays).</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">jdsatepoch</span> <span class="o">=</span> <span class="n">mjd_epoch</span> <span class="o">+</span> <span class="n">SGP4</span><span class="o">.</span><span class="n">MJD_0</span>
+        
+        <span class="c1">#First time derivative of the mean motion (ignored by SGP4).</span>
+        <span class="c1">#sat.ndot</span>
+        <span class="c1">#Second time derivative of the mean motion (ignored by SGP4).</span>
+        <span class="c1">#sat.nddot</span>
+        <span class="c1">#Ballistic drag coefficient B* in inverse earth radii.</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">bstar</span> <span class="o">=</span> <span class="n">bstar</span>
+        <span class="c1">#Inclination in radians.</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">inclo</span> <span class="o">=</span> <span class="n">i0</span>
+        <span class="c1">#Right ascension of ascending node in radians.</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">nodeo</span> <span class="o">=</span> <span class="n">raan0</span>
+        <span class="c1">#Eccentricity.</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">ecco</span> <span class="o">=</span> <span class="n">e0</span>
+        <span class="c1">#Argument of perigee in radians.</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">argpo</span> <span class="o">=</span> <span class="n">aop0</span>
+        <span class="c1">#Mean anomaly in radians.</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">mo</span> <span class="o">=</span> <span class="n">M0</span>
+        <span class="c1">#Mean motion in radians per minute.</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">no</span> <span class="o">=</span> <span class="n">n0</span> <span class="o">/</span> <span class="p">(</span> <span class="mf">1440.0</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="p">)</span>
+        <span class="c1">#</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">whichconst</span> <span class="o">=</span> <span class="n">SGP4</span><span class="o">.</span><span class="n">WGS</span>
+        
+        <span class="n">sat</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="nb">pow</span><span class="p">(</span> <span class="n">sat</span><span class="o">.</span><span class="n">no</span><span class="o">*</span><span class="n">SGP4</span><span class="o">.</span><span class="n">WGS</span><span class="o">.</span><span class="n">tumin</span> <span class="p">,</span> <span class="p">(</span><span class="o">-</span><span class="mf">2.0</span><span class="o">/</span><span class="mf">3.0</span><span class="p">)</span> <span class="p">)</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">alta</span> <span class="o">=</span> <span class="n">sat</span><span class="o">.</span><span class="n">a</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">sat</span><span class="o">.</span><span class="n">ecco</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">altp</span> <span class="o">=</span> <span class="n">sat</span><span class="o">.</span><span class="n">a</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">sat</span><span class="o">.</span><span class="n">ecco</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span>
+    
+        <span class="n">sgp4</span><span class="o">.</span><span class="n">propagation</span><span class="o">.</span><span class="n">sgp4init</span><span class="p">(</span><span class="n">SGP4</span><span class="o">.</span><span class="n">WGS</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> \
+            <span class="n">sat</span><span class="o">.</span><span class="n">satnum</span><span class="p">,</span> <span class="n">sat</span><span class="o">.</span><span class="n">jdsatepoch</span><span class="o">-</span><span class="mf">2433281.5</span><span class="p">,</span> <span class="n">sat</span><span class="o">.</span><span class="n">bstar</span><span class="p">,</span>\
+            <span class="n">sat</span><span class="o">.</span><span class="n">ecco</span><span class="p">,</span> <span class="n">sat</span><span class="o">.</span><span class="n">argpo</span><span class="p">,</span> <span class="n">sat</span><span class="o">.</span><span class="n">inclo</span><span class="p">,</span> <span class="n">sat</span><span class="o">.</span><span class="n">mo</span><span class="p">,</span> <span class="n">sat</span><span class="o">.</span><span class="n">no</span><span class="p">,</span>\
+            <span class="n">sat</span><span class="o">.</span><span class="n">nodeo</span><span class="p">,</span> <span class="n">sat</span><span class="p">)</span>
+
+        <span class="c1"># Store satellite object and epoch </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sat</span>       <span class="o">=</span> <span class="n">sat</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mjd_epoch</span> <span class="o">=</span> <span class="n">mjd_epoch</span>
+        
+<div class="viewcode-block" id="SGP4.state"><a class="viewcode-back" href="../keplerian_sgp4.html#keplerian_sgp4.SGP4.state">[docs]</a>    <span class="k">def</span> <span class="nf">state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mjd_</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Inertial position and velocity ([m], [m/s]) at epoch mjd_</span>
+<span class="sd">        </span>
+<span class="sd">        Input</span>
+<span class="sd">        -----</span>
+<span class="sd">        mjd_ : epoch where satellite should be propagated to</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># minutes since reference epoch</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="p">(</span><span class="n">mjd_</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">mjd_epoch</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1440.0</span>  
+        <span class="n">r</span><span class="p">,</span><span class="n">v</span> <span class="o">=</span> <span class="n">sgp4</span><span class="o">.</span><span class="n">propagation</span><span class="o">.</span><span class="n">sgp4</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sat</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span>
+        <span class="c1"># convert to m and m/s</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">r</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span></div>
+        
+<div class="viewcode-block" id="SGP4.position"><a class="viewcode-back" href="../keplerian_sgp4.html#keplerian_sgp4.SGP4.position">[docs]</a>    <span class="k">def</span> <span class="nf">position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mjd_</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Inertial position at epoch mjd_</span>
+<span class="sd">        </span>
+<span class="sd">        Input</span>
+<span class="sd">        -----</span>
+<span class="sd">        mjd_ : epoch where satellite should be propagated to</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="n">mjd_</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span></div>
+        
+<div class="viewcode-block" id="SGP4.velocity"><a class="viewcode-back" href="../keplerian_sgp4.html#keplerian_sgp4.SGP4.velocity">[docs]</a>    <span class="k">def</span> <span class="nf">velocity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mjd_</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Inertial velocity at epoch mjd_</span>
+<span class="sd">                </span>
+<span class="sd">        Input</span>
+<span class="sd">        -----</span>
+<span class="sd">        mjd_ : epoch where satellite should be propagated to</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="n">mjd_</span><span class="p">)[</span><span class="mi">3</span><span class="p">:</span><span class="mi">7</span><span class="p">]</span></div></div>
+
+
+<div class="viewcode-block" id="sgp4_propagation"><a class="viewcode-back" href="../keplerian_sgp4.html#keplerian_sgp4.sgp4_propagation">[docs]</a><span class="k">def</span> <span class="nf">sgp4_propagation</span><span class="p">(</span> <span class="n">mjd_epoch</span><span class="p">,</span> <span class="n">mean_elements</span><span class="p">,</span> <span class="n">B</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Lazy SGP4 propagation using SGP4 class</span>
+<span class="sd">    </span>
+<span class="sd">    Create a satellite object from mean elements and propagate it</span>
+<span class="sd">    </span>
+<span class="sd">            </span>
+<span class="sd">    Input</span>
+<span class="sd">    -----</span>
+<span class="sd">    mean_elements : [a0,e0,i0,raan0,aop0,M0] </span>
+<span class="sd">    B             : Ballistic coefficient ( 0.5*C_D*A/m )</span>
+<span class="sd">    dt            : Time difference w.r.t. element epoch in seconds</span>
+<span class="sd">    mjd_epoch     : Epoch of elements as Modified Julian Date (MJD) </span>
+<span class="sd">                    Can be ignored if the exact epoch is unimportant</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mjd_</span> <span class="o">=</span> <span class="n">mjd_epoch</span> <span class="o">+</span> <span class="n">dt</span> <span class="o">/</span> <span class="mf">86400.0</span> 
+    <span class="n">obj</span> <span class="o">=</span> <span class="n">SGP4</span><span class="p">(</span><span class="n">mjd_epoch</span><span class="p">,</span> <span class="n">mean_elements</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="n">mjd_</span><span class="p">)</span></div>
+    
+    
+<span class="kn">from</span> <span class="nn">sgp4.io</span> <span class="k">import</span> <span class="n">twoline2rv</span>
+
+<span class="c1">#if __name__ == &quot;__main__&quot;:</span>
+<div class="viewcode-block" id="test_simple"><a class="viewcode-back" href="../keplerian_sgp4.html#keplerian_sgp4.test_simple">[docs]</a><span class="k">def</span> <span class="nf">test_simple</span><span class="p">():</span>
+    
+    <span class="c1"># Simple test with ISS example from Wikipedia</span>
+    <span class="c1"># https://en.wikipedia.org/wiki/Two-line_element_set</span>
+
+    <span class="n">dt</span> <span class="o">=</span> <span class="mf">600.0</span> <span class="c1"># 10 minutes</span>
+    
+    <span class="c1"># Using the sgp4 module directly</span>
+    
+    <span class="c1"># ISS (ZARYA)</span>
+    <span class="n">line1</span> <span class="o">=</span> <span class="s1">&#39;1 25544U 98067A   08264.51782528 -.00002182  00000-0 -11606-4 0  2927&#39;</span>
+    <span class="n">line2</span> <span class="o">=</span> <span class="s1">&#39;2 25544  51.6416 247.4627 0006703 130.5360 325.0288 15.72125391563537&#39;</span>
+    
+    <span class="n">sat</span> <span class="o">=</span> <span class="n">twoline2rv</span><span class="p">(</span><span class="n">line1</span><span class="p">,</span> <span class="n">line2</span><span class="p">,</span> <span class="n">sgp4</span><span class="o">.</span><span class="n">earth_gravity</span><span class="o">.</span><span class="n">wgs72</span><span class="p">)</span>
+    
+    <span class="c1"># Assemble all data that is required for SGP4 propagation</span>
+    <span class="c1"># Epoch, mean orbital elements, ballistic coefficient</span>
+
+    <span class="n">mjd0</span> <span class="o">=</span> <span class="mf">54729.51782528</span>
+    
+    <span class="n">mjd_</span> <span class="o">=</span> <span class="n">mjd0</span> <span class="o">+</span> <span class="n">dt</span> <span class="o">/</span> <span class="mf">86400.0</span> 
+        
+    <span class="n">i0</span>    <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="mf">51.6416</span><span class="p">)</span>
+    <span class="n">e0</span>    <span class="o">=</span> <span class="mf">0.0006703</span>
+    <span class="n">M0</span>    <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="mf">325.0288</span><span class="p">)</span>
+    <span class="n">raan0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="mf">247.4627</span><span class="p">)</span>
+    <span class="n">aop0</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="mf">130.5360</span><span class="p">)</span>
+
+    <span class="c1"># Convert the unit of the ballistic coefficient to [1/m] </span>
+    <span class="n">bstar</span> <span class="o">=</span>  <span class="o">-</span><span class="mf">0.11606E-4</span> <span class="o">/</span> <span class="p">(</span><span class="n">SGP4</span><span class="o">.</span><span class="n">R_EARTH</span><span class="o">*</span><span class="mf">1.0e3</span><span class="p">)</span>
+    <span class="c1"># Ballistic coefficient, B [m^2/kg] </span>
+    <span class="n">B</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">bstar</span> <span class="o">/</span> <span class="n">SGP4</span><span class="o">.</span><span class="n">RHO0</span>
+    
+    <span class="c1"># Mean motion [1/s]</span>
+    <span class="n">n0</span>    <span class="o">=</span> <span class="mf">15.72125391</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">/</span> <span class="mf">86400.0</span>
+    <span class="n">a0</span>    <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">SGP4</span><span class="o">.</span><span class="n">GM</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">n0</span><span class="p">))</span><span class="o">**</span><span class="p">(</span><span class="mf">2.0</span><span class="o">/</span><span class="mf">3.0</span><span class="p">)</span>
+        
+    <span class="n">mean_elements</span> <span class="o">=</span> <span class="p">[</span><span class="n">a0</span><span class="p">,</span><span class="n">e0</span><span class="p">,</span><span class="n">i0</span><span class="p">,</span><span class="n">raan0</span><span class="p">,</span><span class="n">aop0</span><span class="p">,</span><span class="n">M0</span><span class="p">]</span> 
+
+    <span class="c1"># Create own SGP4 object</span>
+    
+    <span class="n">obj</span> <span class="o">=</span> <span class="n">SGP4</span><span class="p">(</span><span class="n">mjd0</span><span class="p">,</span> <span class="n">mean_elements</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Compare satellite structs&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-------------------------&#39;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">(</span><span class="n">sat</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">sat</span><span class="p">,</span> <span class="n">v</span><span class="p">))</span> <span class="o">==</span> <span class="nb">float</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">sat</span><span class="p">):</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">sat</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span><span class="o">-</span><span class="nb">getattr</span><span class="p">(</span><span class="n">sat</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="o">!=</span> <span class="mf">0.0</span><span class="p">):</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">v</span> <span class="p">,</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span><span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">sat</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span><span class="o">-</span><span class="nb">getattr</span><span class="p">(</span><span class="n">sat</span><span class="p">,</span> <span class="n">v</span><span class="p">))</span>
+            
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Evaluate reference implementation&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;---------------------------------&#39;</span><span class="p">)</span>
+        
+    <span class="c1"># Evaluate function at epoch</span>
+    <span class="n">pos</span><span class="p">,</span> <span class="n">vel</span> <span class="o">=</span> <span class="n">sgp4</span><span class="o">.</span><span class="n">propagation</span><span class="o">.</span><span class="n">sgp4</span><span class="p">(</span><span class="n">sat</span><span class="p">,</span> <span class="n">dt</span><span class="o">/</span><span class="mf">60.0</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pos</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">vel</span><span class="p">))</span>
+    
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Evaluate wrapper implementation&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;---------------------------------&#39;</span><span class="p">)</span>
+    
+    <span class="n">y</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="n">mjd_</span><span class="p">)</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">],</span><span class="n">y</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">7</span><span class="p">])</span>
+    
+    <span class="n">y</span> <span class="o">=</span> <span class="n">sgp4_propagation</span><span class="p">(</span><span class="n">mjd0</span><span class="p">,</span> <span class="n">mean_elements</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">],</span><span class="n">y</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">7</span><span class="p">])</span></div>
+
+<span class="c1">#</span>
+<span class="c1"># A propagator needs to implement this.</span>
+<span class="c1"># </span>
+<div class="viewcode-block" id="m_get_orbit"><a class="viewcode-back" href="../keplerian_sgp4.html#keplerian_sgp4.m_get_orbit">[docs]</a><span class="k">def</span> <span class="nf">m_get_orbit</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">a</span><span class="p">,</span><span class="n">e</span><span class="p">,</span><span class="n">inc</span><span class="p">,</span><span class="n">raan</span><span class="p">,</span><span class="n">aop</span><span class="p">,</span><span class="n">mu0</span><span class="p">,</span> <span class="n">C_D</span><span class="o">=</span><span class="mf">2.3</span><span class="p">,</span> <span class="n">A</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span> <span class="n">mjd0</span><span class="o">=</span><span class="mf">54729.51782528</span><span class="p">):</span>
+
+    <span class="c1"># ballistic coefficient in SGP4 B_star format</span>
+    <span class="n">B</span><span class="o">=</span><span class="mf">0.5</span><span class="o">*</span><span class="n">C_D</span><span class="o">*</span><span class="n">A</span><span class="o">/</span><span class="n">m</span>
+
+    <span class="c1"># Assemble all data that is required for SGP4 propagation</span>
+    <span class="c1"># Epoch, mean orbital elements, ballistic coefficient    </span>
+
+    <span class="n">i0</span>    <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">inc</span><span class="p">)</span>
+    <span class="n">e0</span>    <span class="o">=</span> <span class="n">e</span>
+    <span class="n">M0</span>    <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">mu0</span><span class="p">)</span>
+    <span class="n">raan0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">raan</span><span class="p">)</span>
+    <span class="n">aop0</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">aop</span><span class="p">)</span>
+
+    <span class="c1"># apogee of perigee</span>
+    <span class="n">a0</span><span class="o">=</span><span class="n">a</span>
+        
+    <span class="n">mean_elements</span> <span class="o">=</span> <span class="p">[</span><span class="n">a0</span><span class="p">,</span><span class="n">e0</span><span class="p">,</span><span class="n">i0</span><span class="p">,</span><span class="n">raan0</span><span class="p">,</span><span class="n">aop0</span><span class="p">,</span><span class="n">M0</span><span class="p">]</span> 
+
+    <span class="c1"># Create own SGP4 object</span>
+    
+    <span class="n">obj</span> <span class="o">=</span> <span class="n">SGP4</span><span class="p">(</span><span class="n">mjd0</span><span class="p">,</span> <span class="n">mean_elements</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
+
+    <span class="n">mjdates</span> <span class="o">=</span> <span class="n">mjd0</span> <span class="o">+</span> <span class="n">t</span><span class="o">/</span><span class="mf">86400.0</span>
+    <span class="n">pos</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)])</span>
+    <span class="n">vel</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)])</span>
+    <span class="k">for</span> <span class="n">mi</span><span class="p">,</span><span class="n">mjd</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">mjdates</span><span class="p">):</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="n">mjd</span><span class="p">)</span>
+        <span class="n">pos</span><span class="p">[:,</span><span class="n">mi</span><span class="p">]</span><span class="o">=</span><span class="n">y</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="mf">1e3</span> <span class="c1"># km to m</span>
+        <span class="n">vel</span><span class="p">[:,</span><span class="n">mi</span><span class="p">]</span><span class="o">=</span><span class="n">y</span><span class="p">[</span><span class="mi">3</span><span class="p">:]</span><span class="o">*</span><span class="mf">1e3</span> <span class="c1"># km to m</span>
+        
+    <span class="c1">#ecefs=eci2ecef(t,temes,mjd0=mjd0)</span>
+    <span class="c1">#ecefs= teme2ecef(t,pos,mjd0) #testing new function</span>
+    <span class="n">ecefs</span> <span class="o">=</span> <span class="n">teme2ecef_state</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">pos</span><span class="p">,</span><span class="n">vel</span><span class="p">,</span><span class="n">mjd0</span><span class="p">)</span>
+    <span class="k">return</span><span class="p">(</span><span class="n">ecefs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="sgp4_propagator"><a class="viewcode-back" href="../keplerian_sgp4.html#keplerian_sgp4.sgp4_propagator">[docs]</a><span class="k">class</span> <span class="nc">sgp4_propagator</span><span class="p">(</span><span class="n">base_propagator</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span><span class="c1">#,a,e,inc,raan,aop,mu0):</span>
+        <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;init sgp4&quot;</span><span class="p">)</span>
+        <span class="n">base_propagator</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="s1">&#39;sgp4&#39;</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="sgp4_propagator.get_orbit"><a class="viewcode-back" href="../keplerian_sgp4.html#keplerian_sgp4.sgp4_propagator.get_orbit">[docs]</a>    <span class="k">def</span> <span class="nf">get_orbit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">t</span><span class="p">,</span><span class="n">a</span><span class="p">,</span><span class="n">e</span><span class="p">,</span><span class="n">inc</span><span class="p">,</span><span class="n">raan</span><span class="p">,</span><span class="n">aop</span><span class="p">,</span><span class="n">mu0</span><span class="p">,</span><span class="n">mjd0</span><span class="p">,</span><span class="n">A</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">m</span><span class="o">=</span><span class="mf">1e3</span><span class="p">,</span><span class="n">C_D</span><span class="o">=</span><span class="mf">2.3</span><span class="p">):</span>
+        <span class="k">return</span><span class="p">(</span><span class="n">m_get_orbit</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">a</span><span class="p">,</span><span class="n">e</span><span class="p">,</span><span class="n">inc</span><span class="p">,</span><span class="n">raan</span><span class="p">,</span><span class="n">aop</span><span class="p">,</span><span class="n">mu0</span><span class="p">,</span><span class="n">mjd0</span><span class="o">=</span><span class="n">mjd0</span><span class="p">,</span><span class="n">A</span><span class="o">=</span><span class="n">A</span><span class="p">,</span><span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">,</span><span class="n">C_D</span><span class="o">=</span><span class="n">C_D</span><span class="p">))</span></div>
+
+    <span class="k">def</span> <span class="nf">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">traceback</span><span class="p">):</span>
+        <span class="k">pass</span> </div>
+
+    
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">t</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">24</span><span class="o">*</span><span class="mi">360</span><span class="p">)</span><span class="o">*</span><span class="mf">10.0</span>
+
+    <span class="n">mjd0</span><span class="o">=</span><span class="mf">2457126.2729</span>
+    <span class="n">C_D</span><span class="o">=</span><span class="mf">2.3</span>
+    <span class="n">m</span><span class="o">=</span><span class="mi">8000</span>
+    <span class="n">A</span><span class="o">=</span><span class="mf">1.0</span>
+
+    <span class="kn">import</span> <span class="nn">time</span>
+    <span class="n">t0</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">p</span><span class="o">=</span><span class="n">sgp4_propagator</span><span class="p">()</span>
+    <span class="n">ecefs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">get_orbit</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">a</span><span class="o">=</span><span class="mi">7000</span><span class="p">,</span><span class="n">e</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span><span class="n">inc</span><span class="o">=</span><span class="mf">90.0</span><span class="p">,</span><span class="n">raan</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span><span class="n">aop</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span><span class="n">mu0</span><span class="o">=</span><span class="mf">40.0</span><span class="p">,</span><span class="n">C_D</span><span class="o">=</span><span class="n">C_D</span><span class="p">,</span><span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">,</span><span class="n">A</span><span class="o">=</span><span class="n">A</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ecefs</span><span class="p">[</span><span class="mi">0</span><span class="p">,:])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="n">t1</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="mf">1e6</span><span class="o">*</span><span class="p">(</span><span class="n">t1</span><span class="o">-</span><span class="n">t0</span><span class="p">)</span><span class="o">/</span><span class="mf">10000.0</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">ecefs</span><span class="p">[</span><span class="mi">0</span><span class="p">,:])</span><span class="o">**</span><span class="mf">2.0</span><span class="o">+</span><span class="n">n</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">ecefs</span><span class="p">[</span><span class="mi">1</span><span class="p">,:])</span><span class="o">**</span><span class="mf">2.0</span><span class="o">+</span><span class="n">n</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">ecefs</span><span class="p">[</span><span class="mi">2</span><span class="p">,:])</span><span class="o">**</span><span class="mf">2.0</span><span class="p">)</span><span class="o">/</span><span class="mf">1e3</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">20</span><span class="p">])</span>    
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Diff&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+    
+    <span class="nb">print</span><span class="p">(</span><span class="n">ecefs</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">))</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3d&#39;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ecefs</span><span class="p">[</span><span class="mi">0</span><span class="p">,:],</span> <span class="n">ecefs</span><span class="p">[</span><span class="mi">1</span><span class="p">,:],</span> <span class="n">ecefs</span><span class="p">[</span><span class="mi">2</span><span class="p">,:],</span><span class="s2">&quot;.&quot;</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;green&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">([</span><span class="o">-</span><span class="mf">10000e3</span><span class="p">,</span><span class="mf">10000e3</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">([</span><span class="o">-</span><span class="mf">10000e3</span><span class="p">,</span><span class="mf">10000e3</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_zlim</span><span class="p">([</span><span class="o">-</span><span class="mf">10000e3</span><span class="p">,</span><span class="mf">10000e3</span><span class="p">])</span>        
+    
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+    
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/doc.html">Documentation</a></li>
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

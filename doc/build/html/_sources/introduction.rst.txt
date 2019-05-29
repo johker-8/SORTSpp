@@ -1,0 +1,534 @@
+Introduction
+===================================
+
+What is SORTS++
+-----------------
+SORTS++ stands for Next-generation (++) Space Object Radar Tracking Simulator (SORTS). It is a collection of modules designed for research purposes concerning the tracking and detection of objects in space. Its ultimate goal is to simulate the tracking and discovery of objects in space using radar systems in a very general fashion. 
+
+
+Install
+-----------------
+
+System requirements
+~~~~~~~~~~~~~~~~~~~~~~
+
+* Unix (tested on Ubuntu-16.04 LTS, Ubuntu-server-16.04 LTS)
+* Python 2.7
+
+Dependencies
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../pip_req.txt
+   :literal:
+
+Optional dependencies
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../pip_req_optional.txt
+   :literal:
+
+Basemap
+^^^^^^^^
+
+To install **basemap**:
+
+Install proj-bin:
+
+.. code-block:: bash
+
+   sudo apt-get install proj-bin
+
+Get the basemap source
+
+.. code-block:: bash
+
+   wget --no-check-certificate https://github.com/matplotlib/basemap/archive/master.tar.gz
+
+Un-tar the basemap version X.Y.Z source tar.gz file, and enter the basemap-X.Y.Z directory
+
+.. code-block:: bash
+
+   export GEOS_DIR=<where you want the libs and headers to go>
+
+Then go to the geos distribution in the un-tar'ed basemap and run
+
+.. code-block:: bash
+
+   ./configure --prefix=$GEOS_DIR
+   make; make install
+
+Lastly be sure to use the python bin in the virtualenv to install basemap as:: bash
+
+   /..../SORTSpp/env2.7/bin/python setup.py install
+
+
+Pyglow
+^^^^^^^^
+
+Follow the installation guide on `Pyglow <https://github.com/timduly4/pyglow>`_.
+
+
+Step by step guides
+---------------------
+
+Step by step: fresh Ubuntu 16.04 LTS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If needed:
+
+.. code-block:: bash
+
+   sudo dpkg --configure -a
+
+Proceed to:
+
+.. code-block:: bash
+
+   sudo apt-get install git
+   cd /my/projects_dir/
+   git clone https://gitlab.irf.se/danielk/SORTSpp.git
+   cd SORTSpp/
+
+Check your currently installed python versions:
+
+.. code-block:: bash
+
+   python --version
+
+If this does NOT return `Python 2.7.x`:
+
+.. code-block:: bash
+
+   sudo apt-get install python-dev
+
+Check that pip is installed and bound to your python 2.7:
+
+.. code-block:: bash
+
+   pip --version
+
+If pip is NOT installed:
+
+.. code-block:: bash
+
+   sudo apt-get install python-pip
+
+At this stage: DO NOT UPGRADE PIP. Do this after the virtualenv is installed and activated.
+
+Then install and create a virtualenv, here the name "env2.7" is used since this name is included in the .gitignore file and will not be detected by git:
+
+.. code-block:: bash
+
+   pip install virtualenv
+   virtualenv --version
+   virtualenv env2.7
+
+Activate virtualenv:
+
+.. code-block:: bash
+
+   source env2.7/bin/activate
+
+If needed (should already be latest version), upgrade the pip inside the virtualenv:
+
+.. code-block:: bash
+
+   pip install --upgrade pip
+
+Then make sure additional requirements are fulfilled:
+
+* Used by matplotlib
+
+.. code-block:: bash
+
+   sudo apt-get install libfreetype6-dev
+   sudo apt-get install libpng12-dev
+   sudo apt-get install python-tk
+
+* Used by mpi4py
+
+.. code-block:: bash
+
+   sudo apt-get install libopenmpi-dev
+
+Then install the dependency requirement for SORTS++
+
+.. code-block:: bash
+
+   pip install -r pip_req.txt
+
+
+Then test the installation following the test section below.
+
+
+"I'm feeling lucky" Install
+-------------------------------
+
+All of the series of install instructions can also be performed by running the :code:`build.sh` file from the :code:`SORTSpp/` folder after cloning the repository:
+
+.. include:: ../../build.sh
+   :literal:
+
+
+Installing propagators
+------------------------
+
+Orekit
+~~~~~~~~
+(Unknown if this step is required? Needs testing on clean VM machine) 
+sudo apt-get install jcc
+
+Firstly check openJDK version:
+
+.. code-block:: bash
+
+   java -version
+
+if OpenJDK not installed:
+
+.. code-block:: bash
+
+   sudo apt-get install openjdk-7-jdk
+
+or
+
+.. code-block:: bash
+
+   sudo apt-get install openjdk-8-jdk
+
+Then create a Python-2.7 environment in an appropriate folder:
+
+.. code-block:: bash
+
+   virtualenv env
+
+Activate the environment:
+
+.. code-block:: bash
+
+   source env/bin/activate
+
+Depending on your installation, make sure that the :code:`JCC_JDK` variable is set:
+
+.. code-block:: bash
+
+   export JCC_JDK="/usr/lib/jvm/java-8-openjdk-amd64"
+
+Again, this DOES NOT work with java-9, needs 8 or 7.
+
+Then install JCC into the environment:
+
+.. code-block:: bash
+
+   pip install jcc
+
+go to: `Hipparchus <https://www.hipparchus.org/downloads.html>`_ and download binary for version 1.3.
+Extract the .jar files with some archive manager, e.g. *tar*.
+
+Clone the modified orekit including python package java classes: `Orekit with python <https://github.com/petrushy/Orekit.git>`_ .
+
+Follow the instructions in:
+`Build orekit <https://github.com/petrushy/Orekit/blob/develop/BUILDING.txt>`_
+
+Tested building on Ubuntu 16.04:
+
+.. code-block:: bash
+
+   sudo apt install maven
+  mvn package
+
+If you have problem with some tests failing when building orekit, make sure you check the *petrushy/Orekit.git* 
+repository status and ensure that you have the correct branch checked out before compiling (as of writing, tested branch on Ubuntu 16.04 is *cs_93*).
+
+After compilation is complete, go to "/Orekit/target/" and to find the **orekit-x.jar**
+
+Clone the python wrapper repository: `Orekit python wrapper <https://gitlab.orekit.org/orekit-labs/python-wrapper.git>`_ 
+
+Copy the contents of the "python_files" folder (from the python wrapper repository) to the folder where you intend to build the python library.
+
+Then place all the **hipparchus-Y.jar** files and your modified compiled **orekit-x.jar** file in your build folder.
+
+More specifically these files are needed:
+
+ *  orekit-x.jar
+ *  hipparchus-core-1.3.jar
+ *  hipparchus-filtering-1.3.jar
+ *  hipparchus-fitting-1.3.jar
+ *  hipparchus-geometry-1.3.jar
+ *  hipparchus-ode-1.3.jar
+ *  hipparchus-optim-1.3.jar
+ *  hipparchus-stat-1.3.jar
+
+
+Set the environment variable for building:
+
+.. code-block:: bash
+
+   export SRC_DIR="my/orekit/build/folder"
+   export _JAVA_OPTIONS="-Dorekit.data.path=/full/path/to/Orekit/"
+
+In this folder create a build.sh file with the following contents (remember to replace the **x**'es with the correct version compiled):
+
+.. code-block:: bash
+
+  #!/bin/bash
+
+  python -m jcc \
+  --use_full_names \
+  --python orekit \
+  --version x \
+  --jar $SRC_DIR/orekit-x.jar \
+  --jar $SRC_DIR/hipparchus-core-1.3.jar \
+  --jar $SRC_DIR/hipparchus-filtering-1.3.jar \
+  --jar $SRC_DIR/hipparchus-fitting-1.3.jar \
+  --jar $SRC_DIR/hipparchus-geometry-1.3.jar \
+  --jar $SRC_DIR/hipparchus-ode-1.3.jar \
+  --jar $SRC_DIR/hipparchus-optim-1.3.jar \
+  --jar $SRC_DIR/hipparchus-stat-1.3.jar \
+  --package java.io \
+  --package java.util \
+  --package java.text \
+  --package org.orekit \
+  java.io.BufferedReader \
+  java.io.FileInputStream \
+  java.io.FileOutputStream \
+  java.io.InputStream \
+  java.io.InputStreamReader \
+  java.io.ObjectInputStream \
+  java.io.ObjectOutputStream \
+  java.io.PrintStream \
+  java.io.StringReader \
+  java.io.StringWriter \
+  java.lang.System \
+  java.text.DecimalFormat \
+  java.text.DecimalFormatSymbols \
+  java.util.ArrayList \
+  java.util.Arrays \
+  java.util.Collection \
+  java.util.Collections \
+  java.util.Date \
+  java.util.HashMap \
+  java.util.HashSet \
+  java.util.List \
+  java.util.Locale \
+  java.util.Map \
+  java.util.Set \
+  java.util.TreeSet \
+  --module $SRC_DIR/pyhelpers.py \
+  --reserved INFINITE \
+  --reserved ERROR \
+  --reserved OVERFLOW \
+  --reserved NO_DATA \
+  --reserved NAN \
+  --reserved min \
+  --reserved max \
+  --reserved mean \
+  --reserved SNAN \
+  --build \
+  --install
+
+
+This command is taken from the *conda-recipe* `build sh <https://gitlab.orekit.org/orekit-labs/python-wrapper/blob/master/orekit-conda-recipe/build.sh>`_ file.
+
+Make the file executable
+
+.. code-block:: bash
+
+   chmod +x build.sh
+
+Run the build file
+
+.. code-block:: bash
+
+   ./build.sh
+
+This may take some time.
+
+Check installation by
+
+.. code-block:: bash
+
+   pip freeze
+
+it should output:
+
+.. code-block:: bash
+
+   JCC==3.4
+   orekit==9.2
+
+Then install some additional libraries 
+
+.. code-block:: bash
+
+   pip install scipy
+   pip install matplotlib
+   pip install pytest
+
+Make sure that you test that the installation and compilation worked.
+Enter into the "test" folder (should have been part of the "python_files" folder) and run:
+
+.. code-block:: bash
+
+   rm IodGibbsTest.py
+   python -m pytest
+
+
+SGP4
+~~~~~
+
+.. code-block:: bash
+
+   pip install sgp4
+
+
+NEPTUNE
+~~~~~~~~
+
+Binaries included in package.
+
+Requires (maybe?):
+
+.. code-block:: bash
+
+   sudo apt-get install mpich
+
+
+Coordinate conventions
+------------------------
+
+**Orientation of the ellipse in the coordinate system:**
+  * For zero inclination :math:`i`: the ellipse is located in the x-y plane. 
+  * The direction of motion as True anoamly :math:`\\nu`: increases for a zero inclination :math:`i`: orbit is anti-coockwise, i.e. from +x towards +y.
+  * If the eccentricity :math:`e`: is increased, the periapsis will lie in +x direction. 
+  * If the inclination :math:`i`: is increased, the ellipse will rotate around the x-axis, so that +y is rotated toward +z.
+  * An increase in Longitude of ascending node :math:`\Omega`: corresponds to a rotation around the z-axis so that +x is rotated toward +y.
+  * Changing argument of perihelion :math:`\omega`: will not change the plane of the orbit, it will rotate the orbit in the plane.
+  * The periapsis is shifted in the direction of motion.
+  * True anomaly measures from the +x axis, i.e :math:`\\nu = 0` is located at periapsis and :math:`\\nu = \pi` at apoapsis.
+  * All anomalies and orientation angles reach between 0 and :math:`2\pi`
+
+*Reference:* "Orbital Motion" by A.E. Roy.
+
+
+Test installation
+------------------
+
+Modules
+~~~~~~~~~~~~~~~~
+
+Simply navigate to the :code:`SORTSpp` directory and run:
+
+.. code-block:: bash
+
+   pytest
+
+And it will automatically use the :code:`pytest.ini` file to discover and run all tests.
+
+Simulation
+~~~~~~~~~~~~
+
+To test the installation run the **test.py** file.
+
+To test the simulation capabilities:
+ * Go to the folder **SIMULATIONS/**
+ * Configure the files ending with :code:`*_test.py` to output data to desired paths.
+
+Remember, To run the simulation with MPI the file must be executable. To test a capability run the corresponding :code:`test_*` file with 
+
+.. code-block:: bash
+
+   python ./SIMULATIONS/test_simulation.py
+
+or with 
+
+.. code-block:: bash
+
+   mpirun -np 8 ./SIMULATIONS/test_simulation.py
+
+if you wish to test the MPI implementation of the simulation. The *-np* specifies how many processes should be launched and should not be larger then the number of cores available.
+
+
+General simulation
+-------------------
+
+To perform a general simulation using SORTS++ you need to use the :class:`~simulation.simulation` class.
+
+To construct a simulation class instance you need:
+
+:Radar instance:
+   Manually constructed from :class:`~radar_config.radar_system` or a preset instance from :mod:`radar_library`.
+
+:Population instance:
+   Manually constructed from :class:`~population.population` or a preset instance from :mod:`population`.
+
+:Simulation root:
+   A designated root folder where simulation files will be stored.
+
+These are the bare minimum, it is also recommended to have:
+
+:Radar scan:
+   Manually constructed from :class:`~radar_scans.radar_scan` or a preset instance from :mod:`radar_scan_library`. The radar_scan instance should be set in the radar_system instance using the :func:`~radar_config.radar_system.set_scan` method.
+
+:Scheduler instance:
+   A scheduler instance is a function declaration located in :mod:`scheduler_library`. Different schedulers need different configurations and auxiliary functions and instances.
+
+
+Below is an example simulation of catalogue maintenance:
+
+
+.. literalinclude:: ../../SIMULATION_EXAMPLES/simple_sim.py
+   :language: python
+   :linenos:
+
+The simulation can be found in :code:`SIMULATION_EXAMPLES/simple_sim.py`, remember to change the simulation root before running, it can be run using
+
+.. code-block:: bash
+
+   mpirun -np 4 ./SIMULATION_EXAMPLES/simple_sim.py
+
+
+License
+------------------
+
+.. include:: ../../LICENSE
+
+
+
+Coordinate transformation guide
+-----------------------------------
+
+In general there are 2 classes of coordinate systems:
+
+ * Earth Centered Inertial (ECI)
+ * Earth Centered Earth Fixed (ECEF)
+
+There are several realizations of these classes of coordinate systems that take into account different effects and perturbations. The difference between an Inertial and an Earth Fixed frame is that in an inertial system all motion comes from classical orbit dynamics (N-body solutions) and are not caused by the coordinate frame transformation. 
+
+As an example, consider a Keplerian orbit (i.e. a point moving on a ellipse) around the Earth. An inertial frame here is any barycentric Cartesian fixed frame (barycentric can be approximated as the Earth Centric due to the small mass of the orbiting object). An example of a non-inertial frame could be a translating Cartesian frame, here the object would seem to be "spiraling" away from us. In this frame the movement away from us is not induced by fundamental orbital dynamics but due to the coordinate frame transformation. The same is true in a Earth Fixed system, the orbit would seem to rotate at the speed of the Earths rotation.
+
+Since any barycentric Cartesian fixed frame is Inertial it is customary to choose 2 reference directions to make the frame choice unique. These reference directions are usually the rotational axis of the Earth and the Vernal Equinox, i.e. the direction in space formed by the intersection of the Earths orbital plane around the Sun and the Earth equatorial plane. The direction chosen for the +x axis is usually defined so that it is aligned with the direction when axial tilt of the Earth in +z direction (the Earth moving counter-clockwise) is moving from towards the Sun to away from the Sun. The Vernal Equinox with this definition is also the ascending node of the ecliptic on the celestial equator.
+
+Since the orbital dynamics of the Earth in the solar-system has no analytic solutions due to perturbations, the definition of Vernal Equinox and the Earth ecliptic also changes with respect to time, thus is it customary to choose the common reference direction for the Vernal Equinox at a specific time, called the Epoch of that equinox.
+
+From numerical simulations the drift of the Obliquity of the ecliptic (inclination of ecliptic with respect to the celestial equator) does not vary more then 1 degree on the order of 10,000 years.
+
+Most commonly used ECI's are:
+
+ :True Equator Mean Equinox (TEME):
+
+ This is the frame after a Two-Line Element (TLE) orbit has been converted to an Cartesian state. The Mean Equinox refers to the Vernal Equinox but averaged over time to remove nutation. The Mean Vernal Equinox here is aligned to coincide with the +x axis. Thus the instantaneous Vernal Equinox is different at any point in time and needs to be modeled. True Equator refers to the fact that the instantaneous axis of rotation of the Earth is used to align the +z axis with.
+
+ :The International Terrestrial Reference Frame (ITRF):
+
+The ITRF contains models of movement of both the Earth and the Equinox. Thus the frame itself is a function of time. As the models are updated it is customary to denote the reference frame by a Epoch, or the time around witch they "center".
+
+
+Going from a "Mean" element definition to a Instantaneous one requires a model of nutation.
+
+
+To transform from e.g. TEME to ITRF one would first need to find the difference between the instantanius mean equionox
+
+Then find the instantanius earth rotation....
+
+then find the rotation of the earth, also known as GMST
+

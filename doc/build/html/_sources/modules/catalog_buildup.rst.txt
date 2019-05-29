@@ -1,0 +1,7 @@
+catalog_buildup
+===========================
+
+.. automodule:: catalog_buildup
+   :members:
+   :undoc-members:
+   :show-inheritance:

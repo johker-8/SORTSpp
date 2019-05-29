@@ -1,0 +1,1439 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>dpt_tools &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="TLE_tools" href="TLE_tools.html" />
+    <link rel="prev" title="coord" href="coord.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="TLE_tools.html" title="TLE_tools"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="coord.html" title="coord"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" accesskey="U">Documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-dpt_tools">
+<span id="dpt-tools"></span><h1>dpt_tools<a class="headerlink" href="#module-dpt_tools" title="Permalink to this headline">¶</a></h1>
+<p>Functions from Daniel’s-Python-tools package</p>
+<p>This is a module to enable simple plotting with kwargs as
+configuration and includes coordinate transformations and other useful functions.</p>
+<p># TODO: Fix so orbits work with hyperbolic
+# TODO: Fix the 0-e 0-i errors</p>
+<dl class="data">
+<dt id="dpt_tools.M_earth">
+<code class="descclassname">dpt_tools.</code><code class="descname">M_earth</code><em class="property"> = 5.972366228753626e+24</em><a class="headerlink" href="#dpt_tools.M_earth" title="Permalink to this definition">¶</a></dt>
+<dd><p>float: Mass of the Earth using the WGS84 convention.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="dpt_tools.M_sol">
+<code class="descclassname">dpt_tools.</code><code class="descname">M_sol</code><em class="property"> = 1.98847e+30</em><a class="headerlink" href="#dpt_tools.M_sol" title="Permalink to this definition">¶</a></dt>
+<dd><p>float: The mass of the sun <span class="math notranslate nohighlight">\(M_\odot\)</span> given in kg, used in kepler transformations</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.ascending_node_from_statevector">
+<code class="descclassname">dpt_tools.</code><code class="descname">ascending_node_from_statevector</code><span class="sig-paren">(</span><em>sv</em>, <em>m</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#ascending_node_from_statevector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.ascending_node_from_statevector" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>keywords include</dt>
+<dd>M_cent = ‘central mass’</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.cart2kep">
+<code class="descclassname">dpt_tools.</code><code class="descname">cart2kep</code><span class="sig-paren">(</span><em>x</em>, <em>m=0.0</em>, <em>M_cent=1.98847e+30</em>, <em>radians=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#cart2kep"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.cart2kep" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts set of Cartesian state vectors to set of Keplerian orbital elements.</p>
+<dl class="docutils">
+<dt><strong>Units:</strong></dt>
+<dd><p class="first">All units are SI-units: <a class="reference external" href="https://www.nist.gov/pml/weights-and-measures/metric-si/si-units">SI Units</a></p>
+<p class="last">Angles are by default given as radians, all angles are radians internally in functions, input and output angles can be both radians and degrees depending on the <code class="code docutils literal notranslate"><span class="pre">radians</span></code> boolean.</p>
+</dd>
+<dt><strong>Orientation of the ellipse in the coordinate system:</strong></dt>
+<dd><ul class="first simple">
+<li>For zero inclination <span class="math notranslate nohighlight">\(i\)</span>: the ellipse is located in the x-y plane.</li>
+<li>The direction of motion as True anoamly <span class="math notranslate nohighlight">\(\nu\)</span>: increases for a zero inclination <span class="math notranslate nohighlight">\(i\)</span>: orbit is anti-coockwise, i.e. from +x towards +y.</li>
+<li>If the eccentricity <span class="math notranslate nohighlight">\(e\)</span>: is increased, the periapsis will lie in +x direction.</li>
+<li>If the inclination <span class="math notranslate nohighlight">\(i\)</span>: is increased, the ellipse will rotate around the x-axis, so that +y is rotated toward +z.</li>
+<li>An increase in Longitude of ascending node <span class="math notranslate nohighlight">\(\Omega\)</span>: corresponds to a rotation around the z-axis so that +x is rotated toward +y.</li>
+<li>Changing argument of perihelion <span class="math notranslate nohighlight">\(\omega\)</span>: will not change the plane of the orbit, it will rotate the orbit in the plane.</li>
+<li>The periapsis is shifted in the direction of motion.</li>
+<li>True anomaly measures from the +x axis, i.e <span class="math notranslate nohighlight">\(\nu = 0\)</span> is located at periapsis and <span class="math notranslate nohighlight">\(\nu = \pi\)</span> at apoapsis.</li>
+<li>All anomalies and orientation angles reach between 0 and <span class="math notranslate nohighlight">\(2\pi\)</span></li>
+</ul>
+<p class="last"><em>Reference:</em> “Orbital Motion” by A.E. Roy.</p>
+</dd>
+<dt><strong>Constants:</strong></dt>
+<dd><ul class="first last simple">
+<li><a class="reference internal" href="#dpt_tools.e_lim" title="dpt_tools.e_lim"><code class="xref py py-mod docutils literal notranslate"><span class="pre">e_lim</span></code></a>: Used to determine circular orbits</li>
+<li><a class="reference internal" href="#dpt_tools.i_lim" title="dpt_tools.i_lim"><code class="xref py py-mod docutils literal notranslate"><span class="pre">i_lim</span></code></a>: Used to determine non-inclined orbits</li>
+</ul>
+</dd>
+<dt><strong>Variables:</strong></dt>
+<dd><ul class="first last simple">
+<li><span class="math notranslate nohighlight">\(a\)</span>: Semi-major axis</li>
+<li><span class="math notranslate nohighlight">\(e\)</span>: Eccentricity</li>
+<li><span class="math notranslate nohighlight">\(i\)</span>: Inclination</li>
+<li><span class="math notranslate nohighlight">\(\omega\)</span>: Argument of perihelion</li>
+<li><span class="math notranslate nohighlight">\(\Omega\)</span>: Longitude of ascending node</li>
+<li><span class="math notranslate nohighlight">\(\nu\)</span>: True anoamly</li>
+</ul>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x</strong> (<em>numpy.ndarray</em>) – Cartesian state vectors where rows 1-6 correspond to <span class="math notranslate nohighlight">\(x\)</span>, <span class="math notranslate nohighlight">\(y\)</span>, <span class="math notranslate nohighlight">\(z\)</span>, <span class="math notranslate nohighlight">\(v_x\)</span>, <span class="math notranslate nohighlight">\(v_y\)</span>, <span class="math notranslate nohighlight">\(v_z\)</span> and columns correspond to different objects.</li>
+<li><strong>m</strong> (<em>float/numpy.ndarray</em>) – Masses of objects. If m is a numpy vector of masses, the gravitational <span class="math notranslate nohighlight">\(\mu\)</span> parameter will be calculated also as a vector.</li>
+<li><strong>M_cent</strong> (<em>float</em>) – Is the mass of the central massive body, default value is the mass of the sun parameter in <a class="reference internal" href="#dpt_tools.M_sol" title="dpt_tools.M_sol"><code class="xref py py-mod docutils literal notranslate"><span class="pre">M_sol</span></code></a></li>
+<li><strong>radians</strong> (<em>bool</em>) – If true radians are used, else all angles are given in degree.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Keplerian orbital elements where rows 1-6 correspond to <span class="math notranslate nohighlight">\(a\)</span>, <span class="math notranslate nohighlight">\(e\)</span>, <span class="math notranslate nohighlight">\(i\)</span>, <span class="math notranslate nohighlight">\(\omega\)</span>, <span class="math notranslate nohighlight">\(\Omega\)</span>, <span class="math notranslate nohighlight">\(\nu\)</span> and columns correspond to different objects.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example:</strong></p>
+<blockquote>
+<div><p>Convert 1 AU distance object of Earth mass traveling at 30 km/s tangential velocity to Kepler elements.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">dpt_tools</span> <span class="kn">as</span> <span class="nn">dpt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">n</span>
+<span class="kn">import</span> <span class="nn">scipy.constants</span> <span class="kn">as</span> <span class="nn">c</span>
+
+<span class="n">state</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+  <span class="n">c</span><span class="o">.</span><span class="n">au</span><span class="o">*</span><span class="mf">1.0</span><span class="p">,</span> <span class="c1">#x</span>
+  <span class="mi">0</span><span class="p">,</span> <span class="c1">#y</span>
+  <span class="mi">0</span><span class="p">,</span> <span class="c1">#z</span>
+  <span class="mi">0</span><span class="p">,</span> <span class="c1">#vx</span>
+  <span class="mf">30e3</span><span class="p">,</span> <span class="c1">#vy</span>
+  <span class="mi">0</span><span class="p">,</span> <span class="c1">#vz</span>
+<span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+
+<span class="n">orbit</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">cart2kep</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="mf">5.97237e24</span><span class="p">,</span> <span class="n">M_cent</span><span class="o">=</span><span class="mf">1.9885e30</span><span class="p">,</span> <span class="n">radians</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s1">&#39;Orbit: a={} AU, e={}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">orbit</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">c</span><span class="o">.</span><span class="n">au</span><span class="p">,</span> <span class="n">orbit</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+<span class="k">print</span><span class="p">(</span><span class="s1">&#39;(i, omega, Omega, nu)={} deg &#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">orbit</span><span class="p">[</span><span class="mi">2</span><span class="p">:]))</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p><em>Reference:</em> Daniel Kastinen Master Thesis: Meteors and Celestial Dynamics</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.date_to_jd">
+<code class="descclassname">dpt_tools.</code><code class="descname">date_to_jd</code><span class="sig-paren">(</span><em>year</em>, <em>month</em>, <em>day</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#date_to_jd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.date_to_jd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a date to Julian Day.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>year</strong> (<em>int</em>) – Year as integer. Years preceding 1 A.D. should be 0 or negative. The year before 1 A.D. is 0, 10 B.C. is year -9.</li>
+<li><strong>month</strong> (<em>int</em>) – Month as integer, Jan = 1, Feb. = 2, etc.</li>
+<li><strong>day</strong> (<em>float</em>) – Day, may contain fractional part.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">(float) Julian Day</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example:</strong></p>
+<blockquote>
+<div><p>Convert 6 a.m., February 17, 1985 to Julian Day</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">date_to_jd</span><span class="p">(</span><span class="mi">1985</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mf">17.25</span><span class="p">)</span>
+<span class="go">2446113.75</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p><em>Reference:</em> ‘Practical Astronomy with your Calculator or Spreadsheet’, 4th ed., Duffet-Smith and Zwart, 2011.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="dpt_tools.e_lim">
+<code class="descclassname">dpt_tools.</code><code class="descname">e_lim</code><em class="property"> = 1e-09</em><a class="headerlink" href="#dpt_tools.e_lim" title="Permalink to this definition">¶</a></dt>
+<dd><p>float: The limit on eccentricity below witch an orbit is considered circular</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.eccentric2mean">
+<code class="descclassname">dpt_tools.</code><code class="descname">eccentric2mean</code><span class="sig-paren">(</span><em>E</em>, <em>e</em>, <em>radians=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#eccentric2mean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.eccentric2mean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the mean anomaly from the eccentric anomaly using Kepler equation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>E</strong> (<em>float/numpy.ndarray</em>) – Eccentric anomaly.</li>
+<li><strong>e</strong> (<em>float/numpy.ndarray</em>) – Eccentricity of ellipse.</li>
+<li><strong>radians</strong> (<em>bool</em>) – If true radians are used, else all angles are given in degrees</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Mean anomaly.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray or float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.eccentric2true">
+<code class="descclassname">dpt_tools.</code><code class="descname">eccentric2true</code><span class="sig-paren">(</span><em>E</em>, <em>e</em>, <em>radians=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#eccentric2true"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.eccentric2true" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the true anomaly from the eccentric anomaly.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>E</strong> (<em>float/numpy.ndarray</em>) – Eccentric anomaly.</li>
+<li><strong>e</strong> (<em>float/numpy.ndarray</em>) – Eccentricity of ellipse.</li>
+<li><strong>radians</strong> (<em>bool</em>) – If true radians are used, else all angles are given in degrees</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">True anomaly.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray or float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.elliptic_radius">
+<code class="descclassname">dpt_tools.</code><code class="descname">elliptic_radius</code><span class="sig-paren">(</span><em>E</em>, <em>a</em>, <em>e</em>, <em>radians=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#elliptic_radius"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.elliptic_radius" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the distance between the left focus point of an ellipse and a point on the ellipse defined by the eccentric anomaly.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>E</strong> (<em>float/numpy.ndarray</em>) – Eccentric anomaly.</li>
+<li><strong>a</strong> (<em>float/numpy.ndarray</em>) – Semi-major axis of ellipse.</li>
+<li><strong>e</strong> (<em>float/numpy.ndarray</em>) – Eccentricity of ellipse.</li>
+<li><strong>radians</strong> (<em>bool</em>) – If true radians are used, else all angles are given in degrees</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Radius from left focus point.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray or float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.find_ascending_node_time">
+<code class="descclassname">dpt_tools.</code><code class="descname">find_ascending_node_time</code><span class="sig-paren">(</span><em>a</em>, <em>e</em>, <em>aop</em>, <em>mu0</em>, <em>m</em>, <em>radians=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#find_ascending_node_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.find_ascending_node_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the time past the crossing of the ascending node.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.gmst">
+<code class="descclassname">dpt_tools.</code><code class="descname">gmst</code><span class="sig-paren">(</span><em>mjd_UT1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#gmst"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.gmst" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the Greenwich Mean Sidereal Time (rotation of the earth) at a specific UTC Modified Julian Date.
+Defined as the hour angle between the meridian of Greenwich and mean equinox of date at 0 h UT1</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>mjd_UT1</strong> (<em>float/numpy.ndarray</em>) – UTC Modified Julian Date.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Greenwich Mean Sidereal Time in radians between 0 and <span class="math notranslate nohighlight">\(2\pi\)</span>.</td>
+</tr>
+</tbody>
+</table>
+<p><em>Reference:</em> Montenbruck &amp; Gill: Satellite orbits</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="dpt_tools.gps0_tai">
+<code class="descclassname">dpt_tools.</code><code class="descname">gps0_tai</code><em class="property"> = numpy.datetime64('1980-01-06T00:00:19')</em><a class="headerlink" href="#dpt_tools.gps0_tai" title="Permalink to this definition">¶</a></dt>
+<dd><p>numpy.datetime64: Epoch of GPS time, in TAI</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.hist">
+<code class="descclassname">dpt_tools.</code><code class="descname">hist</code><span class="sig-paren">(</span><em>x</em>, <em>**options</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#hist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.hist" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function creates a histogram plot with lots of nice pre-configured settings unless they are overridden</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>x</strong> (<em>numpy.ndarray</em>) – data to histogram over, if x is not a vector it is flattened</li>
+<li><strong>options</strong> (<em>dict</em>) – All keyword arguments as a dictionary containing all the optional settings.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>Currently the keyword arguments that can be used in the <strong>options</strong>:</dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">bins [int]:</th><td class="field-body">the number of bins</td>
+</tr>
+<tr class="field-even field"><th class="field-name">density [bool]:</th><td class="field-body">convert counts to density in [0,1]</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">edges [float]:</th><td class="field-body">bin edge line width, set to 0 to remove edges</td>
+</tr>
+<tr class="field-even field"><th class="field-name">title [string]:</th><td class="field-body">the title of the plot</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">title_font_size [int]:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">the title font size</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">xlabel [string]:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">the label for the x axis</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">ylabel [string]:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">the label for the y axis</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">tick_font_size [int]:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">the axis tick font size</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">window [tuple/list]:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">the size of the plot window in pixels (assuming dpi = 80)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">save [string]:</th><td class="field-body">will not display figure and will instead save it to this path</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">show [bool]:</th><td class="field-body">if False will do draw() instead of show() allowing script to continue</td>
+</tr>
+<tr class="field-even field"><th class="field-name">plot [tuple]:</th><td class="field-body">A tuple with the <code class="code docutils literal notranslate"><span class="pre">(fig,</span> <span class="pre">ax)</span></code> objects from matplotlib. Then no new figure and axis will be created.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">logx [bool]:</th><td class="field-body">Determines if x-axis should be the logarithmic.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">logy [bool]:</th><td class="field-body">Determines if y-axis should be the logarithmic.</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">dpt_tools</span> <span class="k">as</span> <span class="nn">dpt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">19680221</span><span class="p">)</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="mi">10</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+
+<span class="n">dpt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">x</span><span class="p">,</span>
+   <span class="n">title</span> <span class="o">=</span> <span class="s2">&quot;My first plot&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.hist2d">
+<code class="descclassname">dpt_tools.</code><code class="descname">hist2d</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>**options</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#hist2d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.hist2d" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function creates a histogram plot with lots of nice pre-configured settings unless they are overridden</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>x</strong> (<em>numpy.ndarray</em>) – data to histogram over, if x is not a vector it is flattened</li>
+<li><strong>options</strong> (<em>dict</em>) – All keyword arguments as a dictionary containing all the optional settings.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>Currently the keyword arguments that can be used in the <strong>options</strong>:</dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">bins [int]:</th><td class="field-body">the number of bins</td>
+</tr>
+<tr class="field-even field"><th class="field-name">colormap [str]:</th><td class="field-body">Name of colormap to use.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">title [string]:</th><td class="field-body">the title of the plot</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">title_font_size [int]:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">the title font size</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">xlabel [string]:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">the label for the x axis</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">ylabel [string]:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">the label for the y axis</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">tick_font_size [int]:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">the axis tick font size</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">window [tuple/list]:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">the size of the plot window in pixels (assuming dpi = 80)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">save [string]:</th><td class="field-body">will not display figure and will instead save it to this path</td>
+</tr>
+<tr class="field-even field"><th class="field-name">show [bool]:</th><td class="field-body">if False will do draw() instead of show() allowing script to continue</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">plot [tuple]:</th><td class="field-body">A tuple with the <code class="code docutils literal notranslate"><span class="pre">(fig,</span> <span class="pre">ax)</span></code> objects from matplotlib. Then no new figure and axis will be created.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">logx [bool]:</th><td class="field-body">Determines if x-axis should be the logarithmic.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">logy [bool]:</th><td class="field-body">Determines if y-axis should be the logarithmic.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">log_freq [bool]:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">Determines if frequency should be the logarithmic.</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">dpt_tools</span> <span class="k">as</span> <span class="nn">dpt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">19680221</span><span class="p">)</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="mi">10</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+
+<span class="n">dpt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">x</span><span class="p">,</span>
+   <span class="n">title</span> <span class="o">=</span> <span class="s2">&quot;My first plot&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="data">
+<dt id="dpt_tools.i_lim">
+<code class="descclassname">dpt_tools.</code><code class="descname">i_lim</code><em class="property"> = 3.141592653589793e-09</em><a class="headerlink" href="#dpt_tools.i_lim" title="Permalink to this definition">¶</a></dt>
+<dd><p>float: The limit on inclination below witch an orbit is considered not inclined.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.jd_to_date">
+<code class="descclassname">dpt_tools.</code><code class="descname">jd_to_date</code><span class="sig-paren">(</span><em>jd</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#jd_to_date"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.jd_to_date" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert Julian Day to date.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>jd</strong> (<em>float</em>) – Julian Day</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Tuple consisting of year, month and day</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">tuple</td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt><strong>Return tuple:</strong></dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">year:</th><td class="field-body">(int) Year as integer. Years preceding 1 A.D. should be 0 or negative. The year before 1 A.D. is 0, 10 B.C. is year -9.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">month:</th><td class="field-body">(int) Month as integer, Jan = 1, Feb. = 2, etc.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">day:</th><td class="field-body">(float) Day, may contain fractional part.</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+<p><strong>Example:</strong></p>
+<blockquote>
+<div><p>Convert Julian Day 2446113.75 to year, month, and day.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">jd_to_date</span><span class="p">(</span><span class="mf">2446113.75</span><span class="p">)</span>
+<span class="go">(1985, 2, 17.25)</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p><em>Reference:</em> ‘Practical Astronomy with your Calculator or Spreadsheet’, 4th ed., Duffet-Smith and Zwart, 2011.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.jd_to_mjd">
+<code class="descclassname">dpt_tools.</code><code class="descname">jd_to_mjd</code><span class="sig-paren">(</span><em>jd</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#jd_to_mjd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.jd_to_mjd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert Julian Date (relative 12h Jan 1, 4713 BC) to Modified Julian Date (relative 0h Nov 17, 1858)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.jd_to_unix">
+<code class="descclassname">dpt_tools.</code><code class="descname">jd_to_unix</code><span class="sig-paren">(</span><em>jd_ut1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#jd_to_unix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.jd_to_unix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert JD UT1 time to Unix time</p>
+<p>Constant is due to 0h Jan 1, 1970 = 2440587.5 JD</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>jd_ut1</strong> (<em>float/numpy.ndarray</em>) – Julian Date UT1</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Unix time in seconds</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">float/numpy.ndarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.kep2cart">
+<code class="descclassname">dpt_tools.</code><code class="descname">kep2cart</code><span class="sig-paren">(</span><em>o</em>, <em>m=0.0</em>, <em>M_cent=1.98847e+30</em>, <em>radians=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#kep2cart"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.kep2cart" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts set of Keplerian orbital elements to set of Cartesian state vectors.</p>
+<dl class="docutils">
+<dt><strong>Units:</strong></dt>
+<dd><p class="first">All units are SI-units: <a class="reference external" href="https://www.nist.gov/pml/weights-and-measures/metric-si/si-units">SI Units</a></p>
+<p>Angles are by default given as radians, all angles are radians internally in functions, input and output angles can be both radians and degrees depending on the <code class="code docutils literal notranslate"><span class="pre">radians</span></code> boolean.</p>
+<p class="last">To use custom units, simply change the definition of <code class="code docutils literal notranslate"><span class="pre">mu</span> <span class="pre">=</span> <span class="pre">scipy.constants.G*(m</span> <span class="pre">+</span> <span class="pre">M_cent)</span></code> to an input parameter for the function as this is the only unit dependent calculation.</p>
+</dd>
+<dt><strong>Orientation of the ellipse in the coordinate system:</strong></dt>
+<dd><ul class="first simple">
+<li>For zero inclination <span class="math notranslate nohighlight">\(i\)</span>: the ellipse is located in the x-y plane.</li>
+<li>The direction of motion as True anoamly <span class="math notranslate nohighlight">\(\nu\)</span>: increases for a zero inclination <span class="math notranslate nohighlight">\(i\)</span>: orbit is anti-coockwise, i.e. from +x towards +y.</li>
+<li>If the eccentricity <span class="math notranslate nohighlight">\(e\)</span>: is increased, the periapsis will lie in +x direction.</li>
+<li>If the inclination <span class="math notranslate nohighlight">\(i\)</span>: is increased, the ellipse will rotate around the x-axis, so that +y is rotated toward +z.</li>
+<li>An increase in Longitude of ascending node <span class="math notranslate nohighlight">\(\Omega\)</span>: corresponds to a rotation around the z-axis so that +x is rotated toward +y.</li>
+<li>Changing argument of perihelion <span class="math notranslate nohighlight">\(\omega\)</span>: will not change the plane of the orbit, it will rotate the orbit in the plane.</li>
+<li>The periapsis is shifted in the direction of motion.</li>
+</ul>
+<p class="last"><em>Reference:</em> “Orbital Motion” by A.E. Roy.</p>
+</dd>
+<dt><strong>Variables:</strong></dt>
+<dd><ul class="first last simple">
+<li><span class="math notranslate nohighlight">\(a\)</span>: Semi-major axis</li>
+<li><span class="math notranslate nohighlight">\(e\)</span>: Eccentricity</li>
+<li><span class="math notranslate nohighlight">\(i\)</span>: Inclination</li>
+<li><span class="math notranslate nohighlight">\(\omega\)</span>: Argument of perihelion</li>
+<li><span class="math notranslate nohighlight">\(\Omega\)</span>: Longitude of ascending node</li>
+<li><span class="math notranslate nohighlight">\(\nu\)</span>: True anoamly</li>
+</ul>
+</dd>
+<dt><strong>Uses:</strong></dt>
+<dd><ul class="first last simple">
+<li><a class="reference internal" href="#dpt_tools.true2eccentric" title="dpt_tools.true2eccentric"><code class="xref py py-func docutils literal notranslate"><span class="pre">true2eccentric()</span></code></a></li>
+<li><a class="reference internal" href="#dpt_tools.elliptic_radius" title="dpt_tools.elliptic_radius"><code class="xref py py-func docutils literal notranslate"><span class="pre">elliptic_radius()</span></code></a></li>
+</ul>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>o</strong> (<em>numpy.ndarray</em>) – Keplerian orbital elements where rows 1-6 correspond to <span class="math notranslate nohighlight">\(a\)</span>, <span class="math notranslate nohighlight">\(e\)</span>, <span class="math notranslate nohighlight">\(i\)</span>, <span class="math notranslate nohighlight">\(\omega\)</span>, <span class="math notranslate nohighlight">\(\Omega\)</span>, <span class="math notranslate nohighlight">\(\nu\)</span> and columns correspond to different objects.</li>
+<li><strong>m</strong> (<em>float/numpy.ndarray</em>) – Masses of objects. If m is a numpy vector of masses, the gravitational <span class="math notranslate nohighlight">\(\mu\)</span> parameter will be calculated also as a vector.</li>
+<li><strong>M_cent</strong> (<em>float</em>) – Is the mass of the central massive body, default value is the mass of the sun parameter in <a class="reference internal" href="#dpt_tools.M_sol" title="dpt_tools.M_sol"><code class="xref py py-mod docutils literal notranslate"><span class="pre">M_sol</span></code></a></li>
+<li><strong>radians</strong> (<em>bool</em>) – If true radians are used, else all angles are given in degree.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Cartesian state vectors where rows 1-6 correspond to <span class="math notranslate nohighlight">\(x\)</span>, <span class="math notranslate nohighlight">\(y\)</span>, <span class="math notranslate nohighlight">\(z\)</span>, <span class="math notranslate nohighlight">\(v_x\)</span>, <span class="math notranslate nohighlight">\(v_y\)</span>, <span class="math notranslate nohighlight">\(v_z\)</span> and columns correspond to different objects.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example:</strong></p>
+<blockquote>
+<div><p>Convert Earth J2000.0 orbital parameters to Cartesian position.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">dpt_tools</span> <span class="kn">as</span> <span class="nn">dpt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">n</span>
+<span class="kn">import</span> <span class="nn">scipy.constants</span> <span class="kn">as</span> <span class="nn">c</span>
+
+<span class="c1">#Periapsis approx 3 Jan</span>
+<span class="n">orbit</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+  <span class="n">c</span><span class="o">.</span><span class="n">au</span><span class="o">*</span><span class="mf">1.000001018</span><span class="p">,</span> <span class="c1">#a</span>
+  <span class="mf">0.0167086</span><span class="p">,</span> <span class="c1">#e</span>
+  <span class="mf">7.155</span><span class="p">,</span> <span class="c1">#i</span>
+  <span class="mf">288.1</span><span class="p">,</span> <span class="c1">#omega</span>
+  <span class="mf">174.9</span><span class="p">,</span> <span class="c1">#Omega</span>
+  <span class="mf">0.0</span><span class="p">,</span> <span class="c1">#nu</span>
+<span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+
+<span class="n">state</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">kep2cart</span><span class="p">(</span><span class="n">orbit</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="mf">5.97237e24</span><span class="p">,</span> <span class="n">M_cent</span><span class="o">=</span><span class="mf">1.9885e30</span><span class="p">,</span> <span class="n">radians</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s1">&#39;Position: {} AU &#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">state</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span><span class="o">/</span><span class="n">c</span><span class="o">.</span><span class="n">au</span><span class="p">))</span>
+<span class="k">print</span><span class="p">(</span><span class="s1">&#39;Velocity: {} km/s &#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="mi">3</span><span class="p">:]</span><span class="o">/</span><span class="mf">1e3</span><span class="p">))</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p><em>Reference:</em> Daniel Kastinen Master Thesis: Meteors and Celestial Dynamics, “Orbital Motion” by A.E. Roy.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.kepler_guess">
+<code class="descclassname">dpt_tools.</code><code class="descname">kepler_guess</code><span class="sig-paren">(</span><em>M</em>, <em>e</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#kepler_guess"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.kepler_guess" title="Permalink to this definition">¶</a></dt>
+<dd><p>Guess the initial iteration point for newtons method.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>M</strong> (<em>float/numpy.ndarray</em>) – Mean anomaly.</li>
+<li><strong>e</strong> (<em>float/numpy.ndarray</em>) – Eccentricity of ellipse.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Guess for eccentric anomaly.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray or float</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><em>Reference:</em> Esmaelzadeh, R., &amp; Ghadiri, H. (2014). Appropriate starter for solving the Kepler’s equation. International Journal of Computer Applications, 89(7).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.laguerre_solve_kepler">
+<code class="descclassname">dpt_tools.</code><code class="descname">laguerre_solve_kepler</code><span class="sig-paren">(</span><em>E0</em>, <em>M</em>, <em>e</em>, <em>tol=1e-12</em>, <em>degree=5</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#laguerre_solve_kepler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.laguerre_solve_kepler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Solve the Kepler equation using the The Laguerre Algorithm, a algorithm that guarantees global convergence.
+Adjusted for solving only real roots (non-hyperbolic orbits)</p>
+<p>Absolute numerical tolerance is defined as <span class="math notranslate nohighlight">\(|f(E)| &lt; tol\)</span> where <span class="math notranslate nohighlight">\(f(E) = M - E + e \sin(E)\)</span>.</p>
+<p># TODO: implement hyperbolic solving.</p>
+<p><em>Note:</em> Choice of polynomial degree does not matter significantly for convergence rate.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>M</strong> (<em>float</em>) – Initial guess for eccentric anomaly.</li>
+<li><strong>M</strong> – Mean anomaly.</li>
+<li><strong>e</strong> (<em>float</em>) – Eccentricity of ellipse.</li>
+<li><strong>tol</strong> (<em>float</em>) – Absolute numerical tolerance eccentric anomaly.</li>
+<li><strong>degree</strong> (<em>int</em>) – Polynomial degree in derivation of Laguerre Algorithm.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Eccentric anomaly and number of iterations.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">tuple of (float, int)</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><em>Reference:</em> Conway, B. A. (1986). An improved algorithm due to Laguerre for the solution of Kepler’s equation. Celestial mechanics, 39(2), 199-211.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">dpt_tools</span> <span class="kn">as</span> <span class="nn">dpt</span>
+<span class="n">M</span> <span class="o">=</span> <span class="mf">3.14</span>
+<span class="n">e</span> <span class="o">=</span> <span class="mf">0.8</span>
+
+<span class="c1">#Use mean anomaly as initial guess</span>
+<span class="n">E</span><span class="p">,</span> <span class="n">iterations</span> <span class="o">=</span> <span class="n">dpt</span><span class="o">.</span><span class="n">laguerre_solve_kepler</span><span class="p">(</span>
+   <span class="n">E0</span> <span class="o">=</span> <span class="n">M</span><span class="p">,</span>
+   <span class="n">M</span> <span class="o">=</span> <span class="n">M</span><span class="p">,</span>
+   <span class="n">e</span> <span class="o">=</span> <span class="n">e</span><span class="p">,</span>
+   <span class="n">tol</span> <span class="o">=</span> <span class="mf">1e-12</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="data">
+<dt id="dpt_tools.leapseconds">
+<code class="descclassname">dpt_tools.</code><code class="descname">leapseconds</code><em class="property"> = array(['1972-01-01T00:00:00.000000000', '1972-07-01T00:00:00.000000000',        '1973-01-01T00:00:00.000000000', '1974-01-01T00:00:00.000000000',        '1975-01-01T00:00:00.000000000', '1976-01-01T00:00:00.000000000',        '1977-01-01T00:00:00.000000000', '1978-01-01T00:00:00.000000000',        '1979-01-01T00:00:00.000000000', '1980-01-01T00:00:00.000000000',        '1981-07-01T00:00:00.000000000', '1982-07-01T00:00:00.000000000',        '1983-07-01T00:00:00.000000000', '1985-07-01T00:00:00.000000000',        '1988-01-01T00:00:00.000000000', '1990-01-01T00:00:00.000000000',        '1991-01-01T00:00:00.000000000', '1992-07-01T00:00:00.000000000',        '1993-07-01T00:00:00.000000000', '1994-07-01T00:00:00.000000000',        '1996-01-01T00:00:00.000000000', '1997-07-01T00:00:00.000000000',        '1999-01-01T00:00:00.000000000', '2006-01-01T00:00:00.000000000',        '2009-01-01T00:00:00.000000000', '2012-07-01T00:00:00.000000000',        '2015-07-01T00:00:00.000000000', '2017-01-01T00:00:00.000000000'],       dtype='datetime64[ns]')</em><a class="headerlink" href="#dpt_tools.leapseconds" title="Permalink to this definition">¶</a></dt>
+<dd><p>numpy.ndarray: Leapseconds added since 1972.</p>
+<p>Must be maintained manually.</p>
+<p><em>Source:</em> <a class="reference external" href="ftp://maia.usno.navy.mil/ser7/tai-utc.dat">tai-utc</a></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.leapseconds_before">
+<code class="descclassname">dpt_tools.</code><code class="descname">leapseconds_before</code><span class="sig-paren">(</span><em>ytime</em>, <em>tai=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#leapseconds_before"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.leapseconds_before" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the number of leapseconds has been added before given date.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.mean2eccentric">
+<code class="descclassname">dpt_tools.</code><code class="descname">mean2eccentric</code><span class="sig-paren">(</span><em>M</em>, <em>e</em>, <em>tol=1e-12</em>, <em>radians=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#mean2eccentric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.mean2eccentric" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the eccentric anomaly from the mean anomaly by solving the Kepler equation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>M</strong> (<em>float/numpy.ndarray</em>) – Mean anomaly.</li>
+<li><strong>e</strong> (<em>float/numpy.ndarray</em>) – Eccentricity of ellipse.</li>
+<li><strong>tol</strong> (<em>float</em>) – Numerical tolerance for solving Keplers equation in units of radians.</li>
+<li><strong>radians</strong> (<em>bool</em>) – If true radians are used, else all angles are given in degrees</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">True anomaly.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray or float</p>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt><strong>Uses:</strong></dt>
+<dd><ul class="first last simple">
+<li><code class="xref py py-func docutils literal notranslate"><span class="pre">_get_kepler_guess()</span></code></li>
+<li><a class="reference internal" href="#dpt_tools.laguerre_solve_kepler" title="dpt_tools.laguerre_solve_kepler"><code class="xref py py-func docutils literal notranslate"><span class="pre">laguerre_solve_kepler()</span></code></a></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.mean2true">
+<code class="descclassname">dpt_tools.</code><code class="descname">mean2true</code><span class="sig-paren">(</span><em>M</em>, <em>e</em>, <em>tol=1e-12</em>, <em>radians=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#mean2true"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.mean2true" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transforms mean anomaly to true anomaly.</p>
+<dl class="docutils">
+<dt><strong>Uses:</strong></dt>
+<dd><ul class="first last simple">
+<li><a class="reference internal" href="#dpt_tools.mean2eccentric" title="dpt_tools.mean2eccentric"><code class="xref py py-func docutils literal notranslate"><span class="pre">mean2eccentric()</span></code></a></li>
+<li><a class="reference internal" href="#dpt_tools.eccentric2true" title="dpt_tools.eccentric2true"><code class="xref py py-func docutils literal notranslate"><span class="pre">eccentric2true()</span></code></a></li>
+</ul>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>M</strong> (<em>float/numpy.ndarray</em>) – Mean anomaly.</li>
+<li><strong>e</strong> (<em>float/numpy.ndarray</em>) – Eccentricity of ellipse.</li>
+<li><strong>tol</strong> (<em>float</em>) – Numerical tolerance for solving Keplers equation in units of radians.</li>
+<li><strong>radians</strong> (<em>bool</em>) – If true radians are used, else all angles are given in degrees</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">True anomaly.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray or float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.mjd2npdt">
+<code class="descclassname">dpt_tools.</code><code class="descname">mjd2npdt</code><span class="sig-paren">(</span><em>mjd</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#mjd2npdt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.mjd2npdt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a modified Julian date to a numpy datetime64 value (UTC)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.mjd_to_j2000">
+<code class="descclassname">dpt_tools.</code><code class="descname">mjd_to_j2000</code><span class="sig-paren">(</span><em>mjd_tt</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#mjd_to_j2000"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.mjd_to_j2000" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert from Modified Julian Date to days past J2000.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>mjd_tt</strong> (<em>float/numpy.ndarray</em>) – MJD in TT</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Days past J2000</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">float/numpy.ndarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.mjd_to_jd">
+<code class="descclassname">dpt_tools.</code><code class="descname">mjd_to_jd</code><span class="sig-paren">(</span><em>mjd</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#mjd_to_jd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.mjd_to_jd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert Modified Julian Date (relative 0h Nov 17, 1858) to Julian Date (relative 12h Jan 1, 4713 BC)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.npdt2date">
+<code class="descclassname">dpt_tools.</code><code class="descname">npdt2date</code><span class="sig-paren">(</span><em>dt</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#npdt2date"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.npdt2date" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a numpy datetime64 value to a date tuple</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dt</strong> (<em>numpy.datetime64</em>) – Date and time (UTC) in numpy datetime64 format</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">tuple (year, month, day, hours, minutes, seconds, microsecond)
+all except usec are integer</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.npdt2mjd">
+<code class="descclassname">dpt_tools.</code><code class="descname">npdt2mjd</code><span class="sig-paren">(</span><em>dt</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#npdt2mjd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.npdt2mjd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a numpy datetime64 value (UTC) to a modified Julian date</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.npdt2unix">
+<code class="descclassname">dpt_tools.</code><code class="descname">npdt2unix</code><span class="sig-paren">(</span><em>dt</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#npdt2unix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.npdt2unix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.orbit3D">
+<code class="descclassname">dpt_tools.</code><code class="descname">orbit3D</code><span class="sig-paren">(</span><em>states</em>, <em>ax=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#orbit3D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.orbit3D" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a 3D plot of a set of states.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.orbital_period">
+<code class="descclassname">dpt_tools.</code><code class="descname">orbital_period</code><span class="sig-paren">(</span><em>a</em>, <em>mu</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#orbital_period"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.orbital_period" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the orbital period of an Keplerian orbit <span class="math notranslate nohighlight">\(v = 2\pi\sqrt{\frac{a^3}{\mu}}\)</span>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>a</strong> (<em>float/numpy.ndarray</em>) – Semi-major axis of ellipse.</li>
+<li><strong>mu</strong> (<em>float</em>) – Standard gravitation parameter <span class="math notranslate nohighlight">\(\mu = G(m_1 + m_2)\)</span> of the orbit.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Orbital period.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.orbital_speed">
+<code class="descclassname">dpt_tools.</code><code class="descname">orbital_speed</code><span class="sig-paren">(</span><em>r</em>, <em>a</em>, <em>mu</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#orbital_speed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.orbital_speed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the orbital speed at a given radius for an Keplerian orbit <span class="math notranslate nohighlight">\(v = \sqrt{\mu \left (\frac{2}{r} - \frac{1}{a} \right )}\)</span>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>r</strong> (<em>float/numpy.ndarray</em>) – Radius from the pericenter.</li>
+<li><strong>a</strong> (<em>float/numpy.ndarray</em>) – Semi-major axis of ellipse.</li>
+<li><strong>mu</strong> (<em>float</em>) – Standard gravitation parameter <span class="math notranslate nohighlight">\(\mu = G(m_1 + m_2)\)</span> of the orbit.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Orbital speed.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.orbits">
+<code class="descclassname">dpt_tools.</code><code class="descname">orbits</code><span class="sig-paren">(</span><em>o</em>, <em>**options</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#orbits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.orbits" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function creates several scatter plots of a set of orbital elements based on the
+different possible axis planar projections, calculates all possible permutations of plane
+intersections based on the number of columns</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>o</strong> (<em>numpy.ndarray</em>) – Rows are distinct orbits and columns are orbital elements in the order a, e, i, omega, Omega</li>
+<li><strong>options</strong> – dictionary containing all the optional settings</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>Currently the options fields are:</dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">marker [char]:</th><td class="field-body">the marker type</td>
+</tr>
+<tr class="field-even field"><th class="field-name">size [int]:</th><td class="field-body">the size of the marker</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">title [string]:</th><td class="field-body">the title of the plot</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">title_font_size [int]:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">the title font size</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">axis_labels [list of strings]:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">labels for each column</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">tick_font_size [int]:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">the axis tick font size</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">window [tuple/list]:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">the size of the plot window in pixels (assuming dpi = 80)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">save [string]:</th><td class="field-body">will not display figure and will instead save it to this path</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">show [bool]:</th><td class="field-body">if False will do draw() instead of show() allowing script to continue</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">tight_rect [list of 4 floats]:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">configuration for the tight_layout function</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">dpt_tools</span> <span class="k">as</span> <span class="nn">dpt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">19680221</span><span class="p">)</span>
+
+<span class="n">orbs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">([</span>
+    <span class="mi">11</span>  <span class="o">+</span> <span class="mi">3</span>  <span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">1000</span><span class="p">),</span>
+    <span class="mf">0.5</span> <span class="o">+</span> <span class="mf">0.2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">1000</span><span class="p">),</span>
+    <span class="mi">60</span>  <span class="o">+</span> <span class="mi">10</span> <span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">1000</span><span class="p">),</span>
+    <span class="mi">120</span> <span class="o">+</span> <span class="mi">5</span>  <span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">1000</span><span class="p">),</span>
+    <span class="mi">33</span>  <span class="o">+</span> <span class="mi">2</span>  <span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">1000</span><span class="p">),</span>
+<span class="p">])</span><span class="o">.</span><span class="n">T</span>
+
+<span class="n">dpt</span><span class="o">.</span><span class="n">orbits</span><span class="p">(</span><span class="n">orbs</span><span class="p">,</span>
+    <span class="n">title</span> <span class="o">=</span> <span class="s2">&quot;My orbital element distribution&quot;</span><span class="p">,</span>
+    <span class="n">size</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.plot_orbit_convention">
+<code class="descclassname">dpt_tools.</code><code class="descname">plot_orbit_convention</code><span class="sig-paren">(</span><em>get_orbit</em>, <em>res=100</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#plot_orbit_convention"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.plot_orbit_convention" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the orbit convention used by arbitrary function/program</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>get_orbit</strong> (<em>function</em>) – A function pointer that takes an Kepler state as input and returns a state vector.</td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>The arguments to <code class="code docutils literal notranslate"><span class="pre">get_orbit</span></code> should be:</dt>
+<dd><ul class="first last simple">
+<li><em>numpy.ndarray</em> of Kepler elements.</li>
+<li>Use degrees for angles.</li>
+<li>Kepler elements are <span class="math notranslate nohighlight">\(a\)</span>, <span class="math notranslate nohighlight">\(e\)</span>, <span class="math notranslate nohighlight">\(i\)</span>, <span class="math notranslate nohighlight">\(\omega\)</span>, <span class="math notranslate nohighlight">\(\Omega\)</span>, <span class="math notranslate nohighlight">\(\nu\)</span></li>
+<li>See <a class="reference internal" href="#dpt_tools.kep2cart" title="dpt_tools.kep2cart"><code class="xref py py-func docutils literal notranslate"><span class="pre">kep2cart()</span></code></a></li>
+</ul>
+</dd>
+</dl>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">dpt_tools</span> <span class="kn">as</span> <span class="nn">dpt</span>
+<span class="kn">import</span> <span class="nn">space_object</span> <span class="kn">as</span> <span class="nn">so</span>
+
+<span class="k">def</span> <span class="nf">get_orbit</span><span class="p">(</span><span class="n">o</span><span class="p">):</span>
+    <span class="n">obj</span><span class="o">=</span><span class="n">so</span><span class="o">.</span><span class="n">space_object</span><span class="p">(</span>
+        <span class="n">a</span><span class="o">=</span><span class="n">o</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="n">e</span><span class="o">=</span><span class="n">o</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+        <span class="n">i</span><span class="o">=</span><span class="n">o</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+        <span class="n">raan</span><span class="o">=</span><span class="n">o</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span>
+        <span class="n">aop</span><span class="o">=</span><span class="n">o</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
+        <span class="n">mu0</span><span class="o">=</span><span class="n">o</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span>
+        <span class="n">C_D</span><span class="o">=</span><span class="mf">2.3</span><span class="p">,</span>
+        <span class="n">A</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">m</span><span class="o">=</span><span class="mf">1.0</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">get_state</span><span class="p">([</span><span class="mf">0.0</span><span class="p">])</span>
+
+<span class="n">dpt</span><span class="o">.</span><span class="n">plot_orbit_convention</span><span class="p">(</span><span class="n">get_orbit</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.plot_ref_orbit">
+<code class="descclassname">dpt_tools.</code><code class="descname">plot_ref_orbit</code><span class="sig-paren">(</span><em>get_orbit</em>, <em>res=100</em>, <em>orb_init=array([1.0e+07</em>, <em>2.0e-01</em>, <em>7.0e+01</em>, <em>1.2e+02</em>, <em>3.5e+01])</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#plot_ref_orbit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.plot_ref_orbit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots a specific reference orbit.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>get_orbit</strong> (<em>function</em>) – A function pointer that takes an Kepler state as input and returns a state vector.</td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>The arguments to <code class="code docutils literal notranslate"><span class="pre">get_orbit</span></code> should be:</dt>
+<dd><ul class="first last simple">
+<li><em>numpy.ndarray</em> of Kepler elements.</li>
+<li>Use degrees for angles.</li>
+<li>Kepler elements are <span class="math notranslate nohighlight">\(a\)</span>, <span class="math notranslate nohighlight">\(e\)</span>, <span class="math notranslate nohighlight">\(i\)</span>, <span class="math notranslate nohighlight">\(\omega\)</span>, <span class="math notranslate nohighlight">\(\Omega\)</span>, <span class="math notranslate nohighlight">\(\nu\)</span></li>
+<li>See <a class="reference internal" href="#dpt_tools.kep2cart" title="dpt_tools.kep2cart"><code class="xref py py-func docutils literal notranslate"><span class="pre">kep2cart()</span></code></a></li>
+</ul>
+</dd>
+</dl>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">dpt_tools</span> <span class="kn">as</span> <span class="nn">dpt</span>
+<span class="kn">import</span> <span class="nn">space_object</span> <span class="kn">as</span> <span class="nn">so</span>
+
+<span class="k">def</span> <span class="nf">get_orbit</span><span class="p">(</span><span class="n">o</span><span class="p">):</span>
+    <span class="n">obj</span><span class="o">=</span><span class="n">so</span><span class="o">.</span><span class="n">space_object</span><span class="p">(</span>
+        <span class="n">a</span><span class="o">=</span><span class="n">o</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="n">e</span><span class="o">=</span><span class="n">o</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+        <span class="n">i</span><span class="o">=</span><span class="n">o</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+        <span class="n">raan</span><span class="o">=</span><span class="n">o</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span>
+        <span class="n">aop</span><span class="o">=</span><span class="n">o</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
+        <span class="n">mu0</span><span class="o">=</span><span class="n">o</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span>
+        <span class="n">C_D</span><span class="o">=</span><span class="mf">2.3</span><span class="p">,</span>
+        <span class="n">A</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">m</span><span class="o">=</span><span class="mf">1.0</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">get_state</span><span class="p">([</span><span class="mf">0.0</span><span class="p">])</span>
+
+<span class="n">dpt</span><span class="o">.</span><span class="n">plot_ref_orbit</span><span class="p">(</span><span class="n">get_orbit</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.posterior">
+<code class="descclassname">dpt_tools.</code><code class="descname">posterior</code><span class="sig-paren">(</span><em>post</em>, <em>variables</em>, <em>**options</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#posterior"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.posterior" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function creates several scatter plots of a set of orbital elements based on the
+different possible axis planar projections, calculates all possible permutations of plane
+intersections based on the number of columns</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>post</strong> (<em>numpy.ndarray</em>) – Rows are distinct variable samples and columns are variables in the order of <code class="code docutils literal notranslate"><span class="pre">variables</span></code></li>
+<li><strong>variables</strong> (<em>list</em>) – Name of variables, used for axis names.</li>
+<li><strong>options</strong> – dictionary containing all the optional settings</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>Currently the options fields are:</dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">bins [int]:</th><td class="field-body">the number of bins</td>
+</tr>
+<tr class="field-even field"><th class="field-name">colormap [str]:</th><td class="field-body">Name of colormap to use.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">title [string]:</th><td class="field-body">the title of the plot</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">title_font_size [int]:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">the title font size</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">axis_labels [list of strings]:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">labels for each column</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">tick_font_size [int]:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">the axis tick font size</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">window [tuple/list]:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">the size of the plot window in pixels (assuming dpi = 80)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">save [string]:</th><td class="field-body">will not display figure and will instead save it to this path</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">show [bool]:</th><td class="field-body">if False will do draw() instead of show() allowing script to continue</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">tight_rect [list of 4 floats]:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">configuration for the tight_layout function</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.rot_mat_x">
+<code class="descclassname">dpt_tools.</code><code class="descname">rot_mat_x</code><span class="sig-paren">(</span><em>theta</em>, <em>dtype=&lt;type 'float'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#rot_mat_x"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.rot_mat_x" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates the 3D transformation matrix for rotation around X-axis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>theta</strong> (<em>float</em>) – Angle to rotate.</li>
+<li><strong>dtype</strong> (<em>numpy.dtype</em>) – The data-type of the output matrix.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Rotation matrix</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(3,3) numpy.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.rot_mat_y">
+<code class="descclassname">dpt_tools.</code><code class="descname">rot_mat_y</code><span class="sig-paren">(</span><em>theta</em>, <em>dtype=&lt;type 'float'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#rot_mat_y"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.rot_mat_y" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates the 3D transformation matrix for rotation around Y-axis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>theta</strong> (<em>float</em>) – Angle to rotate.</li>
+<li><strong>dtype</strong> (<em>numpy.dtype</em>) – The data-type of the output matrix.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Rotation matrix</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(3,3) numpy.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.rot_mat_z">
+<code class="descclassname">dpt_tools.</code><code class="descname">rot_mat_z</code><span class="sig-paren">(</span><em>theta</em>, <em>dtype=&lt;type 'float'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#rot_mat_z"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.rot_mat_z" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates the 3D transformation matrix for rotation around Z-axis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>theta</strong> (<em>float</em>) – Angle to rotate.</li>
+<li><strong>dtype</strong> (<em>numpy.dtype</em>) – The data-type of the output matrix.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Rotation matrix</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(3,3) numpy.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.scatter">
+<code class="descclassname">dpt_tools.</code><code class="descname">scatter</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>**options</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#scatter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.scatter" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function creates a scatter plot with lots of nice pre-configured settings unless they are overridden</p>
+<dl class="docutils">
+<dt>Currently the options fields are:</dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">marker [char]:</th><td class="field-body">The marker type</td>
+</tr>
+<tr class="field-even field"><th class="field-name">size [int]:</th><td class="field-body">The size of the marker</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">alpha [float]:</th><td class="field-body">The transparency of the points.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">title [string]:</th><td class="field-body">The title of the plot</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">title_font_size [int]:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">The title font size</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">xlabel [string]:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">The label for the x axis</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">ylabel [string]:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">The label for the y axis</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">tick_font_size [int]:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">The axis tick font size</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">window [tuple/list]:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">The size of the plot window in pixels (assuming dpi = 80)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">save [string]:</th><td class="field-body">Will not display figure and will instead save it to this path</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">show [bool]:</th><td class="field-body">If False will do draw() instead of show() allowing script to continue</td>
+</tr>
+<tr class="field-even field"><th class="field-name">plot [tuple]:</th><td class="field-body">A tuple with the <code class="code docutils literal notranslate"><span class="pre">(fig,</span> <span class="pre">ax)</span></code> objects from matplotlib. Then no new figure and axis will be created.</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>x</strong> (<em>numpy.ndarray</em>) – x-axis data vector.</li>
+<li><strong>y</strong> (<em>numpy.ndarray</em>) – y-axis data vector.</li>
+<li><strong>options</strong> – dictionary containing all the optional settings.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">dpt_tools</span> <span class="k">as</span> <span class="nn">dpt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">19680221</span><span class="p">)</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="mi">10</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="mi">10</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+
+<span class="n">dpt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="p">{</span>
+    <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;My first plot&quot;</span><span class="p">,</span>
+    <span class="p">}</span> <span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="data">
+<dt id="dpt_tools.sec">
+<code class="descclassname">dpt_tools.</code><code class="descname">sec</code><em class="property"> = numpy.timedelta64(1000000000,'ns')</em><a class="headerlink" href="#dpt_tools.sec" title="Permalink to this definition">¶</a></dt>
+<dd><p>numpy.datetime64: Interval of 1 second</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.tai2utc">
+<code class="descclassname">dpt_tools.</code><code class="descname">tai2utc</code><span class="sig-paren">(</span><em>ytime</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#tai2utc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.tai2utc" title="Permalink to this definition">¶</a></dt>
+<dd><p>TAI to UTC conversion using Leapseconds data.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.true2eccentric">
+<code class="descclassname">dpt_tools.</code><code class="descname">true2eccentric</code><span class="sig-paren">(</span><em>nu</em>, <em>e</em>, <em>radians=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#true2eccentric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.true2eccentric" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the eccentric anomaly from the true anomaly.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>nu</strong> (<em>float/numpy.ndarray</em>) – True anomaly.</li>
+<li><strong>e</strong> (<em>float/numpy.ndarray</em>) – Eccentricity of ellipse.</li>
+<li><strong>radians</strong> (<em>bool</em>) – If true radians are used, else all angles are given in degrees</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Eccentric anomaly.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray or float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.true2mean">
+<code class="descclassname">dpt_tools.</code><code class="descname">true2mean</code><span class="sig-paren">(</span><em>nu</em>, <em>e</em>, <em>radians=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#true2mean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.true2mean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transforms true anomaly to mean anomaly.</p>
+<dl class="docutils">
+<dt><strong>Uses:</strong></dt>
+<dd><ul class="first last simple">
+<li><a class="reference internal" href="#dpt_tools.true2eccentric" title="dpt_tools.true2eccentric"><code class="xref py py-func docutils literal notranslate"><span class="pre">true2eccentric()</span></code></a></li>
+<li><a class="reference internal" href="#dpt_tools.eccentric2mean" title="dpt_tools.eccentric2mean"><code class="xref py py-func docutils literal notranslate"><span class="pre">eccentric2mean()</span></code></a></li>
+</ul>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>nu</strong> (<em>float/numpy.ndarray</em>) – True anomaly.</li>
+<li><strong>e</strong> (<em>float/numpy.ndarray</em>) – Eccentricity of ellipse.</li>
+<li><strong>radians</strong> (<em>bool</em>) – If true radians are used, else all angles are given in degrees</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Mean anomaly.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray or float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.unix2npdt">
+<code class="descclassname">dpt_tools.</code><code class="descname">unix2npdt</code><span class="sig-paren">(</span><em>unix</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#unix2npdt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.unix2npdt" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.unix_to_jd">
+<code class="descclassname">dpt_tools.</code><code class="descname">unix_to_jd</code><span class="sig-paren">(</span><em>unix</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#unix_to_jd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.unix_to_jd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert Unix time to JD UT1</p>
+<p>Constant is due to 0h Jan 1, 1970 = 2440587.5 JD</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>unix</strong> (<em>float/numpy.ndarray</em>) – Unix time in seconds.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Julian Date UT1</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">float/numpy.ndarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.utc2tai">
+<code class="descclassname">dpt_tools.</code><code class="descname">utc2tai</code><span class="sig-paren">(</span><em>ytime</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#utc2tai"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.utc2tai" title="Permalink to this definition">¶</a></dt>
+<dd><p>UTC to TAI conversion using Leapseconds data.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dpt_tools.yearday_to_monthday">
+<code class="descclassname">dpt_tools.</code><code class="descname">yearday_to_monthday</code><span class="sig-paren">(</span><em>year_day</em>, <em>leap</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpt_tools.html#yearday_to_monthday"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpt_tools.yearday_to_monthday" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a day of the year to a month-day pair.
+Only takes first order leap-year into account. The day of the year is actually counted so that it starts from 1, so that 1.0 corresponds to January 1 00:00.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>year_day</strong> (<em>float</em>) – Day of the year.</li>
+<li><strong>leap</strong> (<em>bool</em>) – Indicates of the year is a leap year or not.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">tuple of (month, day)</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example:</strong></p>
+<blockquote>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">yearday_to_monthday</span><span class="p">(</span><span class="mf">1.1</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+<span class="go">(1.0, 1.1)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">yearday_to_monthday</span><span class="p">(</span><span class="mf">31.1</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+<span class="go">(1.0, 31.1)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">yearday_to_monthday</span><span class="p">(</span><span class="mf">32.1</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+<span class="go">(2.0, 1.1)</span>
+</pre></div>
+</div>
+</div></blockquote>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../introduction/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="doc.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="doc.html#simulation-handler">Simulation handler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#class-modules">Class modules</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="doc.html#function-modules">Function modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#instance-libraries">Instance libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#integrator-interfaces">Integrator interfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#tests">Tests</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="coord.html"
+                        title="previous chapter">coord</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="TLE_tools.html"
+                        title="next chapter">TLE_tools</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="TLE_tools.html" title="TLE_tools"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="coord.html" title="coord"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" >Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

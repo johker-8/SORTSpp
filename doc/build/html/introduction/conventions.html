@@ -1,0 +1,239 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Coordinate conventions &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Optional dependencies" href="more_dependencies.html" />
+    <link rel="prev" title="Introduction" href="introduction.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="more_dependencies.html" title="Optional dependencies"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="Introduction"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="coordinate-conventions">
+<h1>Coordinate conventions<a class="headerlink" href="#coordinate-conventions" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="orbit-conventions">
+<h2>Orbit conventions<a class="headerlink" href="#orbit-conventions" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt><strong>Orientation of the ellipse in the coordinate system:</strong></dt>
+<dd><ul class="first last simple">
+<li>For zero inclination <span class="math notranslate nohighlight">\(i\)</span>: the ellipse is located in the x-y plane.</li>
+<li>The direction of motion as True anoamly <span class="math notranslate nohighlight">\(\\nu\)</span>: increases for a zero inclination <span class="math notranslate nohighlight">\(i\)</span>: orbit is anti-coockwise, i.e. from +x towards +y.</li>
+<li>If the eccentricity <span class="math notranslate nohighlight">\(e\)</span>: is increased, the periapsis will lie in +x direction.</li>
+<li>If the inclination <span class="math notranslate nohighlight">\(i\)</span>: is increased, the ellipse will rotate around the x-axis, so that +y is rotated toward +z.</li>
+<li>An increase in Longitude of ascending node <span class="math notranslate nohighlight">\(\Omega\)</span>: corresponds to a rotation around the z-axis so that +x is rotated toward +y.</li>
+<li>Changing argument of perihelion <span class="math notranslate nohighlight">\(\omega\)</span>: will not change the plane of the orbit, it will rotate the orbit in the plane.</li>
+<li>The periapsis is shifted in the direction of motion.</li>
+<li>True anomaly measures from the +x axis, i.e <span class="math notranslate nohighlight">\(\\nu = 0\)</span> is located at periapsis and <span class="math notranslate nohighlight">\(\\nu = \pi\)</span> at apoapsis.</li>
+<li>All anomalies and orientation angles reach between 0 and <span class="math notranslate nohighlight">\(2\pi\)</span></li>
+</ul>
+</dd>
+</dl>
+<p><em>Reference:</em> “Orbital Motion” by A.E. Roy.</p>
+</div>
+<div class="section" id="coordinate-transformation-guide">
+<h2>Coordinate transformation guide<a class="headerlink" href="#coordinate-transformation-guide" title="Permalink to this headline">¶</a></h2>
+<p>In general there are 2 classes of coordinate systems:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Earth Centered Inertial (ECI)</li>
+<li>Earth Centered Earth Fixed (ECEF)</li>
+</ul>
+</div></blockquote>
+<p>There are several realizations of these classes of coordinate systems that take into account different effects and perturbations. The difference between an Inertial and an Earth Fixed frame is that in an inertial system all motion comes from classical orbit dynamics (N-body solutions) and are not caused by the coordinate frame transformation.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="17%" />
+<col width="8%" />
+<col width="75%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Reference</th>
+<th class="head">Type</th>
+<th class="head">Coordinate frame name</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>ITRF</td>
+<td>ECEF</td>
+<td>International Terrestrial Reference Frame</td>
+</tr>
+<tr class="row-odd"><td>PEF</td>
+<td>ECEF</td>
+<td>Pseudo-Earth Fixed reference frame</td>
+</tr>
+<tr class="row-even"><td>CIRF</td>
+<td>ECI</td>
+<td>Celestial Intermediate Reference Frame</td>
+</tr>
+<tr class="row-odd"><td>MOD</td>
+<td>ECI</td>
+<td>Mean-Of-Date reference frame</td>
+</tr>
+<tr class="row-even"><td>TOD</td>
+<td>ECI</td>
+<td>True-Of-Data reference frame</td>
+</tr>
+<tr class="row-odd"><td>GCRF</td>
+<td>ECI</td>
+<td>Geocentric Celestial Reference Frame (GCRF)</td>
+</tr>
+<tr class="row-even"><td>J2000</td>
+<td>ECI</td>
+<td>J2000 reference frame (Also called EME2000)</td>
+</tr>
+<tr class="row-odd"><td>TEME</td>
+<td>ECI</td>
+<td>True Equator, Mean Equinox reference frame</td>
+</tr>
+</tbody>
+</table>
+<p><a class="reference external" href="https://www.orekit.org/site-orekit-9.3.1/architecture/frames.html">https://www.orekit.org/site-orekit-9.3.1/architecture/frames.html</a></p>
+<div class="figure" id="id1">
+<a class="reference internal image-reference" href="../_images/frames.png"><img alt="Connection of different coordinate frames" src="../_images/frames.png" style="width: 459.0px; height: 533.0px;" /></a>
+<p class="caption"><span class="caption-text">Flowchart describing the relation between different frames. Original image Copyright (c) 2018 Jules David under the MIT license. Source: <a class="reference external" href="https://github.com/galactics/beyond">beyond</a>.</span></p>
+</div>
+<p>As an example, consider a Keplerian orbit (i.e. a point moving on a ellipse) around the Earth. An inertial frame here is any barycentric Cartesian fixed frame (barycentric can be approximated as the Earth Centric due to the small mass of the orbiting object). An example of a non-inertial frame could be a translating Cartesian frame, here the object would seem to be “spiraling” away from us. In this frame the movement away from us is not induced by fundamental orbital dynamics but due to the coordinate frame transformation. The same is true in a Earth Fixed system, the orbit would seem to rotate at the speed of the Earths rotation.</p>
+<p>Since any barycentric Cartesian fixed frame is Inertial it is customary to choose 2 reference directions to make the frame choice unique. These reference directions are usually the rotational axis of the Earth and the Vernal Equinox, i.e. the direction in space formed by the intersection of the Earths orbital plane around the Sun and the Earth equatorial plane. The direction chosen for the +x axis is usually defined so that it is aligned with the direction when axial tilt of the Earth in +z direction (the Earth moving counter-clockwise) is moving from towards the Sun to away from the Sun. The Vernal Equinox with this definition is also the ascending node of the ecliptic on the celestial equator.</p>
+<p>Since the orbital dynamics of the Earth in the solar-system has no analytic solutions due to perturbations, the definition of Vernal Equinox and the Earth ecliptic also changes with respect to time, thus is it customary to choose the common reference direction for the Vernal Equinox at a specific time, called the Epoch of that equinox.</p>
+<p>From numerical simulations the drift of the Obliquity of the ecliptic (inclination of ecliptic with respect to the celestial equator) does not vary more then 1 degree on the order of 10,000 years.</p>
+<p>Most commonly used ECI’s are:</p>
+<blockquote>
+<div><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">True Equator Mean Equinox (TEME):</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<p>This is the frame after a Two-Line Element (TLE) orbit has been converted to an Cartesian state. The Mean Equinox refers to the Vernal Equinox but averaged over time to remove nutation. The Mean Vernal Equinox here is aligned to coincide with the +x axis. Thus the instantaneous Vernal Equinox is different at any point in time and needs to be modeled. True Equator refers to the fact that the instantaneous axis of rotation of the Earth is used to align the +z axis with.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">The International Terrestrial Reference Frame (ITRF):</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+<p>The ITRF contains models of movement of both the Earth and the Equinox. Thus the frame itself is a function of time. As the models are updated it is customary to denote the reference frame by a Epoch, or the time around witch they “center”.</p>
+<p>Going from a “Mean” element definition to a Instantaneous one requires a model of nutation.</p>
+<p>To transform from e.g. TEME to ITRF one would first need to find the difference between the instantanius mean equionox</p>
+<p>Then find the instantanius earth rotation….</p>
+<p>then find the rotation of the earth, also known as GMST</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Coordinate conventions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#orbit-conventions">Orbit conventions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#coordinate-transformation-guide">Coordinate transformation guide</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/doc.html">Documentation</a></li>
+</ul>
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Coordinate conventions</a><ul>
+<li><a class="reference internal" href="#orbit-conventions">Orbit conventions</a></li>
+<li><a class="reference internal" href="#coordinate-transformation-guide">Coordinate transformation guide</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="introduction.html"
+                        title="previous chapter">Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="more_dependencies.html"
+                        title="next chapter">Optional dependencies</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="more_dependencies.html" title="Optional dependencies"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="Introduction"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>

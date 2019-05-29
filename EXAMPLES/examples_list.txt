@@ -1,0 +1,18 @@
+To-do:
+Extend scan
+Configure scan
+Configure Maintinence
+Configure Radar system
+Configure custom scan
+Configure interleaved experiment
+Configure interleaved experiment with data mining 
+Load scan and maint
+Configure scheduler
+Run scheduler
+Develop custom scheduler
+Develop custom cost function for scheduler
+Load schedule
+List of plotting methods
+
+Done: 
+parse_files.py: Parsing results files

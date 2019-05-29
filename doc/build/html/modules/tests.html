@@ -1,0 +1,635 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>unit-tests &#8212; SORTS++ 3.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="propagator_neptune" href="propagator_neptune.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="propagator_neptune.html" title="propagator_neptune"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" accesskey="U">Documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="unit-tests">
+<h1>unit-tests<a class="headerlink" href="#unit-tests" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="list-of-tests">
+<h2>List of tests<a class="headerlink" href="#list-of-tests" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>  1
+  2
+  3
+  4
+  5
+  6
+  7
+  8
+  9
+ 10
+ 11
+ 12
+ 13
+ 14
+ 15
+ 16
+ 17
+ 18
+ 19
+ 20
+ 21
+ 22
+ 23
+ 24
+ 25
+ 26
+ 27
+ 28
+ 29
+ 30
+ 31
+ 32
+ 33
+ 34
+ 35
+ 36
+ 37
+ 38
+ 39
+ 40
+ 41
+ 42
+ 43
+ 44
+ 45
+ 46
+ 47
+ 48
+ 49
+ 50
+ 51
+ 52
+ 53
+ 54
+ 55
+ 56
+ 57
+ 58
+ 59
+ 60
+ 61
+ 62
+ 63
+ 64
+ 65
+ 66
+ 67
+ 68
+ 69
+ 70
+ 71
+ 72
+ 73
+ 74
+ 75
+ 76
+ 77
+ 78
+ 79
+ 80
+ 81
+ 82
+ 83
+ 84
+ 85
+ 86
+ 87
+ 88
+ 89
+ 90
+ 91
+ 92
+ 93
+ 94
+ 95
+ 96
+ 97
+ 98
+ 99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="n">tests</span><span class="o">/</span><span class="n">test_TLE_tools</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestTLE</span><span class="p">::</span><span class="n">test_TEME_to_ITRF_circle_polar</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_TLE_tools</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestTLE</span><span class="p">::</span><span class="n">test_TEME_to_ITRF_equatorial_circle</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_TLE_tools</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestTLE</span><span class="p">::</span><span class="n">test_TEME_to_TLE</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_TLE_tools</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestTLE</span><span class="p">::</span><span class="n">test_TEME_to_TLE_cases</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_TLE_tools</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestTLE</span><span class="p">::</span><span class="n">test_TLE_to_TEME</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_TLE_tools</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestTLE</span><span class="p">::</span><span class="n">test_get_DUT</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_TLE_tools</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestTLE</span><span class="p">::</span><span class="n">test_get_IERS_EOP</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_TLE_tools</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestTLE</span><span class="p">::</span><span class="n">test_get_Polar_Motion</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_TLE_tools</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestTLE</span><span class="p">::</span><span class="n">test_theta_GMST1982</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_TLE_tools</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestTLE</span><span class="p">::</span><span class="n">test_tle_bstar</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_TLE_tools</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestTLE</span><span class="p">::</span><span class="n">test_tle_id</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_TLE_tools</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestTLE</span><span class="p">::</span><span class="n">test_tle_jd</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_TLE_tools</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestTLE</span><span class="p">::</span><span class="n">test_yearday_to_monthday</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_antenna</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestAntennaRX</span><span class="p">::</span><span class="n">test_ecef</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_antenna</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestAntennaRX</span><span class="p">::</span><span class="n">test_init</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_antenna</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestAntennaRX</span><span class="p">::</span><span class="n">test_str</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_antenna</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestAntennaTX</span><span class="p">::</span><span class="n">test_get_scan</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_antenna</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestAntennaTX</span><span class="p">::</span><span class="n">test_init</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_antenna</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestGainConv</span><span class="p">::</span><span class="n">test_inst_gain2full_gain</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_antenna</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestGainConv</span><span class="p">::</span><span class="n">test_inst_gain2full_gain_types</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_antenna</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestBeamPattern</span><span class="p">::</span><span class="n">test_gain</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_antenna</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestBeamPattern</span><span class="p">::</span><span class="n">test_on_axis</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_coord</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestCoord</span><span class="p">::</span><span class="n">test_angle_deg</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_coord</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestCoord</span><span class="p">::</span><span class="n">test_az_el_r2geodetic</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_coord</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestCoord</span><span class="p">::</span><span class="n">test_azel_to_cart</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_coord</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestCoord</span><span class="p">::</span><span class="n">test_cart_to_azel</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_coord</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestCoord</span><span class="p">::</span><span class="n">test_ecef2geodetic</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_coord</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestCoord</span><span class="p">::</span><span class="n">test_ecef2local</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_coord</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestCoord</span><span class="p">::</span><span class="n">test_ecef_geo_inverse</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_coord</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestCoord</span><span class="p">::</span><span class="n">test_geodetic2ecef</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_coord</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestCoord</span><span class="p">::</span><span class="n">test_geodetic_to_az_el_r</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_coord</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestCoord</span><span class="p">::</span><span class="n">test_ned2ecef</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestKeplerSolver</span><span class="p">::</span><span class="n">test_kepler_guess</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestKeplerSolver</span><span class="p">::</span><span class="n">test_laguerre_solve_kepler</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestAnomalies</span><span class="p">::</span><span class="n">test_eccentric2mean</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestAnomalies</span><span class="p">::</span><span class="n">test_eccentric2true_coencides</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestAnomalies</span><span class="p">::</span><span class="n">test_eccentric2true_hand_calc</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestAnomalies</span><span class="p">::</span><span class="n">test_eccentric_true_inverse</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestAnomalies</span><span class="p">::</span><span class="n">test_mean2eccentric</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestAnomalies</span><span class="p">::</span><span class="n">test_mean2true</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestAnomalies</span><span class="p">::</span><span class="n">test_mean_eccentric_inverse_array</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestAnomalies</span><span class="p">::</span><span class="n">test_mean_eccentric_inverse_float</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestAnomalies</span><span class="p">::</span><span class="n">test_mean_true_inverse_array</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestAnomalies</span><span class="p">::</span><span class="n">test_mean_true_inverse_float</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestAnomalies</span><span class="p">::</span><span class="n">test_true2eccentric_coencides</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestAnomalies</span><span class="p">::</span><span class="n">test_true2eccentric_hand_calc</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestAnomalies</span><span class="p">::</span><span class="n">test_true2mean</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestTimes</span><span class="p">::</span><span class="n">test_date_to_jd_float</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestTimes</span><span class="p">::</span><span class="n">test_date_to_jd_int</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestTimes</span><span class="p">::</span><span class="n">test_gmst</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestTimes</span><span class="p">::</span><span class="n">test_gmst_numpy</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestTimes</span><span class="p">::</span><span class="n">test_jd_to_date_float</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestTimes</span><span class="p">::</span><span class="n">test_jd_to_date_floor</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestTimes</span><span class="p">::</span><span class="n">test_jd_to_date_int</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestTimes</span><span class="p">::</span><span class="n">test_yearday_to_monthday</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestOrbits</span><span class="p">::</span><span class="n">test_elliptic_radius</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestOrbits</span><span class="p">::</span><span class="n">test_period_hand_calc</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestOrbits</span><span class="p">::</span><span class="n">test_period_numpy</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestOrbits</span><span class="p">::</span><span class="n">test_speed_hand_calc</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestOrbits</span><span class="p">::</span><span class="n">test_speed_numpy</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestKepCart</span><span class="p">::</span><span class="n">test_cart2kep_circ</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestKepCart</span><span class="p">::</span><span class="n">test_cart_kep_inverse</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestKepCart</span><span class="p">::</span><span class="n">test_kep2cart_Omega_inc</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestKepCart</span><span class="p">::</span><span class="n">test_kep2cart_circ</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestKepCart</span><span class="p">::</span><span class="n">test_kep2cart_ecc</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestKepCart</span><span class="p">::</span><span class="n">test_kep2cart_inc</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestKepCart</span><span class="p">::</span><span class="n">test_kep2cart_omega</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_dpt</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestKepCart</span><span class="p">::</span><span class="n">test_kep2cart_omega_inc</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_population</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPopulation</span><span class="p">::</span><span class="n">test_allocate</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_population</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPopulation</span><span class="p">::</span><span class="n">test_column_order</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_population</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPopulation</span><span class="p">::</span><span class="n">test_constructor</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_population</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPopulation</span><span class="p">::</span><span class="n">test_constructor_arguemnts</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_population</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPopulation</span><span class="p">::</span><span class="n">test_filter</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_population</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPopulation</span><span class="p">::</span><span class="n">test_generator</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_population</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPopulation</span><span class="p">::</span><span class="n">test_get_item</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_population</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPopulation</span><span class="p">::</span><span class="n">test_get_item_nan</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_population</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPopulation</span><span class="p">::</span><span class="n">test_iter</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_population</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPopulation</span><span class="p">::</span><span class="n">test_set_item</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_population</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPopulation</span><span class="p">::</span><span class="n">test_shape</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_population</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPopulation</span><span class="p">::</span><span class="n">test_space_object</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_population_library</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPopulationLibrary</span><span class="p">::</span><span class="n">test_filtered_master</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_population_library</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPopulationLibrary</span><span class="p">::</span><span class="n">test_master</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_population_library</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPopulationLibrary</span><span class="p">::</span><span class="n">test_master_factor</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_population_library</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPopulationLibrary</span><span class="p">::</span><span class="n">test_master_factor_cnt</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_population_library</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPopulationLibrary</span><span class="p">::</span><span class="n">test_tle_snapshot</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_base</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestBaseProp</span><span class="p">::</span><span class="n">test_base_prop_methods</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_base</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestBaseProp</span><span class="p">::</span><span class="n">test_meta_raise_no_method</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_base</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestBaseProp</span><span class="p">::</span><span class="n">test_meta_raise_wrong_method</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_base</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestBaseProp</span><span class="p">::</span><span class="n">test_numpy_conv_float</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_base</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestBaseProp</span><span class="p">::</span><span class="n">test_numpy_conv_list</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_base</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestBaseProp</span><span class="p">::</span><span class="n">test_numpy_conv_numpy</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_base</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestBaseProp</span><span class="p">::</span><span class="n">test_numpy_conv_raise</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_orekit</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorOrekit</span><span class="p">::</span><span class="n">test_circ_orbit</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_orekit</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorOrekit</span><span class="p">::</span><span class="n">test_frame_conversion</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_orekit</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorOrekit</span><span class="p">::</span><span class="n">test_get_orbit_cart</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_orekit</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorOrekit</span><span class="p">::</span><span class="n">test_get_orbit_kep</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_orekit</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorOrekit</span><span class="p">::</span><span class="n">test_kep_cart</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_orekit</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorOrekit</span><span class="p">::</span><span class="n">test_options_drag_off</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_orekit</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorOrekit</span><span class="p">::</span><span class="n">test_options_frames</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_orekit</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorOrekit</span><span class="p">::</span><span class="n">test_options_gravity_kep</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_orekit</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorOrekit</span><span class="p">::</span><span class="n">test_options_gravity_order</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_orekit</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorOrekit</span><span class="p">::</span><span class="n">test_options_integrator</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_orekit</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorOrekit</span><span class="p">::</span><span class="n">test_options_jpliau</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_orekit</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorOrekit</span><span class="p">::</span><span class="n">test_options_more_solarsystem</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_orekit</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorOrekit</span><span class="p">::</span><span class="n">test_options_rad_off</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_orekit</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorOrekit</span><span class="p">::</span><span class="n">test_options_tidal</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_orekit</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorOrekit</span><span class="p">::</span><span class="n">test_options_tolerance</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_orekit</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorOrekit</span><span class="p">::</span><span class="n">test_raise_bodies</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_orekit</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorOrekit</span><span class="p">::</span><span class="n">test_raise_frame</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_orekit</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorOrekit</span><span class="p">::</span><span class="n">test_raise_models</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_orekit</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorOrekit</span><span class="p">::</span><span class="n">test_raise_sc_params_missing</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_sgp4</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorSGP4</span><span class="p">::</span><span class="n">test_PropagatorSGP4_cart</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_sgp4</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorSGP4</span><span class="p">::</span><span class="n">test_PropagatorSGP4_cart_kep_cases</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_sgp4</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorSGP4</span><span class="p">::</span><span class="n">test_PropagatorSGP4_cart_kep_inverse</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_sgp4</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorSGP4</span><span class="p">::</span><span class="n">test_PropagatorSGP4_cart_kep_inverse_cases</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_sgp4</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorSGP4</span><span class="p">::</span><span class="n">test_PropagatorSGP4_cart_polar_motion00</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_sgp4</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorSGP4</span><span class="p">::</span><span class="n">test_PropagatorSGP4_get_orbit</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_sgp4</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorSGP4</span><span class="p">::</span><span class="n">test_PropagatorSGP4_get_orbit_B</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_sgp4</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorSGP4</span><span class="p">::</span><span class="n">test_PropagatorSGP4_get_orbit_cart</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_sgp4</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorSGP4</span><span class="p">::</span><span class="n">test_PropagatorSGP4_polar_motion</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_sgp4</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorSGP4</span><span class="p">::</span><span class="n">test_PropagatorSGP4_polar_motion00</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_sgp4</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorSGP4</span><span class="p">::</span><span class="n">test_class_implementation</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_sgp4</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorSGP4</span><span class="p">::</span><span class="n">test_ecef_teme_inverse</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_propagator_sgp4</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestPropagatorSGP4</span><span class="p">::</span><span class="n">test_propagator_sgp4_mjd_invaraiance</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_radar_config</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestRadarSystem</span><span class="p">::</span><span class="n">test_init</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_space_object</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestSpaceObject</span><span class="p">::</span><span class="n">test_kep_cart_init</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_space_object</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestSpaceObject</span><span class="p">::</span><span class="n">test_propagator_change_orekit</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_space_object</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestSpaceObject</span><span class="p">::</span><span class="n">test_propagator_change_sgp4</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_space_object</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestSpaceObject</span><span class="p">::</span><span class="n">test_propagator_options_orekit</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_space_object</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestSpaceObject</span><span class="p">::</span><span class="n">test_propagator_options_sgp4</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_space_object</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestSpaceObject</span><span class="p">::</span><span class="n">test_return_sizes</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_space_object</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestSpaceObject</span><span class="p">::</span><span class="n">test_update_elements_cart</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_space_object</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestSpaceObject</span><span class="p">::</span><span class="n">test_update_elements_kep</span>
+<span class="n">tests</span><span class="o">/</span><span class="n">test_space_object</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">TestSpaceObject</span><span class="p">::</span><span class="n">test_update_error</span>
+
+<span class="n">no</span> <span class="n">tests</span> <span class="n">ran</span> <span class="ow">in</span> <span class="mf">1.19</span> <span class="n">seconds</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+</div>
+<div class="section" id="visual-tests">
+<h1>Visual-tests<a class="headerlink" href="#visual-tests" title="Permalink to this headline">¶</a></h1>
+<p>Visual tests produce some amount of plots that are inspected to make a rough estimate of validation.</p>
+<div class="section" id="test-propagator">
+<h2>Test propagator<a class="headerlink" href="#test-propagator" title="Permalink to this headline">¶</a></h2>
+<p>These test files will take a propagator and produce 3 different orbit plots:</p>
+<ol class="arabic simple">
+<li>Circular orbit in equatorial place</li>
+<li>Elliptic orbit in equatorial plane</li>
+<li>Elliptic polar orbit in ECEF over several periods</li>
+</ol>
+<p>Most scientists that work with orbits daily will have a good grasp of how these scenarios should look visually and can make early detection of errors by inspecting the output of the below code.</p>
+<div class="highlight-python notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>  1
+  2
+  3
+  4
+  5
+  6
+  7
+  8
+  9
+ 10
+ 11
+ 12
+ 13
+ 14
+ 15
+ 16
+ 17
+ 18
+ 19
+ 20
+ 21
+ 22
+ 23
+ 24
+ 25
+ 26
+ 27
+ 28
+ 29
+ 30
+ 31
+ 32
+ 33
+ 34
+ 35
+ 36
+ 37
+ 38
+ 39
+ 40
+ 41
+ 42
+ 43
+ 44
+ 45
+ 46
+ 47
+ 48
+ 49
+ 50
+ 51
+ 52
+ 53
+ 54
+ 55
+ 56
+ 57
+ 58
+ 59
+ 60
+ 61
+ 62
+ 63
+ 64
+ 65
+ 66
+ 67
+ 68
+ 69
+ 70
+ 71
+ 72
+ 73
+ 74
+ 75
+ 76
+ 77
+ 78
+ 79
+ 80
+ 81
+ 82
+ 83
+ 84
+ 85
+ 86
+ 87
+ 88
+ 89
+ 90
+ 91
+ 92
+ 93
+ 94
+ 95
+ 96
+ 97
+ 98
+ 99
+100
+101
+102
+103
+104
+105
+106
+107</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">))</span>
+
+<span class="kn">import</span> <span class="nn">unittest</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">n</span>
+<span class="kn">import</span> <span class="nn">numpy.testing</span> <span class="kn">as</span> <span class="nn">nt</span>
+
+<span class="kn">import</span> <span class="nn">propagator_base</span>
+
+<span class="k">class</span> <span class="nc">new_propagator</span><span class="p">(</span><span class="n">propagator_base</span><span class="o">.</span><span class="n">PropagatorBase</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">get_orbit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">inc</span><span class="p">,</span> <span class="n">raan</span><span class="p">,</span> <span class="n">aop</span><span class="p">,</span> <span class="n">mu0</span><span class="p">,</span> <span class="n">mjd0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">pass</span>
+    <span class="k">def</span> <span class="nf">get_orbit_cart</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">vx</span><span class="p">,</span> <span class="n">vy</span><span class="p">,</span> <span class="n">vz</span><span class="p">,</span> <span class="n">mjd0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+<span class="k">class</span> <span class="nc">TestBaseProp</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">test_base_prop_methods</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">prop</span> <span class="o">=</span> <span class="n">new_propagator</span><span class="p">()</span>
+
+        <span class="k">assert</span> <span class="n">prop</span><span class="o">.</span><span class="n">get_orbit</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span>
+            <span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span>
+            <span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span>
+            <span class="mi">0</span><span class="p">,</span>
+        <span class="p">)</span> <span class="ow">is</span> <span class="bp">None</span>
+
+        <span class="k">assert</span> <span class="n">prop</span><span class="o">.</span><span class="n">get_orbit_cart</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span>
+            <span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span>
+            <span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span>
+            <span class="mi">0</span><span class="p">,</span>
+        <span class="p">)</span> <span class="ow">is</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">test_meta_raise_no_method</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="k">class</span> <span class="nc">new_wrong_propagator</span><span class="p">(</span><span class="n">propagator_base</span><span class="o">.</span><span class="n">PropagatorBase</span><span class="p">):</span>
+            <span class="k">pass</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="n">new_wrong_propagator</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">test_meta_raise_wrong_method</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="k">class</span> <span class="nc">new_wrong_propagator</span><span class="p">(</span><span class="n">propagator_base</span><span class="o">.</span><span class="n">PropagatorBase</span><span class="p">):</span>
+            <span class="k">def</span> <span class="nf">get_orbit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="k">pass</span>
+            <span class="k">def</span> <span class="nf">get_orbit_cart</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">vx</span><span class="p">,</span> <span class="n">vy</span><span class="p">,</span> <span class="n">vz</span><span class="p">,</span> <span class="n">mjd0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+                <span class="k">pass</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">AssertionError</span><span class="p">,</span> <span class="n">new_wrong_propagator</span><span class="p">)</span>
+
+
+        <span class="k">class</span> <span class="nc">new_wrong_propagator</span><span class="p">(</span><span class="n">propagator_base</span><span class="o">.</span><span class="n">PropagatorBase</span><span class="p">):</span>
+            <span class="k">def</span> <span class="nf">get_orbit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">inc</span><span class="p">,</span> <span class="n">raan</span><span class="p">,</span> <span class="n">aop</span><span class="p">,</span> <span class="n">mu0</span><span class="p">,</span> <span class="n">mjd0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+                <span class="k">pass</span>
+            <span class="k">def</span> <span class="nf">get_orbit_cart</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">vx</span><span class="p">,</span> <span class="n">vy</span><span class="p">,</span> <span class="n">vz</span><span class="p">,</span> <span class="n">mjd0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+                <span class="k">pass</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">AssertionError</span><span class="p">,</span> <span class="n">new_wrong_propagator</span><span class="p">)</span>
+
+
+    <span class="k">def</span> <span class="nf">test_numpy_conv_float</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">prop</span> <span class="o">=</span> <span class="n">new_propagator</span><span class="p">()</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="mf">5.3</span>
+        <span class="n">x_conv</span> <span class="o">=</span> <span class="n">prop</span><span class="o">.</span><span class="n">_make_numpy</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x_conv</span><span class="p">,</span> <span class="n">n</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+
+        <span class="n">nt</span><span class="o">.</span><span class="n">assert_almost_equal</span><span class="p">(</span><span class="n">x_conv</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">,</span> <span class="n">decimal</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">test_numpy_conv_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">prop</span> <span class="o">=</span> <span class="n">new_propagator</span><span class="p">()</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="mf">5.3</span><span class="p">]</span>
+        <span class="n">x_conv</span> <span class="o">=</span> <span class="n">prop</span><span class="o">.</span><span class="n">_make_numpy</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x_conv</span><span class="p">,</span> <span class="n">n</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+
+        <span class="n">nt</span><span class="o">.</span><span class="n">assert_almost_equal</span><span class="p">(</span><span class="n">x_conv</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">decimal</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">test_numpy_conv_numpy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">prop</span> <span class="o">=</span> <span class="n">new_propagator</span><span class="p">()</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">5.3</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+        <span class="n">x_conv</span> <span class="o">=</span> <span class="n">prop</span><span class="o">.</span><span class="n">_make_numpy</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x_conv</span><span class="p">,</span> <span class="n">n</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="n">x</span> <span class="ow">is</span> <span class="n">x_conv</span>
+
+        <span class="n">nt</span><span class="o">.</span><span class="n">assert_array_almost_equal</span><span class="p">(</span><span class="n">x_conv</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">decimal</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">test_numpy_conv_raise</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">prop</span> <span class="o">=</span> <span class="n">new_propagator</span><span class="p">()</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="s1">&#39;4&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">Exception</span><span class="p">,</span> <span class="n">prop</span><span class="o">.</span><span class="n">_make_numpy</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">unittest</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+</div>
+<div class="section" id="simulation-tests">
+<h1>Simulation-tests<a class="headerlink" href="#simulation-tests" title="Permalink to this headline">¶</a></h1>
+<p>test</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../introduction/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/conventions.html">Coordinate conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/more_dependencies.html">Optional dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/propagators.html">Installing propagators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/step_by_step.html">Step by step guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_examples.html">Usage examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="doc.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="doc.html#simulation-handler">Simulation handler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#class-modules">Class modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#function-modules">Function modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#instance-libraries">Instance libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doc.html#integrator-interfaces">Integrator interfaces</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="doc.html#tests">Tests</a></li>
+</ul>
+</li>
+</ul>
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">unit-tests</a><ul>
+<li><a class="reference internal" href="#list-of-tests">List of tests</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#visual-tests">Visual-tests</a><ul>
+<li><a class="reference internal" href="#test-propagator">Test propagator</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#simulation-tests">Simulation-tests</a></li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="propagator_neptune.html"
+                        title="previous chapter">propagator_neptune</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="propagator_neptune.html" title="propagator_neptune"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">SORTS++ 3.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="doc.html" >Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Kastinen, Juha Vierinen.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.1.
+    </div>
+  </body>
+</html>
